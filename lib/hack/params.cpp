@@ -1,4 +1,6 @@
+#include "./params.h"
 #include <ArduinoNvs.h>
+#include "./SerialUtilities.h"
 #include "./common.h"
 #include "./toHex.h"
 
@@ -147,7 +149,7 @@ void printCompactParameters(Print* output, byte number) {
     int16_t value = getParameter(i);
     checkDigit ^= toHex(output, value);
   }
-  // todo checkDigit ^= toHex(output, (int16_t)getQualifier());
+  checkDigit ^= toHex(output, (int16_t)getQualifier());
   toHex(output, checkDigit);
   output->println("");
 }
@@ -157,26 +159,25 @@ void printCompactParameters(Print* output) {
 }
 
 void resetParameters() {
-  setAndSaveParameter(PARAM_BRIGHTNESS, 255);
-  setAndSaveParameter(PARAM_INTENSITY, 4);
-  setAndSaveParameter(PARAM_SPEED, 17);
-  setAndSaveParameter(PARAM_CURRENT_PROGRAM, 3);
-  setAndSaveParameter(PARAM_COLOR_MODEL, 8);
-  setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-  setAndSaveParameter(PARAM_NB_ROWS, 16);
-  setAndSaveParameter(PARAM_NB_COLUMNS, 16);
-  setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
-  setAndSaveParameter(PARAM_COLOR_MODEL, 0);
-  setAndSaveParameter(PARAM_SCHEDULE, 0b11);
-  setAndSaveParameter(PARAM_ACTION_1, -1);
-  setAndSaveParameter(PARAM_ACTION_2, -1);
-  setAndSaveParameter(PARAM_ACTION_3, -1);
-  setAndSaveParameter(PARAM_ACTION_4, -1);
+  setAndSaveParameter(PARAM_EXT_HUMIDITY, 3600);
+
+  for (byte i = 0; i < 26; i++) {
+    setAndSaveParameter(i, ERROR_VALUE);
+  }
+
+  setQualifier(16961);
 }
 
 void checkParameters() {
-  if (getParameter(PARAM_BRIGHTNESS) < 0) {
+  if (getParameter(PARAM_EXT_HUMIDITY) < 0) {
     resetParameters();
   }
+}
+
+void setQualifier(int16_t value) {
+  NVS.setInt("q", value);
+}
+
+int getQualifier() {
+  return NVS.getInt("q");
 }

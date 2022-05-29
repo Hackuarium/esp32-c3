@@ -1,6 +1,5 @@
 #include "./common.h"
 #include "./params.h"
-#include "./WifiUtilities.h"
 
 void resetParameters();
 
@@ -32,21 +31,21 @@ char ptrTaskList[600];
 
 static void printFreeMemory(Print* output) {
   output->print(F("Number of tasks: "));
-  uint8_t nbTasks=uxTaskGetNumberOfTasks();
+  uint8_t nbTasks = uxTaskGetNumberOfTasks();
   output->println(nbTasks);
 
-/*
-  for (uint8_t i=0; i<nbTasks; i++) {
-     output->println(uxTaskGetStackHighWaterMark(0));
-  }
-  */
+  /*
+    for (uint8_t i=0; i<nbTasks; i++) {
+       output->println(uxTaskGetStackHighWaterMark(0));
+    }
+    */
   /*
   vTaskList(ptrTaskList);
   output->println(F("Task  State   Prio    Stack    Num"));
   output->println(F("----------------------------------"));
   output->print(ptrTaskList);
   */
-//  uxTaskGetSystemState();
+  //  uxTaskGetSystemState();
 
   output->print(F("Free heap: "));
   output->println(ESP.getFreeHeap());
@@ -77,15 +76,13 @@ void processUtilitiesCommand(char command,
       printFreeMemory(output);
       break;
     case 'q':
-      /* todo
-        if (paramValue[0] != '\0') {
-          setQualifier(atoi(paramValue));
-        }
-        {
-          uint16_t a = getQualifier();
-          output->println(a);
-        }
-        */
+      if (paramValue[0] != '\0') {
+        setQualifier(atoi(paramValue));
+      }
+      {
+        uint16_t a = getQualifier();
+        output->println(a);
+      }
       break;
     case 'r':
       if (paramValue[0] != '\0') {

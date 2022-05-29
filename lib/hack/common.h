@@ -7,54 +7,43 @@ extern int16_t parameters[MAX_PARAM];
 
 #define MAX_LED 1024
 
-#define PARAM_ERROR 51
+#define PARAM_EXT_TEMPERATURE 0
+#define PARAM_EXT_HUMIDITY 1
+#define PARAM_LUMINOSITY 2
+#define PARAM_PRESSURE 3
+#define PARAM_INT_TEMPERATURE 4
+#define PARAM_INT_HUMIDITY 5
+#define PARAM_INT_TEMPERATURE_A 6
+#define PARAM_INT_TEMPERATURE_B 7
+#define PARAM_WEIGHT_G 8
+#define PARAM_BATTERY 9
+#define PARAM_GATE1_IN 10
+#define PARAM_GATE1_OUT 11
+#define PARAM_GATE2_IN 12
+#define PARAM_GATE2_OUT 13
+#define PARAM_GATE3_IN 14
+#define PARAM_GATE3_OUT 15
+#define PARAM_GATE4_IN 16
+#define PARAM_GATE4_OUT 17
+#define PARAM_GATE5_IN 18
+#define PARAM_GATE5_OUT 19
+#define PARAM_GATE6_IN 20
+#define PARAM_GATE6_OUT 21
+#define PARAM_GATE7_IN 22
+#define PARAM_GATE7_OUT 23
+#define PARAM_GATE8_IN 24
+#define PARAM_GATE8_OUT 25
 
-#define PARAM_BRIGHTNESS 0  // A
-#define PARAM_INTENSITY 1
-#define PARAM_SPEED 2
-#define PARAM_CURRENT_PROGRAM 3        // D
-#define PARAM_COLOR_MODEL 4            // E
-#define PARAM_COLOR_CHANGE_SPEED 5     // 0 to 6 - F
-#define PARAM_COLOR_DECREASE_SPEED 6   // 0 to 6 - G
-#define PARAM_BACKGROUND_BRIGHTNESS 7  // 0 or 1 - H
+#define PARAM_WEIGHT 26
+#define PARAM_WEIGHT_OFFSET 27
+#define PARAM_WEIGHT_FACTOR 28
 
-#define PARAM_NB_ROWS 8     // I
-#define PARAM_NB_COLUMNS 9  // J
-
-#define PARAM_RED 10    // K: 0 to 255
-#define PARAM_GREEN 11  // L: 0 to 255
-#define PARAM_BLUE 12   // M: 0 to 255
-
-#define PARAM_FCT_COLOR_MODEL 13  // N
-#define PARAM_DIRECTION 14        // O
-#define PARAM_COMMAND_1 15        // P
-#define PARAM_COMMAND_2 16        // Q
-#define PARAM_COMMAND_3 17        // R
-#define PARAM_COMMAND_4 18        // S
-#define PARAM_NB_PLAYERS 19       // T
-#define PARAM_WIN_LIMIT 20        // U
-#define PARAM_COMMAND_5 21        // V
-#define PARAM_COMMAND_6 22        // W
-#define PARAM_COMMAND_7 23        // X
-#define PARAM_COMMAND_8 24        // Y
-
-#define PARAM_LAYOUT_MODEL 25     // Z
-#define PARAM_COLOR_LED_MODEL 26  // AA
-#define PARAM_SCHEDULE 27         // AB   bit 0: day, bit 1: night
-#define PARAM_SUNSET_OFFSET \
-  28  // AC   Allows to turn on before or after sunset (in minutes)
-#define PARAM_SUNRISE_OFFSET \
-  29  // AD   Allows to turn off before or after sunrise (in minutes)
-#define PARAM_ACTION_1 \
-  30  // AE   Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
-#define PARAM_ACTION_2 \
-  31  // AF   Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
-#define PARAM_ACTION_3 \
-  32  // AG   Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
-#define PARAM_ACTION_4 \
-  33  // AH   Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
-
-#define PARAM_TEMPERATURE 34
-#define PARAM_HUMIDITY 35
+#define PARAM_CHARGING 29
+#define PARAM_LOGGING_INTERVAL 30
+// minimal 300s to prevent desctruction of EEPROM. Should last 22 years
+// with 300s
+#define PARAM_INT_TEMPERATURE_C 31
 
 #define PARAM_WIFI_RSSI 49  // AX  Wifi RSSI, larger is better
+
+#define PARAM_ERROR 51
