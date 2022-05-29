@@ -1,8 +1,10 @@
 #include <AsyncMqttClient.h>
+#include <StringStream.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include "./common.h"
 #include "./params.h"
+#include "./taskSerial.cpp"
 
 AsyncMqttClient mqttClient;
 
@@ -41,7 +43,11 @@ void TaskMQTT(void* pvParameters) {
   mqttClient.onMessage(onMqttMessage);
 
   while (true) {
-    uint16_t packetIdPub1 = mqttClient.publish("test/esp", 0, true, "Hello");
+    String message;
+    StringStream stream((String&)message);
+    printResult("uc", &stream);
+    uint16_t packetIdPub1 =
+        mqttClient.publish("test/esp", 0, true, &message[0]);
     vTaskDelay(10 * 1000);
   }
 }
