@@ -1,10 +1,47 @@
 #include "./common.h"
 
+#include <OneWire.h>
+
 void TaskOneWire(void* pvParameters) {
   (void)pvParameters;
 
+  OneWire ds(6);
+
+  byte i;
+  byte present = 0;
+  byte data[9];
+  byte addr[8];
+  float celsius;
+
   while (true) {
-    vTaskDelay(1000);
+    vTaskDelay(10000);
+
+    if (!ds.search(addr)) {
+      ds.reset_search();
+      continue;
+    }
+
+    ds.reset();
+    ds.select(addr);
+    ds.write(0x44, 1);  // start conversion, with parasite power on at the end
+
+    vTaskDelay(1000);  // maybe 750ms is enough, maybe not
+    // we might do a ds.depower() here, but the reset will take care of it.
+
+    ds.reset();
+    ds.select(addr);
+    ds.write(0xBE);  // Read Scratchpad
+
+    for (i = 0; i < 9; i++) {  // we need 9 bytes
+      data[i] = ds.read();
+    }
+
+    int16_t raw = (data[1] << 8) | data[0];
+
+    celsius = (float)raw / 16.0;
+    // Serial.print("  Temperature = ");
+    // Serial.print(celsius);
+    // Serial.print(" Celsius, ");
   }
 }
 
