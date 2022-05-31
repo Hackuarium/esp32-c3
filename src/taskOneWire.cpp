@@ -1,4 +1,5 @@
 #include "./common.h"
+#include "./params.h"
 
 #include <OneWire.h>
 
@@ -14,7 +15,7 @@ void TaskOneWire(void* pvParameters) {
   float celsius;
 
   while (true) {
-    vTaskDelay(10000);
+    vTaskDelay(1000);
 
     if (!ds.search(addr)) {
       ds.reset_search();
@@ -39,9 +40,8 @@ void TaskOneWire(void* pvParameters) {
     int16_t raw = (data[1] << 8) | data[0];
 
     celsius = (float)raw / 16.0;
-    // Serial.print("  Temperature = ");
-    // Serial.print(celsius);
-    // Serial.print(" Celsius, ");
+
+    setParameter(PARAM_TEMPERATURE, celsius * 100);
   }
 }
 

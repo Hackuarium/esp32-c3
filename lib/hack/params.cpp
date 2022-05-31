@@ -159,7 +159,7 @@ void printCompactParameters(Print* output) {
 }
 
 void resetParameters() {
-  setAndSaveParameter(PARAM_EXT_HUMIDITY, 3600);
+  setAndSaveParameter(PARAM_HUMIDITY, 3600);
 
   for (byte i = 0; i < 26; i++) {
     setAndSaveParameter(i, ERROR_VALUE);
@@ -169,7 +169,7 @@ void resetParameters() {
 }
 
 void checkParameters() {
-  if (getParameter(PARAM_EXT_HUMIDITY) < 0) {
+  if (getParameter(PARAM_HUMIDITY) < 0) {
     resetParameters();
   }
 }
