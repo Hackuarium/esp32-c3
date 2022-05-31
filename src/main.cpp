@@ -5,6 +5,7 @@ void taskBlink();
 void taskSerial();
 void taskNTPD();
 void taskMQTT();
+void taskOneWire();
 void taskWifi();
 void taskOTA();
 
@@ -15,6 +16,7 @@ void setup() {
   taskOTA();
   taskWifi();
   taskMQTT();
+  taskOneWire();
   taskNTPD();
   taskBlink();
 }
