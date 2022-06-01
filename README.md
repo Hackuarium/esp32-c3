@@ -1,4 +1,6 @@
-##
+## Test mqtt
+
+mosquitto_sub -h "mqtt.hackuarium.org" -t "test/esp"
 
 ## Logging
 
