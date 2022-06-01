@@ -1,7 +1,8 @@
 #include "./SerialUtilities.h"
-#include "./WifiUtilities.h" 
+#include "./WifiUtilities.h"
 #include "./common.h"
 #include "./params.h"
+#include "./taskWire.h"
 
 #define SERIAL_BUFFER_LENGTH 256
 #define SERIAL_MAX_PARAM_VALUE_LENGTH 256

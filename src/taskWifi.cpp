@@ -40,7 +40,7 @@ void TaskWifi(void* pvParameters) {
       // WiFi.begin(ssid, password);
       // WiFi.reconnect();
     }
-    vTaskDelay(10000);
+    vTaskDelay(1000);
     setParameter(PARAM_WIFI_RSSI, WiFi.RSSI());
   }
 }

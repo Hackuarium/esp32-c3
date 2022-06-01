@@ -52,3 +52,5 @@ extern int16_t parameters[MAX_PARAM];
 
 // minimal 300s to prevent desctruction of EEPROM. Should last 22 years
 // with 300s
+
+#define THR_WIRE_MASTER 1

@@ -9,7 +9,7 @@ void taskMQTT();
 void taskOneWire();
 void taskWifi();
 void taskOTA();
-
+void taskWire();
 
 void setup() {
   Serial.begin(115200);  // only for debug purpose
@@ -21,8 +21,8 @@ void setup() {
   taskMQTT();
   taskOneWire();
   taskNTPD();
+  taskWire();
   taskBlink();
-
 }
 
 void loop() {
