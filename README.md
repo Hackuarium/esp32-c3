@@ -1,3 +1,11 @@
+# Configuration
+
+Configuration of the device is done using the console
+
+# MQTT
+
+Using the console
+
 ## Test mqtt
 
 mosquitto_sub -h "mqtt.hackuarium.org" -t "test/esp"
