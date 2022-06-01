@@ -8,15 +8,16 @@
 
 AsyncMqttClient mqttClient;
 
-char broker[20];
-char topic[20];
+char broker[40];
+char subscribeTopic[40];
+char publishTopic[40];
 
 void onMqttPublish(uint16_t packetId);
 void onMqttSubscribe(uint16_t packetId, uint8_t qos);
 void onMqttUnsubscribe(uint16_t packetId);
 void onMqttConnect(bool sessionPresent);
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason);
-void onMqttMessage(char* topic,
+void onMqttMessage(char* subscribeTopic,
                    char* payload,
                    AsyncMqttClientMessageProperties properties,
                    size_t len,
@@ -25,30 +26,47 @@ void onMqttMessage(char* topic,
 
 void TaskMQTT(void* pvParameters) {
   getParameter("mqtt.broker", broker);
-  getParameter("mqtt.topic", topic);
+  getParameter("mqtt.subscribe", subscribeTopic);
+  getParameter("mqtt.publish", publishTopic);
+
+  vTaskDelay(1000);
 
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(5000);
   }
 
-  mqttClient.setServer(broker, 1883);
-  mqttClient.connect();
+  bool mqttEnabled = false;
 
-  Serial.println("Connecting to MQTT...");
-  mqttClient.onConnect(onMqttConnect);
-  mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onPublish(onMqttPublish);
-  //  mqttClient.onSubscribe(onMqttSubscribe);
-  //  mqttClient.onUnsubscribe(onMqttUnsubscribe);
-  mqttClient.onMessage(onMqttMessage);
+  if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
+    mqttClient.setServer(broker, 1883);
+    mqttClient.connect();
+
+    Serial.println("Connecting to MQTT...");
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+  };
+
+  if (strlen(subscribeTopic) != 0) {
+    mqttClient.onSubscribe(onMqttSubscribe);
+    mqttClient.onUnsubscribe(onMqttUnsubscribe);
+    mqttClient.onMessage(onMqttMessage);
+  }
+
+  if (strlen(publishTopic) != 0) {
+    mqttClient.onPublish(onMqttPublish);
+  }
 
   while (true) {
+    vTaskDelay(10 * 1000);
+    if (strlen(publishTopic) == 0) {
+      continue;
+    }
+
     String message;
     StringStream stream((String&)message);
     printResult("uc", &stream);
     uint16_t packetIdPub1 =
-        mqttClient.publish("test/esp", 0, true, &message[0]);
-    vTaskDelay(10 * 1000);
+        mqttClient.publish(publishTopic, 0, true, &message[0]);
   }
 }
 
@@ -80,7 +98,7 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe(topic, 2);
+  uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 2);
   Serial.print("Subscribing at QoS 2, packetId: ");
   Serial.println(packetIdSub);
 }
