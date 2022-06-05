@@ -8,7 +8,17 @@ Using the console
 
 ## Test mqtt
 
-mosquitto_sub -h "mqtt.hackuarium.org" -t "test/esp"
+mosquitto_sub -h "mqtt.beemos.org" -t "test/esp"
+
+mosquitto_pub -h 'mqtt.beemos.org' -m "123412341234 " -t "test/esp"
+
+## Topic
+
+lpatiny/Beemos/hive1
+
+## Device information
+
+`uq` allows to setup the device information. This is a numeric number between `66*256+65` and `66*256+90` (16961 to 16986).
 
 ## Logging
 
