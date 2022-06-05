@@ -39,9 +39,8 @@ void TaskMQTT(void* pvParameters) {
 
   if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
     mqttClient.setServer(broker, 1883);
-    mqttClient.connect();
-
     Serial.println("Connecting to MQTT...");
+    mqttClient.connect();
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
   };
@@ -98,9 +97,11 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
+  if (strlen(subscribeTopic) != 0) {
+    uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 2);
+    Serial.print("Subscribing at QoS 2, packetId: ");
+    Serial.println(packetIdSub);
+  }
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
