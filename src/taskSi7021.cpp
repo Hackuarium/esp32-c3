@@ -12,7 +12,6 @@ void TaskSi7021(void* pvParameters) {
       3, 4);  // Define specific i2c pins for SDA/SCL (mandatory for ESP32-C3)
 
   while (!sensor.begin()) {
-    Serial.println("Did not find Si7021 sensor!");
     vTaskDelay(300);
   }
 
