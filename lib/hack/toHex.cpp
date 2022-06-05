@@ -20,3 +20,9 @@ uint8_t toHex(Print* output, long value) {
   checkDigit ^= toHex(output, (int16_t)(value >> 0 & 65535));
   return checkDigit;
 }
+
+uint8_t toHex(Print* output, unsigned long value) {
+  byte checkDigit = toHex(output, (int16_t)(value >> 16 & 65535));
+  checkDigit ^= toHex(output, (int16_t)(value >> 0 & 65535));
+  return checkDigit;
+}

@@ -2,6 +2,7 @@
 #include <ArduinoNvs.h>
 #include "./SerialUtilities.h"
 #include "./common.h"
+#include "./taskNTPD.h"
 #include "./toHex.h"
 
 #define INT_MAX_VALUE 32767
@@ -144,7 +145,8 @@ void printCompactParameters(Print* output, byte number) {
   byte checkDigit = 0;
 
   // we first add epoch
-  // todo checkDigit ^= toHex(output, (long)now());
+  // checkDigit ^= toHex(output, (long)now());
+  checkDigit ^= toHex(output, getEpoch());
   for (int16_t i = 0; i < number; i++) {
     int16_t value = getParameter(i);
     checkDigit ^= toHex(output, value);
@@ -161,7 +163,7 @@ void printCompactParameters(Print* output) {
 void resetParameters() {
   setAndSaveParameter(PARAM_HUMIDITY, 3600);
 
-  for (byte i = 0; i < 26; i++) {
+  for (byte i = 0; i < MAX_PARAM; i++) {
     setAndSaveParameter(i, ERROR_VALUE);
   }
 
