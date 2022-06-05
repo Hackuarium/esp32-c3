@@ -1,5 +1,6 @@
 #include "./common.h"
 #include "./params.h"
+#include "./taskNTPD.h"
 
 void resetParameters();
 
@@ -63,14 +64,12 @@ void processUtilitiesCommand(char command,
       }
       break;
     case 'e':
-      /* todo
-        if (paramValue[0] != '\0') {
-          setTime(atol(paramValue));
-          output->println(now());
-        } else {
-          output->println(now());
-        }
-        */
+      if (paramValue[0] != '\0') {
+        setEpoch(atol(paramValue));
+        output->println(getEpoch());
+      } else {
+        output->println(getEpoch());
+      }
       break;
     case 'f':
       printFreeMemory(output);
