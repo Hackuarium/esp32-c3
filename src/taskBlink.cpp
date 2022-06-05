@@ -7,7 +7,7 @@ void TaskBlink(void* pvParameters) {
 
   while (true) {
     digitalWrite(LED_BUILTIN, HIGH);
-    vTaskDelay(100);
+    vTaskDelay(2);
     digitalWrite(LED_BUILTIN, LOW);
     vTaskDelay(100);
   }
