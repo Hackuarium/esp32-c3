@@ -35,12 +35,10 @@ void TaskMQTT(void* pvParameters) {
     vTaskDelay(5000);
   }
 
-  bool mqttEnabled = false;
+  bool mqttAvailable = false;
 
   if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
     mqttClient.setServer(broker, 1883);
-    Serial.println("Connecting to MQTT...");
-    mqttClient.connect();
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
   };
@@ -57,6 +55,12 @@ void TaskMQTT(void* pvParameters) {
 
   while (true) {
     vTaskDelay(10 * 1000);
+    while (!mqttClient.connected()) {
+      Serial.println("Connecting to MQTT...");
+      mqttClient.connect();
+      vTaskDelay(5 * 1000);
+    }
+
     if (strlen(publishTopic) == 0) {
       continue;
     }
