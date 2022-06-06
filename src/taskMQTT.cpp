@@ -12,6 +12,7 @@ char broker[40];
 char subscribeTopic[40];
 char publishTopic[40];
 char logPublishTopic[40];
+String mqttMessage;
 
 void sendCommandResult(char* command);
 void onMqttPublish(uint16_t packetId);
@@ -68,29 +69,23 @@ void TaskMQTT(void* pvParameters) {
       continue;
     }
 
-    String message;
-    StringStream stream((String&)message);
+    StringStream stream((String&)mqttMessage);
     printResult("uc", &stream);
-    uint16_t packetIdPub1 =
-        mqttClient.publish(logPublishTopic, 0, true, &message[0]);
+    mqttClient.publish(logPublishTopic, 0, true, &mqttMessage[0]);
   }
 }
 
-void sendCommandResult(char* command) {}
-
 char subcommand[100];
-
 void sendCommandResultWithCommand(char* command) {
   if (sizeof(command) > sizeof(subcommand)) {
     return;
   }
-  String message;
-  StringStream stream((String&)message);
+  StringStream stream((String&)mqttMessage);
   printResult(command, &stream);
   strcpy(subcommand, publishTopic);
   strcat(subcommand, "/");
   strcat(subcommand, command);
-  uint16_t packetIdPub1 = mqttClient.publish(subcommand, 0, true, &message[0]);
+  mqttClient.publish(subcommand, 0, true, &mqttMessage[0]);
 }
 
 void onMqttPublish(uint16_t packetId) {
