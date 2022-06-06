@@ -12,6 +12,16 @@ mosquitto_sub -h "mqtt.beemos.org" -t "test/esp"
 
 mosquitto_pub -h 'mqtt.beemos.org' -m "123412341234 " -t "test/esp"
 
+## Testing bidirectional communication
+
+MQTT log publish topic: lpatiny/Beemos/hive1
+MQTT publish topic: lpatiny/Beemos/hive1/a
+MQTT subscribe topic: lpatiny/Beemos/hive1/q
+
+mosquitto_sub -h "mqtt.beemos.org" -t "lpatiny/Beemos/hive1/a/+"
+
+mosquitto_pub -h 'mqtt.beemos.org' -m "h" -t "lpatiny/Beemos/hive1/q"
+
 ## Topic
 
 lpatiny/Beemos/hive1

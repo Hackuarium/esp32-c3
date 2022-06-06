@@ -11,7 +11,9 @@ AsyncMqttClient mqttClient;
 char broker[40];
 char subscribeTopic[40];
 char publishTopic[40];
+char logPublishTopic[40];
 
+void sendCommandResult(char* command);
 void onMqttPublish(uint16_t packetId);
 void onMqttSubscribe(uint16_t packetId, uint8_t qos);
 void onMqttUnsubscribe(uint16_t packetId);
@@ -28,6 +30,7 @@ void TaskMQTT(void* pvParameters) {
   getParameter("mqtt.broker", broker);
   getParameter("mqtt.subscribe", subscribeTopic);
   getParameter("mqtt.publish", publishTopic);
+  getParameter("mqtt.logpublish", logPublishTopic);
 
   vTaskDelay(1000);
 
@@ -61,7 +64,7 @@ void TaskMQTT(void* pvParameters) {
       vTaskDelay(5 * 1000);
     }
 
-    if (strlen(publishTopic) == 0) {
+    if (strlen(logPublishTopic) == 0) {
       continue;
     }
 
@@ -69,8 +72,25 @@ void TaskMQTT(void* pvParameters) {
     StringStream stream((String&)message);
     printResult("uc", &stream);
     uint16_t packetIdPub1 =
-        mqttClient.publish(publishTopic, 0, true, &message[0]);
+        mqttClient.publish(logPublishTopic, 0, true, &message[0]);
   }
+}
+
+void sendCommandResult(char* command) {}
+
+char subcommand[100];
+
+void sendCommandResultWithCommand(char* command) {
+  if (sizeof(command) > sizeof(subcommand)) {
+    return;
+  }
+  String message;
+  StringStream stream((String&)message);
+  printResult(command, &stream);
+  strcpy(subcommand, publishTopic);
+  strcat(subcommand, "/");
+  strcat(subcommand, command);
+  uint16_t packetIdPub1 = mqttClient.publish(subcommand, 0, true, &message[0]);
 }
 
 void onMqttPublish(uint16_t packetId) {
@@ -134,4 +154,5 @@ void onMqttMessage(char* topic,
   Serial.println(strlen(payload));
   Serial.println(sizeof(*payload));
   Serial.println(payload);
+  sendCommandResultWithCommand(payload);
 }

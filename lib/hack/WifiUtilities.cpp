@@ -9,6 +9,7 @@ void printWifiHelp(Print* output) {
   output->println(F("(wp) Wifi password"));
   output->println(F("(wm) Wifi MDNS"));
   output->println(F("(wq) MQTT broker"));
+  output->println(F("(wl) MQTT log publish topic"));
   output->println(F("(wb) MQTT publish topic"));
   output->println(F("(wt) MQTT subscribe topic"));
 }
@@ -35,6 +36,9 @@ void processWifiCommand(char command,
       output->println(wifiTemp);
       output->print("MQTT subscribe topic: ");
       getParameter("mqtt.subscribe", wifiTemp);
+      output->println(wifiTemp);
+      output->print("MQTT log publish topic: ");
+      getParameter("mqtt.logpublish", wifiTemp);
       output->println(wifiTemp);
       output->print("MQTT publish topic: ");
       getParameter("mqtt.publish", wifiTemp);
@@ -66,6 +70,10 @@ void processWifiCommand(char command,
       break;
     case 'b':  // MQTT publish topic
       setParameter("mqtt.publish", paramValue);
+      output->println(paramValue);
+      break;
+    case 'l':  // MQTT publish log topic
+      setParameter("mqtt.logpublish", paramValue);
       output->println(paramValue);
       break;
     case 's':
