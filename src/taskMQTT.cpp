@@ -68,7 +68,7 @@ void TaskMQTT(void* pvParameters) {
     if (strlen(logPublishTopic) == 0) {
       continue;
     }
-
+    mqttMessage = "";
     StringStream stream((String&)mqttMessage);
     printResult("uc", &stream);
     mqttClient.publish(logPublishTopic, 0, true, &mqttMessage[0]);
@@ -80,6 +80,7 @@ void sendCommandResultWithCommand(char* command) {
   if (sizeof(command) > sizeof(subcommand)) {
     return;
   }
+  mqttMessage = "";
   StringStream stream((String&)mqttMessage);
   printResult(command, &stream);
   strcpy(subcommand, publishTopic);
@@ -117,8 +118,8 @@ void onMqttConnect(bool sessionPresent) {
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
   if (strlen(subscribeTopic) != 0) {
-    uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 2);
-    Serial.print("Subscribing at QoS 2, packetId: ");
+    uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 0);
+    Serial.print("Subscribing at QoS 0, packetId: ");
     Serial.println(packetIdSub);
   }
 }
@@ -139,15 +140,18 @@ void onMqttMessage(char* topic,
                    size_t len,
                    size_t index,
                    size_t total) {
-  Serial.println("Publish received.");
-  Serial.print("  topic: ");
-  Serial.println(topic);
-  Serial.print("  len: ");
-  Serial.println(len);
-  Serial.println(total);
-  Serial.println(sizeof(payload));
-  Serial.println(strlen(payload));
-  Serial.println(sizeof(*payload));
-  Serial.println(payload);
+  if (false) {
+    Serial.println("Publish received.");
+    Serial.print("  topic: ");
+    Serial.println(topic);
+    Serial.print("  len: ");
+    Serial.println(len);
+    Serial.println(total);
+    Serial.println(sizeof(payload));
+    Serial.println(strlen(payload));
+    Serial.println(sizeof(*payload));
+    Serial.println(payload);
+  }
+
   sendCommandResultWithCommand(payload);
 }
