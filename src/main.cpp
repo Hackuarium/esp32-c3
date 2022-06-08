@@ -6,6 +6,7 @@ void taskSi7021();
 void taskSerial();
 void taskNTPD();
 void taskMQTT();
+void taskBluetooth();
 void taskOneWire();
 void taskWifi();
 void taskOTA();
@@ -22,6 +23,7 @@ void setup() {
   taskOneWire();
   taskNTPD();
   taskWire();
+  taskBluetooth();
   taskBlink();
 }
 
