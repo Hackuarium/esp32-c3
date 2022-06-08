@@ -3,45 +3,56 @@
 
 #include <OneWire.h>
 
+OneWire oneWire(6);
+byte oneWireData[9];
+byte oneWireAddress[8];
+
 void TaskOneWire(void* pvParameters) {
   (void)pvParameters;
 
-  OneWire ds(6);
-
-  byte i;
-  byte present = 0;
-  byte data[9];
-  byte addr[8];
   float celsius;
 
   while (true) {
     vTaskDelay(1000);
 
-    if (!ds.search(addr)) {
-      ds.reset_search();
+    if (!oneWire.search(oneWireAddress)) {
+      oneWire.reset_search();
       continue;
     }
 
-    ds.reset();
-    ds.select(addr);
-    ds.write(0x44, 1);  // start conversion, with parasite power on at the end
+    oneWire.reset();
+    oneWire.select(oneWireAddress);
+    oneWire.write(0x44,
+                  1);  // start conversion, with parasite power on at the end
 
     vTaskDelay(1000);  // maybe 750ms is enough, maybe not
-    // we might do a ds.depower() here, but the reset will take care of it.
+    // we might do a oneWire.depower() here, but the reset will take care of it.
 
-    ds.reset();
-    ds.select(addr);
-    ds.write(0xBE);  // Read Scratchpad
+    oneWire.reset();
+    oneWire.select(oneWireAddress);
+    oneWire.write(0xBE);  // Read Scratchpad
 
-    for (i = 0; i < 9; i++) {  // we need 9 bytes
-      data[i] = ds.read();
+    for (byte i = 0; i < 9; i++) {  // we need 9 bytes
+      oneWireData[i] = oneWire.read();
     }
 
-    int16_t raw = (data[1] << 8) | data[0];
+    int16_t raw = (oneWireData[1] << 8) | oneWireData[0];
 
     celsius = (float)raw / 16.0;
 
     setParameter(PARAM_TEMPERATURE, celsius * 100);
+  }
+}
+
+void oneWireInfo(Print* output) {
+  output->println(F("One wire device list"));
+  oneWire.reset_search();
+  while (oneWire.search(oneWireAddress)) {
+    for (byte i = 0; i < 8; i++) {
+      output->print(' ');
+      output->print(oneWireAddress[i], HEX);
+    }
+    output->println("");
   }
 }
 

@@ -2,6 +2,7 @@
 #include "./WifiUtilities.h"
 #include "./common.h"
 #include "./params.h"
+#include "./taskOneWire.h"
 #include "./taskWire.h"
 
 #define SERIAL_BUFFER_LENGTH 256
@@ -163,6 +164,9 @@ void printResult(char* data, Print* output) {
       processLoggerCommand(data[1], paramValue, output);
       break;
 #endif
+    case 'o':
+      oneWireInfo(output);
+      break;
     case 's':
       printParameters(output);
       break;

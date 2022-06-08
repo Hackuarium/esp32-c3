@@ -27,4 +27,8 @@ void setup() {
 
 void loop() {
   vTaskDelay(30000);
+  /**
+  esp_sleep_enable_timer_wakeup(15 * 1e6);
+  esp_deep_sleep_start();
+  **/
 }

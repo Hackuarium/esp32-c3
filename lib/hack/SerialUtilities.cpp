@@ -1,6 +1,7 @@
 #include "./common.h"
 #include "./params.h"
 #include "./taskNTPD.h"
+#include "./taskOneWire.h"
 
 void resetParameters();
 
@@ -21,6 +22,7 @@ void printHelp(Print* output) {
 #ifdef THR_EEPROM_LOGGER
   output->println(F("(l)og"));
 #endif
+  output->println(F("(o)neWire"));
   output->println(F("(s)ettings"));
   output->println(F("(u)tilities"));
   output->println(F("(w)ifi"));
