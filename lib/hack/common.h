@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Preferences.h>
 
 #define LED_BUILTIN 7
 
