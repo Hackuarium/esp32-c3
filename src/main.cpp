@@ -1,5 +1,7 @@
-#include "./common.h"
-#include "./params.h"
+// #include "./common.h"
+// #include "./params.h"
+#include <common.h>
+#include <params.h>
 
 void taskBlink();
 void taskSi7021();

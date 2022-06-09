@@ -5,6 +5,9 @@
 #include "./taskNTPD.h"
 #include "./toHex.h"
 
+// To do: implement Preferences instead ArduinoNvs
+#include <Preferences.h>
+
 #define INT_MAX_VALUE 32767
 #define INT_MIN_VALUE -32768
 #define LONG_MAX_VALUE 2147483647
