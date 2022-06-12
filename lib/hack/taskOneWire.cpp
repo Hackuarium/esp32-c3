@@ -76,7 +76,7 @@ void TaskOneWire(void* pvParameters) {
 
     celsius2 = (float)raw2 / 16.0;
 
-    setParameter(PARAM_INT_TEMPERATURE, celsius2 * 100);
+    setParameter(PARAM_INT_TEMPERATURE_A, celsius2 * 100);
   }
 }
 
