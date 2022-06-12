@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include "./params.h"
 
-char ssid[20];
-char password[20];
+char ssid[30];
+char password[30];
 
 void TaskWifi(void* pvParameters) {
   vTaskDelay(2500);
