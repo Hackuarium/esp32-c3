@@ -7,36 +7,54 @@
 SST25VF064 chip The time synchronization works through the NTP protocol and our
 server
 ******************************************************************************************/
-#include "Params.h"
-#include "Hack.h"
+#include "params.h"
 
-#ifdef THR_SST_LOGGER
+#ifdef THR_LOGGER
 
-#include <Arduino.h>
-#include <ChNil.h>
+/*
+ * EEPROM -> Preferences for ESP32 
+ * Built-in Partition tables
+ * (https://my-esp-idf.readthedocs.io/en/stable/api-guides/partition-tables.html)
+ * Single factory app, no OTA:
+ * nvs size 0x6000 - 24576 bytes (2^13(8 kB) + 2^14(16 kB))
+ * Factory app, two OTA definitions:
+ * nvs size 0x4000 - 16384 bytes (2^14(16 kB))
+*/
 
-//#include <SST.h>
-#include <SPI.h>
-#include "libraries/SST/SST.h"
+#include <Preferences.h>
+
+// Create object
+Preferences prefs;
+
+// Open Preferences with my-app namespace. Each application module, library, etc
+// has to use a namespace name to prevent key name collisions. We will open storage in
+// RW-mode (second parameter has to be false).
+// Note: Namespace name is limited to 15 chars.
+preferences.begin("logger");
+
+// Remove all preferences under the opened namespace
+//preferences.clear();
+
+// Or remove the one key only
+//preferences.remove("one-key");
+
 
 //#include <TimeLib.h>
 #include <avr/wdt.h>
 #include "libraries/time/TimeLib.h"
 
-#include "Sem.h"
+// #include "Sem.h"
 // SEMAPHORE_DECL(lockTimeCriticalZone, 1); // only one process in some specific
 // zones
 
 /******************************************
-   DEFINE FLASH VERSION (default is SST64)
+   DEFINE PARTITION TABLE (default is PARTITION_TABLE_SINGLE_APP)
  *****************************************/
 //  THIS SHOULD BE AUTOMATIC !!!
-// support SST25VF064C, SST26VF064B (64Mbits) or similar from Cypress
-#define SST64 1
-// support SST25VF032C, SST26VF032B (32Mbits) or similar from Cypress
-//#define SST32 1
+#define PARTITION_TABLE_SINGLE_APP
+// #define PARTITION_TABLE_TWO_OTA
 
-#if defined(SST64) || defined(SST32)
+#if defined(PARTITION_TABLE_SINGLE_APP) || defined(PARTITION_TABLE_TWO_OTA)
 
 // Types of logs
 #define ENTRY_SIZE_LINEAR_LOGS 64
@@ -44,16 +62,16 @@ server
 #define SIZE_COUNTER_ENTRY 4
 
 // Definition of the log sectors in the flash for the logs
-#if defined(SST64)  // 64Mbits
+#if defined(PARTITION_TABLE_SINGLE_APP)  // 24576 bytes
 #define ADDRESS_MAX \
-  0x800000  // http://www.sst.com/dotAsset/40498.pdf&usd=2&usg=ALhdy294tEkn4s_aKwurdSetYTt_vmXQhw
-#elif defined(SST32)  // 32Mbits
-#define ADDRESS_MAX 0X400000
+  0x6000  // https://my-esp-idf.readthedocs.io/en/stable/api-guides/partition-tables.html
+#elif defined(SST32)  // 16384 bytes
+#define ADDRESS_MAX 0X4000
 #endif
 
 // #define ADDRESS_MAX   0X001000 // if we don't want to use all memory !!!!
 
-#define ADDRESS_BEG 0x000000
+#define ADDRESS_BEG 0x9000
 #define ADDRESS_LAST (ADDRESS_MAX - ENTRY_SIZE_LINEAR_LOGS)
 #define SECTOR_SIZE 4096
 #define NB_ENTRIES_PER_SECTOR (SECTOR_SIZE / ENTRY_SIZE_LINEAR_LOGS)

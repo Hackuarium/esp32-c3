@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Preferences.h>
 
 #define LED_BUILTIN 7
 
@@ -55,3 +54,4 @@ extern int16_t parameters[MAX_PARAM];
 // with 300s
 
 #define THR_WIRE_MASTER 1
+// #define THR_LOGGER
