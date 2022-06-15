@@ -15,13 +15,19 @@ uint8_t toHex(Print* output, int16_t value) {
   return checkDigit;
 }
 
-uint8_t toHex(Print* output, long value) {
+uint8_t toHex(Print* output, uint16_t value) {
+  byte checkDigit = toHex(output, (byte)(value >> 8 & 255));
+  checkDigit ^= toHex(output, (byte)(value >> 0 & 255));
+  return checkDigit;
+}
+
+uint8_t toHex(Print* output, int32_t value) {
   byte checkDigit = toHex(output, (int16_t)(value >> 16 & 65535));
   checkDigit ^= toHex(output, (int16_t)(value >> 0 & 65535));
   return checkDigit;
 }
 
-uint8_t toHex(Print* output, unsigned long value) {
+uint8_t toHex(Print* output, uint32_t value) {
   byte checkDigit = toHex(output, (int16_t)(value >> 16 & 65535));
   checkDigit ^= toHex(output, (int16_t)(value >> 0 & 65535));
   return checkDigit;

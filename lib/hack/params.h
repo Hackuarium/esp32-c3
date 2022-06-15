@@ -41,6 +41,6 @@ void getParameter(char* key, char* value);
 
 void setQualifier(int16_t value);
 
-int getQualifier();
+uint32_t getQualifier();
 
 #define ERROR_VALUE -32768

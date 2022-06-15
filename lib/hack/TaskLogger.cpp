@@ -8,6 +8,7 @@ SST25VF064 chip The time synchronization works through the NTP protocol and our
 server
 ******************************************************************************************/
 #include "params.h"
+#include "toHex.h"
 
 #ifdef THR_LOGGER
 
@@ -23,24 +24,7 @@ server
 
 #include <Preferences.h>
 
-// Create object
-Preferences prefs;
-
-// Open Preferences with my-app namespace. Each application module, library, etc
-// has to use a namespace name to prevent key name collisions. We will open storage in
-// RW-mode (second parameter has to be false).
-// Note: Namespace name is limited to 15 chars.
-preferences.begin("logger");
-
-// Remove all preferences under the opened namespace
-//preferences.clear();
-
-// Or remove the one key only
-//preferences.remove("one-key");
-
-
 //#include <TimeLib.h>
-#include <avr/wdt.h>
 #include "libraries/time/TimeLib.h"
 
 // #include "Sem.h"
@@ -64,9 +48,9 @@ preferences.begin("logger");
 // Definition of the log sectors in the flash for the logs
 #if defined(PARTITION_TABLE_SINGLE_APP)  // 24576 bytes
 #define ADDRESS_MAX \
-  0x6000  // https://my-esp-idf.readthedocs.io/en/stable/api-guides/partition-tables.html
-#elif defined(SST32)  // 16384 bytes
-#define ADDRESS_MAX 0X4000
+  0xF000  // https://my-esp-idf.readthedocs.io/en/stable/api-guides/partition-tables.html
+#elif defined(PARTITION_TABLE_TWO_OTA)  // 16384 bytes
+#define ADDRESS_MAX (0XD000)
 #endif
 
 // #define ADDRESS_MAX   0X001000 // if we don't want to use all memory !!!!
@@ -82,21 +66,28 @@ preferences.begin("logger");
 
 #define MAX_MULTI_LOG 64  // Allows to display long log on serial
 
-#if FLASH_SELECT == 10  // Flash SS_SPI
-SST sst = SST('B', 6);  // D10 is PORT B - 6
-#endif
-#if FLASH_SELECT == 1   // Flash SS_SPI
-SST sst = SST('D', 3);  // TX is PORT D - 3
-#endif
-#if FLASH_SELECT == A3  // Flash SS_SPI
-SST sst = SST('F', 4);  // A3 is PORT F - 4
-#endif
+// Create object
+Preferences prefs;
+
+// Or remove the one key only
+//preferences.remove("one-key");
 
 uint32_t nextEntryID = 0;
+char* j;
 // Deactivate safeguard to store log into memory
 bool logActive = true;
 
-uint32_t findAddressOfEntryN(uint32_t entryN);
+/******************************************************************************
+  Returns the address corresponding to one log ID nilThdSleepMilliseconds(5);
+nilThdSleepMilliseconds(5); entryNb:     Log ID return:      Address of the
+first byte where the corresponding log is located
+*******************************************************************************/
+uint32_t findAddressOfEntryN(uint32_t entryN) {
+  uint32_t address =
+      ((entryN % MAX_NB_ENTRIES) * ENTRY_SIZE_LINEAR_LOGS) % ADDRESS_SIZE +
+      ADDRESS_BEG;
+  return address;
+}
 
 /***********************************************************************************
   Save logs in the Flash memory.
@@ -113,12 +104,14 @@ void writeLog(uint16_t event_number, int parameter_value) {
   /*****************************
             Slave Select
   ******************************/
-
-  chSemWait(&lockTimeCriticalZone);
-
   uint16_t param = 0;
   uint32_t timenow = now();
-  uint32_t startAddress = findAddressOfEntryN(nextEntryID);
+
+  // Open Preferences with my-app namespace. Each application module, library, 
+  // etc has to use a namespace name to prevent key name collisions. We will 
+  // open storage in RW-mode (second parameter has to be false).
+  // Note: Namespace name is limited to 15 chars.
+  prefs.begin("logger");
 
   /************************************************************************************
       Test if it is the begining of one sector, erase the sector of 4096 bytes
@@ -126,29 +119,25 @@ void writeLog(uint16_t event_number, int parameter_value) {
     ************************************************************************************/
   if ((!(nextEntryID % NB_ENTRIES_PER_SECTOR))) {
     long start = millis();
-    sst.flashSectorErase(startAddress);
 
-    /*
-      Serial.print("Result of erase ");
-      Serial.println(millis()-start);
-      dumpLoggerFlash(&Serial, startAddress, startAddress+512);
-    */
+    // Remove all preferences under the opened namespace
+    //preferences.clear();
+    prefs.clear();
   }
+
   /*****************************
           Writing Sequence
   ******************************/
-
-  sst.flashWriteInit(startAddress);      // Initialize with the right address
-  sst.flashWriteNextInt32(nextEntryID);  // 4 bytes of the entry number
-  sst.flashWriteNextInt32(
-      timenow);  // 4 bytes of the timestamp in the memory using a mask
-  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
+  prefs.putInt("nextEntryID", nextEntryID);  // 4 bytes of the entry number, return 4
+  prefs.putInt("timenow", timenow);  // 4 bytes of the timestamp in the memory using a mask, return 4
+  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
     param = getParameter(i);
-    sst.flashWriteNextInt16(param);  // 2 bytes per parameter
+    itoa(i,j,10);
+    prefs.putUShort(j, param);  // 2 bytes per parameter, return 2
   }
-  sst.flashWriteNextInt16(event_number);     // event
-  sst.flashWriteNextInt16(parameter_value);  // parameter value */
-  sst.flashWriteFinish();                    // finish the writing process
+  prefs.putShort("event_number", event_number);       // event, return 2
+  prefs.putShort("parameter_value", parameter_value); // parameter value, return 2
+  prefs.end();  // finish the writing process
 
   /*****************************
           Check saved information
@@ -156,21 +145,21 @@ void writeLog(uint16_t event_number, int parameter_value) {
           And no other thread will change any of the values !!!!!!
   ******************************/
   bool isLogValid = true;
-  // sst.flashReadInit(findAddressOfEntryN(nextEntryID));
-  sst.flashReadInit(startAddress);
-  if (sst.flashReadNextInt32() != nextEntryID)
+  prefs.begin("logger");
+  if (prefs.getInt("nextEntryID") != nextEntryID)
     isLogValid = false;
-  if (sst.flashReadNextInt32() != timenow)
+  if (prefs.getInt("timenow") != timenow)
     isLogValid = false;
-  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-    if (sst.flashReadNextInt16() != getParameter(i))
+  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
+    itoa(i,j,10);
+    if (prefs.getUShort(j) != getParameter(i))
       isLogValid = false;
   }
-  if (sst.flashReadNextInt16() != event_number)
+  if (prefs.getShort("event_number") != event_number)
     isLogValid = false;
-  if (sst.flashReadNextInt16() != parameter_value)
+  if (prefs.getShort("parameter_value") != parameter_value)
     isLogValid = false;
-  sst.flashReadFinish();
+  prefs.end();
   if (isLogValid) {
     // Update the value of the next event log position in the memory
     nextEntryID++;
@@ -186,8 +175,7 @@ void writeLog(uint16_t event_number, int parameter_value) {
   /*****************************
          Out and Deselect
   ******************************/
-  chSemSignal(&lockTimeCriticalZone);
-  chThdSleep(5);
+  vTaskDelay(5);
 }
 
 /******************************************************************************************
@@ -206,23 +194,21 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
       (entryN < (nextEntryID - MAX_NB_ENTRIES + NB_ENTRIES_PER_SECTOR))) {
     entryN = nextEntryID - MAX_NB_ENTRIES + NB_ENTRIES_PER_SECTOR;
   }
-  chSemWait(&lockTimeCriticalZone);
-  sst.flashReadInit(findAddressOfEntryN(entryN));
+  prefs.begin("logger");
   byte checkDigit = 0;
   for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
-    byte oneByte = sst.flashReadNextInt8();
-    checkDigit ^= toHex(output, oneByte);
+    itoa(i,j,10);
+    uint16_t oneData = prefs.getUShort(j);
+    checkDigit ^= toHex(output, oneData);
   }
-  checkDigit ^= toHex(output, (int)getQualifier());
+  checkDigit ^= toHex(output, getQualifier());
   toHex(output, checkDigit);
   output->println("");
-  sst.flashReadFinish();
-  chSemSignal(&lockTimeCriticalZone);
+  prefs.end();
   return entryN;
 }
 
 void Last_Log_To_SPI_buff(byte* buff) {
-  chSemWait(&lockTimeCriticalZone);
   sst.flashReadInit(findAddressOfEntryN(nextEntryID - 1));
   for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
     byte oneByte = sst.flashReadNextInt8();
@@ -239,18 +225,6 @@ void loadLastEntryToParameters() {
     setParameter(i, sst.flashReadNextInt16());
   }
   sst.flashReadFinish();
-}
-
-/******************************************************************************
-  Returns the address corresponding to one log ID nilThdSleepMilliseconds(5);
-nilThdSleepMilliseconds(5); entryNb:     Log ID return:      Address of the
-first byte where the corresponding log is located
-*******************************************************************************/
-uint32_t findAddressOfEntryN(uint32_t entryN) {
-  uint32_t address =
-      ((entryN % MAX_NB_ENTRIES) * ENTRY_SIZE_LINEAR_LOGS) % ADDRESS_SIZE +
-      ADDRESS_BEG;
-  return address;
 }
 
 /*****************************************************************************

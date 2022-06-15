@@ -1,4 +1,4 @@
-#include "./params.h"
+// #include "./params.h"
 #include <ArduinoNvs.h>
 #include "./SerialUtilities.h"
 #include "./common.h"
@@ -19,10 +19,15 @@
 RTC_DATA_ATTR int16_t parameters[MAX_PARAM];
 
 // todo uint16_t getQualifier();
+void setQualifier(int16_t value);
 boolean setParameterBit(byte number, byte bitToSet);
 boolean clearParameterBit(byte number, byte bitToClear);
 String numberToLabel(byte number);
 void checkParameters();
+
+uint32_t getQualifier() {
+  return NVS.getInt("q");
+}
 
 boolean getParameterBit(byte number, byte bitToRead) {
   return (parameters[number] >> bitToRead) & 1;
@@ -181,8 +186,4 @@ void checkParameters() {
 
 void setQualifier(int16_t value) {
   NVS.setInt("q", value);
-}
-
-int getQualifier() {
-  return NVS.getInt("q");
 }
