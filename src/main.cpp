@@ -10,6 +10,7 @@ void taskBluetooth();
 void taskOneWire();
 void taskWifi();
 void taskOTA();
+void taskBatteryLevel();
 void taskWire();
 
 void setup() {
@@ -19,6 +20,7 @@ void setup() {
   taskSi7021();
   taskOTA();
   taskWifi();
+  taskBatteryLevel();
   taskMQTT();
   taskOneWire();
   taskNTPD();
