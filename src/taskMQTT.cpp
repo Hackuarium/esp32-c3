@@ -5,6 +5,12 @@
 #include "./common.h"
 #include "./params.h"
 #include "./taskSerial.cpp"
+#include "driver/adc.h"                    // For deep sleep
+#include <esp_wifi.h>
+#include <esp_bt.h>
+
+int32_t LOG_INTERVAL_DURATION_IN_SECS = 300; // The interval for measurements in seconds. Sleep will occur once MQTT has sent values and
+// sleep duration in seconds will be adjusted to LOG_INTERVAL_DURATION_IN_SECS - millis()/1000 
 
 AsyncMqttClient mqttClient;
 
@@ -57,22 +63,55 @@ void TaskMQTT(void* pvParameters) {
     mqttClient.onPublish(onMqttPublish);
   }
 
+  // Limit number of tries to connect to MQTT (to avoid battery drain if there's an issue with MQTT server)
+  byte mqtt_tries = 0; 
+  byte mqtt_max_tries = 4; 
+
+
   while (true) {
-    vTaskDelay(10 * 1000);
+
     while (!mqttClient.connected()) {
       Serial.println("Connecting to MQTT...");
       mqttClient.connect();
       vTaskDelay(5 * 1000);
+      mqtt_tries++;
+      if (mqtt_tries == mqtt_max_tries){
+        Serial.println("Going to sleep now.");
+        vTaskDelay(50);
+        // Prepare before sleep
+        vTaskDelay(50);
+        btStop();
+        esp_bt_controller_disable();
+        WiFi.mode(WIFI_OFF);
+        esp_sleep_enable_timer_wakeup(LOG_INTERVAL_DURATION_IN_SECS*1e6 - 1000*millis()); // set Deep sleep timer between measurements in uS
+        esp_deep_sleep_start();  // Deep sleep here
+        vTaskDelay(50);
+        Serial.println("This is after deep sleep and will never be printed.");  
     }
 
     if (strlen(logPublishTopic) == 0) {
       continue;
-    }
+    } 
     mqttMessage = "";
     StringStream stream((String&)mqttMessage);
     printResult("uc", &stream);
     mqttClient.publish(logPublishTopic, 0, true, &mqttMessage[0]);
+
+
+    Serial.println("Going to sleep now.");
+    vTaskDelay(50);
+ // Prepare before sleep
+    vTaskDelay(50);
+    btStop();
+    esp_bt_controller_disable();
+    WiFi.mode(WIFI_OFF);
+    esp_sleep_enable_timer_wakeup(LOG_INTERVAL_DURATION_IN_SECS*1e6 - 1000*millis()); // set Deep sleep timer between measurements in uS
+    esp_deep_sleep_start();  // Deep sleep here
+    vTaskDelay(50);
+    Serial.println("This is after deep sleep and will never be printed.");
+   
   }
+}
 }
 
 char subcommand[100];
