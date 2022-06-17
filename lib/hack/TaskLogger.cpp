@@ -8,7 +8,6 @@ SST25VF064 chip The time synchronization works through the NTP protocol and our
 server
 ******************************************************************************************/
 #include "params.h"
-#include "toHex.h"
 
 #ifdef THR_LOGGER
 
@@ -24,12 +23,31 @@ server
 
 #include <Preferences.h>
 
+#include "toHex.h"
 //#include <TimeLib.h>
-#include "libraries/time/TimeLib.h"
+// #include "libraries/time/TimeLib.h"
+#include "./libraries/time/TimeLib.h"
 
 // #include "Sem.h"
 // SEMAPHORE_DECL(lockTimeCriticalZone, 1); // only one process in some specific
 // zones
+
+// Create object
+Preferences prefs;
+
+// Or remove the one key only
+//preferences.remove("one-key");
+
+// Define structure to store logger
+typedef struct {
+  int32_t nextEntryID;
+  int32_t timenow;
+  uint16_t params[NB_PARAMETERS_LINEAR_LOGS];
+  int16_t event_number;
+  int16_t parameter_value;
+} Logger;
+
+// Logger *logs;
 
 /******************************************
    DEFINE PARTITION TABLE (default is PARTITION_TABLE_SINGLE_APP)
@@ -41,7 +59,7 @@ server
 #if defined(PARTITION_TABLE_SINGLE_APP) || defined(PARTITION_TABLE_TWO_OTA)
 
 // Types of logs
-#define ENTRY_SIZE_LINEAR_LOGS 64
+#define ENTRY_SIZE_LINEAR_LOGS sizeof(Logger) // Actually 64
 #define SIZE_TIMESTAMPS 4
 #define SIZE_COUNTER_ENTRY 4
 
@@ -66,11 +84,7 @@ server
 
 #define MAX_MULTI_LOG 64  // Allows to display long log on serial
 
-// Create object
-Preferences prefs;
-
-// Or remove the one key only
-//preferences.remove("one-key");
+Logger *logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
 
 uint32_t nextEntryID = 0;
 char* j;
@@ -101,23 +115,35 @@ void writeLog(uint16_t event_number, int parameter_value) {
   ********************************/
   if (!logActive)
     return;
+
+
+  // logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
+
+  logs[nextEntryID].event_number = event_number;
+  logs[nextEntryID].parameter_value = parameter_value;
+  logs[nextEntryID].nextEntryID = nextEntryID;
+
+  // if(logs[nextEntryID].nextEntryID != nextEntryID) {
+  //   logs[nextEntryID].nextEntryID = nextEntryID;
+  // }
+
   /*****************************
             Slave Select
   ******************************/
   uint16_t param = 0;
-  uint32_t timenow = now();
+  logs[nextEntryID].timenow = now();
 
   // Open Preferences with my-app namespace. Each application module, library, 
   // etc has to use a namespace name to prevent key name collisions. We will 
   // open storage in RW-mode (second parameter has to be false).
   // Note: Namespace name is limited to 15 chars.
   prefs.begin("logger");
-
+  
   /************************************************************************************
       Test if it is the begining of one sector, erase the sector of 4096 bytes
     if needed  delay(2);
     ************************************************************************************/
-  if ((!(nextEntryID % NB_ENTRIES_PER_SECTOR))) {
+  if ((!(logs[nextEntryID].nextEntryID % NB_ENTRIES_PER_SECTOR))) {
     long start = millis();
 
     // Remove all preferences under the opened namespace
@@ -128,16 +154,21 @@ void writeLog(uint16_t event_number, int parameter_value) {
   /*****************************
           Writing Sequence
   ******************************/
-  prefs.putInt("nextEntryID", nextEntryID);  // 4 bytes of the entry number, return 4
-  prefs.putInt("timenow", timenow);  // 4 bytes of the timestamp in the memory using a mask, return 4
-  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
-    param = getParameter(i);
+  prefs.putBytes("nextEntryID", logs->nextEntryID, (nextEntryID + 1)*sizeof(logs->nextEntryID)); 
+
+
+  prefs.putInt("nextEntryID", logs[nextEntryID].nextEntryID);  // 4 bytes of the entry number, return 4
+  prefs.putInt("timenow", logs[nextEntryID].timenow);  // 4 bytes of the timestamp in the memory using a mask, return 4
+  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
+    logs[nextEntryID].params[i] = getParameter(i);
     itoa(i,j,10);
-    prefs.putUShort(j, param);  // 2 bytes per parameter, return 2
+    prefs.putUShort(j, logs[nextEntryID].params[i]);  // 2 bytes per parameter, return 2
   }
-  prefs.putShort("event_number", event_number);       // event, return 2
-  prefs.putShort("parameter_value", parameter_value); // parameter value, return 2
+  prefs.putShort("event_number", logs[nextEntryID].event_number);       // event, return 2
+  prefs.putShort("parameter_value", logs[nextEntryID].parameter_value); // parameter value, return 2
+
   prefs.end();  // finish the writing process
+
 
   /*****************************
           Check saved information
@@ -146,18 +177,18 @@ void writeLog(uint16_t event_number, int parameter_value) {
   ******************************/
   bool isLogValid = true;
   prefs.begin("logger");
-  if (prefs.getInt("nextEntryID") != nextEntryID)
+  if (prefs.getInt("nextEntryID") != logs[nextEntryID].nextEntryID)
     isLogValid = false;
-  if (prefs.getInt("timenow") != timenow)
+  if (prefs.getInt("timenow") != logs[nextEntryID].timenow)
     isLogValid = false;
-  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
+  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
     itoa(i,j,10);
-    if (prefs.getUShort(j) != getParameter(i))
+    if (prefs.getUShort(j) != logs[nextEntryID].params[i])
       isLogValid = false;
   }
-  if (prefs.getShort("event_number") != event_number)
+  if (prefs.getShort("event_number") != logs[nextEntryID].event_number)
     isLogValid = false;
-  if (prefs.getShort("parameter_value") != parameter_value)
+  if (prefs.getShort("parameter_value") != logs[nextEntryID].parameter_value)
     isLogValid = false;
   prefs.end();
   if (isLogValid) {
@@ -196,7 +227,8 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
   }
   prefs.begin("logger");
   byte checkDigit = 0;
-  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
+  logs[nextEntryID].nextEntryID = prefs.getInt("nextEntryID");
+  for (byte i = 2; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
     itoa(i,j,10);
     uint16_t oneData = prefs.getUShort(j);
     checkDigit ^= toHex(output, oneData);
@@ -209,6 +241,7 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
 }
 
 void Last_Log_To_SPI_buff(byte* buff) {
+  prefs.begin("logger");
   sst.flashReadInit(findAddressOfEntryN(nextEntryID - 1));
   for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
     byte oneByte = sst.flashReadNextInt8();

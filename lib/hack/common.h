@@ -55,3 +55,4 @@ extern int16_t parameters[MAX_PARAM];
 
 #define THR_WIRE_MASTER 1
 #define THR_LOGGER
+#define NB_PARAMETERS_LINEAR_LOGS 26
