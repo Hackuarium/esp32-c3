@@ -14,34 +14,46 @@ void TaskWifi(void* pvParameters) {
   Serial.println(password);
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  // WiFi.begin(ssid, password);
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 
-  int counter = 0;
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED && counter++ < 100) {
-    vTaskDelay(500);
-    Serial.print(".");
-  }
+  /**
+    int counter = 0;
+    // Wait for connection
+    while (WiFi.status() != WL_CONNECTED && counter++ < 100) {
+      vTaskDelay(500);
+      Serial.print(".");
+    }
+    **/
 
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  /**
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    **/
 
   while (true) {
     vTaskDelay(1000);
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("WIFI disconnect, will restart");
-      vTaskDelay(1000);
-      ESP.restart();
+    byte counter = 0;
+    while (WiFi.status() != WL_CONNECTED && counter++ < 10) {
+      setParameter(PARAM_WIFI_RSSI, -1);
+      Serial.println("WIFI not connected, trying to connect");
       // WiFi.disconnect();
-      // WiFi.begin(ssid, password);
+      WiFi.begin(ssid, password);
       // WiFi.reconnect();
+      vTaskDelay(5000);
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("WIFI connected");
+      }
     }
-    vTaskDelay(1000);
-    setParameter(PARAM_WIFI_RSSI, WiFi.RSSI());
+    if (WiFi.status() != WL_CONNECTED) {
+      setParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI);
+    } else {
+      clearParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI);
+      setParameter(PARAM_WIFI_RSSI, WiFi.RSSI());
+    }
   }
 }
 

@@ -24,10 +24,15 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_WEIGHT 14
 #define PARAM_WEIGHT_G 15
 
+#define PARAM_STATUS 21
 #define PARAM_BATTERY 22    // W
 #define PARAM_CHARGING 23   // X
 #define PARAM_WIFI_RSSI 24  // Y
 #define PARAM_ERROR 25      // Z
+
+#define PARAM_STATUS_FLAG_NO_WIFI 0
+#define PARAM_STATUS_FLAG_NO_MQTT 1
+#define PARAM_STATUS_FLAG_MQTT_SENT 8
 
 #define PARAM_LOGGING_INTERVAL 26
 #define PARAM_WEIGHT_OFFSET 27
