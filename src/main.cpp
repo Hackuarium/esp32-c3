@@ -46,7 +46,7 @@ void loop() {
     deepSleep(600);
   }
 
-  if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_SENT)) {
+  if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_PUBLISHED)) {
     // we succeeded to send MQTT info
     deepSleep(120);
   }

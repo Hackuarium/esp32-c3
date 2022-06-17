@@ -102,7 +102,7 @@ void onMqttPublish(uint16_t packetId) {
   Serial.println("Publish acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
-  setParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_SENT);
+  setParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_PUBLISHED);
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
