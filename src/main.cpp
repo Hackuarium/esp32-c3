@@ -25,7 +25,7 @@ void setup() {
   taskOneWire();
   taskNTPD();
   taskWire();
-  taskBluetooth();
+  // taskBluetooth();
   taskBlink();
 }
 
