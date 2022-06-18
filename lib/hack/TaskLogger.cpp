@@ -42,12 +42,39 @@ Preferences prefs;
 typedef struct {
   int32_t nextEntryID;
   int32_t timenow;
+  int16_t eventNumber;
+  int16_t parameterValue;
   uint16_t params[NB_PARAMETERS_LINEAR_LOGS];
-  int16_t event_number;
-  int16_t parameter_value;
 } Logger;
 
-// Logger *logs;
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+  uint8_t p2;
+  uint8_t p3;
+} sNextEntryID;
+
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+} sEventNumber;
+
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+} sParameterValue;
+
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+  uint8_t p2;
+  uint8_t p3;
+} sTimenow;
+
+typedef struct {
+  uint8_t p0[NB_PARAMETERS_LINEAR_LOGS];
+  uint8_t p1[NB_PARAMETERS_LINEAR_LOGS];
+} sParams;
 
 /******************************************
    DEFINE PARTITION TABLE (default is PARTITION_TABLE_SINGLE_APP)
@@ -59,7 +86,7 @@ typedef struct {
 #if defined(PARTITION_TABLE_SINGLE_APP) || defined(PARTITION_TABLE_TWO_OTA)
 
 // Types of logs
-#define ENTRY_SIZE_LINEAR_LOGS sizeof(Logger) // Actually 64
+#define ENTRY_SIZE_LINEAR_LOGS 64 // Actually 64
 #define SIZE_TIMESTAMPS 4
 #define SIZE_COUNTER_ENTRY 4
 
@@ -86,6 +113,17 @@ typedef struct {
 
 Logger *logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
 
+sNextEntryID *logsNextEntryID = (sNextEntryID *)calloc(1, sizeof(sNextEntryID));
+
+sTimenow *logsTimenow = (sTimenow *)calloc(1, sizeof(sTimenow));
+
+sEventNumber *logsEventNumber = (sEventNumber *)calloc(1, sizeof(sEventNumber));
+
+sParameterValue *logsParameterValue = (sParameterValue *)calloc(1, sizeof(sParameterValue));
+
+sParams *logsParams = (sParams *)calloc(1, sizeof(sParams));
+
+
 uint32_t nextEntryID = 0;
 char* j;
 // Deactivate safeguard to store log into memory
@@ -109,19 +147,103 @@ uint32_t findAddressOfEntryN(uint32_t entryN) {
 the corresponding command/event number. Should be found in the define list of
   commands/errors
 ************************************************************************************/
-void writeLog(uint16_t event_number, int parameter_value) {
+void writeLog(uint16_t eventNumber, int parameterValue) {
   /********************************
              Safeguards
   ********************************/
   if (!logActive)
     return;
+  
+  // Open Preferences with my-app namespace. Each application module, library, 
+  // etc has to use a namespace name to prevent key name collisions. We will 
+  // open storage in RW-mode (second parameter has to be false).
+  // Note: Namespace name is limited to 15 chars.
+  prefs.begin("logger");
+
+  /*****************************************************************************
+    Reallocating memory to store flash variables
+  *****************************************************************************/
+  logsNextEntryID = (sNextEntryID *)realloc(logsNextEntryID, ENTRY_SIZE_LINEAR_LOGS*sizeof(sNextEntryID));
+
+  logsTimenow = (sTimenow *)realloc(logsTimenow, nextEntryID*sizeof(sTimenow));
+
+  logsEventNumber = (sEventNumber *)realloc(logsEventNumber, ENTRY_SIZE_LINEAR_LOGS*sizeof(sEventNumber));
+
+  logsParameterValue = (sParameterValue *)realloc(logsParameterValue, ENTRY_SIZE_LINEAR_LOGS*sizeof(sParameterValue));
+
+  logsParams = (sParams *)realloc(logsParams, ENTRY_SIZE_LINEAR_LOGS*sizeof(sParams));
+
+
+
+
+
+  /*****************************
+          Reading Sequence
+  ******************************/
+  // if(nextEntryID != 0) {
+    size_t schLen32 = prefs.getBytesLength("nextEntryID");
+    char bufferNextEntryID[schLen32];
+    char bufferTimenow[schLen32];
+
+    size_t schLen16 = prefs.getBytesLength("eventNumber");
+    char bufferEventNumber[schLen16];
+    char bufferParameterValue[schLen16];
+
+    size_t schLenParams = prefs.getBytesLength("params");
+    char bufferParams[schLenParams];
+
+    prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
+    logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+
+    prefs.getBytes("timenow", bufferTimenow, schLen32);
+    logsTimenow = (sTimenow *)bufferTimenow;
+
+    prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
+    logsEventNumber = (sEventNumber *)bufferEventNumber;
+
+    prefs.getBytes("parameterValue", bufferParameterValue, schLen16);
+    logsParameterValue = (sParameterValue *)bufferParameterValue;
+
+    prefs.getBytes("params", bufferParams, schLenParams);
+    logsParams = (sParams *)bufferParams;
+
+    size_t schLen = prefs.getBytesLength("timenow");
+    char buffer[schLen]; // prepare a buffer for the data
+    prefs.getBytes("timenow", buffer, schLen);
+    logsNextEntryID = (sNextEntryID *)buffer;
+  // }
+
+  logsNextEntryID[nextEntryID].p0 = (nextEntryID >> 24) & 0xFF;
+  logsNextEntryID[nextEntryID].p1 = (nextEntryID >> 16) & 0xFF;
+  logsNextEntryID[nextEntryID].p2 = (nextEntryID >> 8) & 0xFF;
+  logsNextEntryID[nextEntryID].p3 = (nextEntryID >> 0) & 0xFF;
+
+  /*****************************
+          Writing Sequence
+  ******************************/
+  prefs.putBytes("nextEntryID", content, sizeof(content));
+
+
+
 
 
   // logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
 
+  logs[nextEntryID].nextEntryID = nextEntryID;
   logs[nextEntryID].event_number = event_number;
   logs[nextEntryID].parameter_value = parameter_value;
-  logs[nextEntryID].nextEntryID = nextEntryID;
+
+  logsNextEntryID[nextEntryID].p0 = (nextEntryID >> 24) & 0xFF;
+  logsNextEntryID[nextEntryID].p1 = (nextEntryID >> 16) & 0xFF;
+  logsNextEntryID[nextEntryID].p2 = (nextEntryID >> 8) & 0xFF;
+  logsNextEntryID[nextEntryID].p3 = (nextEntryID >> 0) & 0xFF;
+
+  logsEvent_Number[nextEntryID].p0 = (event_number >> 8) & 0xFF;
+  logsEvent_Number[nextEntryID].p1 = (event_number >> 0) & 0xFF;
+
+  logsParameter_Value[nextEntryID].p0 = (parameter_value >> 8) & 0xFF;
+  logsParameter_Value[nextEntryID].p1 = (parameter_value >> 0) & 0xFF;
+  
 
   // if(logs[nextEntryID].nextEntryID != nextEntryID) {
   //   logs[nextEntryID].nextEntryID = nextEntryID;
@@ -131,13 +253,15 @@ void writeLog(uint16_t event_number, int parameter_value) {
             Slave Select
   ******************************/
   uint16_t param = 0;
-  logs[nextEntryID].timenow = now();
+  uint32_t timenow = now();
+  logs[nextEntryID].timenow = timenow;
 
-  // Open Preferences with my-app namespace. Each application module, library, 
-  // etc has to use a namespace name to prevent key name collisions. We will 
-  // open storage in RW-mode (second parameter has to be false).
-  // Note: Namespace name is limited to 15 chars.
-  prefs.begin("logger");
+  logsTimenow[nextEntryID].p0 = (timenow >> 24) & 0xFF;
+  logsTimenow[nextEntryID].p1 = (timenow >> 16) & 0xFF;
+  logsTimenow[nextEntryID].p2 = (timenow >> 8) & 0xFF;
+  logsTimenow[nextEntryID].p3 = (timenow >> 0) & 0xFF;
+
+  
   
   /************************************************************************************
       Test if it is the begining of one sector, erase the sector of 4096 bytes
@@ -151,12 +275,13 @@ void writeLog(uint16_t event_number, int parameter_value) {
     prefs.clear();
   }
 
+  
+
+
+
   /*****************************
           Writing Sequence
   ******************************/
-  prefs.putBytes("nextEntryID", logs->nextEntryID, (nextEntryID + 1)*sizeof(logs->nextEntryID)); 
-
-
   prefs.putInt("nextEntryID", logs[nextEntryID].nextEntryID);  // 4 bytes of the entry number, return 4
   prefs.putInt("timenow", logs[nextEntryID].timenow);  // 4 bytes of the timestamp in the memory using a mask, return 4
   for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
@@ -202,6 +327,9 @@ void writeLog(uint16_t event_number, int parameter_value) {
     // and if we don't do this ... we will destroy the memory !
     nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
   }
+
+  // Free memory
+  free(logsNextEntryID);
 
   /*****************************
          Out and Deselect
