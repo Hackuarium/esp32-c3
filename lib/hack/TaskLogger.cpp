@@ -503,11 +503,16 @@ void printLastLog(Print* output) {
 }
 
 void formatFlash(Print* output) {
-  chSemWait(&lockTimeCriticalZone);
-  sst.flashTotalErase();
-  output->println(F("OK"));
+  prefs.begin("logger");
+  // Remove all preferences under the opened namespace
+  if(prefs.clear()) {
+    output->println(F("OK"));
+  }
+  else {
+    output->println(F("Format flash ERROR!"));
+  }
   nextEntryID = 0;
-  chSemSignal(&lockTimeCriticalZone);
+  prefs.end();
 }
 
 void testFlash(Print* output) {
