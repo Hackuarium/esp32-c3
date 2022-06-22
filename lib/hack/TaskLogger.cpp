@@ -456,19 +456,19 @@ void recoverLastEntryN() {
   bool found = false;
 
   prefs.begin("logger");
-  size_t schLen32 = prefs.getBytesLength("nextEntryID");
-  uint8_t bufferNextEntryID[schLen32];
+  size_t schLen1 = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen1];
 
-  size_t schLen32 = prefs.getBytesLength("timeNow");
-  char bufferTimeNow[schLen32];
+  size_t schLen2 = prefs.getBytesLength("timeNow");
+  char bufferTimeNow[schLen2];
 
   // Read values
-  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen1);
   logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
   ID_temp = (((uint32_t)bufferNextEntryID[0] << 24) && 0xFF000000) || (((uint32_t)bufferNextEntryID[1] << 16) && 0x00FF0000) || (((uint32_t)bufferNextEntryID[2] << 8) && 0x0000FF00) || (((uint32_t)bufferNextEntryID[3] << 24) && 0x000000FF);
 
-  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+  prefs.getBytes("timeNow", bufferTimeNow, schLen2);
   logsTimeNow = (sTimeNow *)bufferTimeNow;
 
   Time_temp = (((uint32_t)bufferTimeNow[0] << 24) && 0xFF000000) || (((uint32_t)bufferTimeNow[1] << 16) && 0x00FF0000) || (((uint32_t)bufferTimeNow[2] << 8) && 0x0000FF00) || (((uint32_t)bufferTimeNow[3] << 24) && 0x000000FF);
@@ -516,27 +516,25 @@ void formatFlash(Print* output) {
 }
 
 void testFlash(Print* output) {
-  wdt_disable();
-  chSemWait(&lockTimeCriticalZone);
   output->println(F("W/R / validate"));
   output->println(F("You need to format after test lf1234"));
   for (int i = 0; i < ADDRESS_MAX / SECTOR_SIZE; i++) {
     uint32_t sectorFlash = i * SECTOR_SIZE;
-    sst.flashSectorErase(sectorFlash);
+    // sst.flashSectorErase(sectorFlash);
     for (byte j = 0; j < SECTOR_SIZE / 64; j++) {
       long address = (long)i * SECTOR_SIZE + (long)j * 64;
-      sst.flashWriteInit(address);
+      // sst.flashWriteInit(address);
       byte result = 0;
       for (byte k = 0; k < 64; k++) {
         result ^= (k + 13);
-        sst.flashWriteNextInt8(k + 13);
+        // sst.flashWriteNextInt8(k + 13);
       }
-      sst.flashWriteFinish();
-      sst.flashReadInit(address);
+      // sst.flashWriteFinish();
+      // sst.flashReadInit(address);
       for (byte k = 0; k < 64; k++) {
-        result ^= sst.flashReadNextInt8();
+        // result ^= sst.flashReadNextInt8();
       }
-      sst.flashReadFinish();
+      // sst.flashReadFinish();
       if (result == 0) {
         if (j == 0 && i % 4 == 0) {
           output->print(".");
@@ -550,30 +548,25 @@ void testFlash(Print* output) {
       }
     }
   }
-  chSemSignal(&lockTimeCriticalZone);
-  wdt_enable(WDTO_8S);
-  wdt_reset();
 }
 
 void readFlash(Print* output, long firstRecord) {
-  chSemWait(&lockTimeCriticalZone);
   output->println(F("Index / Address / ID / Epoch"));
   for (int i = firstRecord; i < ADDRESS_MAX / SECTOR_SIZE; i++) {
     if (i == (firstRecord + 256))
       break;
     long address = findAddressOfEntryN(i);
-    sst.flashReadInit(address);
+    // sst.flashReadInit(address);
     output->print(i);
     output->print(" ");
     output->print(address, HEX);
     output->print(" ");
-    output->print(sst.flashReadNextInt32(), HEX);
+    // output->print(sst.flashReadNextInt32(), HEX);
     output->print(" ");
-    output->print(sst.flashReadNextInt32(), HEX);
+    // output->print(sst.flashReadNextInt32(), HEX);
     output->println("");
-    sst.flashReadFinish();
+    // sst.flashReadFinish();
   }
-  chSemSignal(&lockTimeCriticalZone);
 }
 
 /*
@@ -581,14 +574,13 @@ void readFlash(Print* output, long firstRecord) {
 */
 
 void debugFlash(Print* output) {
-  wdt_disable();
-  chSemWait(&lockTimeCriticalZone);
   output->print(F("Debug changes"));
   byte isFF = 2;
   for (long i = 0; i < MAX_NB_ENTRIES; i++) {
     long address = findAddressOfEntryN(i);
-    sst.flashReadInit(address);
-    long index = sst.flashReadNextInt32();
+    // sst.flashReadInit(address);
+    // long index = sst.flashReadNextInt32();
+    uint32_t index = 0;
     if (index == 0xFFFFFFFF) {
       if (isFF != 1) {
         isFF = 1;
@@ -606,47 +598,39 @@ void debugFlash(Print* output) {
         toHex(output, index);
       }
     }
-    sst.flashReadFinish();
+    // sst.flashReadFinish();
     if (i % 1024 == 0) {
       output->print(F("."));
     }
   }
   output->println(F(""));
   output->println(F("Done"));
-  chSemSignal(&lockTimeCriticalZone);
-  wdt_enable(WDTO_8S);
-  wdt_reset();
 }
 
 /*
    We will check when we have a change to FF at the ID
 */
-void checkNextID(Print* output) {
-  wdt_disable();
-  chSemWait(&lockTimeCriticalZone);
-  output->println(F("Check next ID"));
-  // we assume that the ID should always grow linearly. Just
-  // after it is not linear, we set the lastEntryID
-  sst.flashReadInit(0);
-  uint32_t expectedID = sst.flashReadNextInt32();
-  sst.flashReadFinish();
-  for (uint32_t i = 1; i < MAX_NB_ENTRIES; i++) {
-    expectedID++;
-    uint32_t address = findAddressOfEntryN(i);
-    sst.flashReadInit(address);
-    uint32_t currentID = sst.flashReadNextInt32();
-    sst.flashReadFinish();
-    if (currentID != expectedID && currentID != 4294967295) {
-      output->print(expectedID);
-      output->print(" ");
-      output->println(currentID);
-    }
-  }
-  chSemSignal(&lockTimeCriticalZone);
-  wdt_enable(WDTO_8S);
-  wdt_reset();
-  output->println(F("Done"));
-}
+// void checkNextID(Print* output) {
+//   output->println(F("Check next ID"));
+//   // we assume that the ID should always grow linearly. Just
+//   // after it is not linear, we set the lastEntryID
+//   sst.flashReadInit(0);
+//   uint32_t expectedID = sst.flashReadNextInt32();
+//   sst.flashReadFinish();
+//   for (uint32_t i = 1; i < MAX_NB_ENTRIES; i++) {
+//     expectedID++;
+//     uint32_t address = findAddressOfEntryN(i);
+//     sst.flashReadInit(address);
+//     uint32_t currentID = sst.flashReadNextInt32();
+//     sst.flashReadFinish();
+//     if (currentID != expectedID && currentID != 4294967295) {
+//       output->print(expectedID);
+//       output->print(" ");
+//       output->println(currentID);
+//     }
+//   }
+//   output->println(F("Done"));
+// }
 
 void printLoggerHelp(Print* output) {
   output->println(F("Logger help"));
@@ -681,7 +665,10 @@ void processLoggerCommand(char command, char* data, Print* output) {
       }
       break;
     case 'i':
-      sst.printFlashID(output);
+      prefs.begin("logger");
+      output->print(F("Free entries: "));
+      output->println(prefs.freeEntries());
+      prefs.end();
       break;
     case 'l':
       if (data[0] != '\0')
@@ -702,7 +689,7 @@ void processLoggerCommand(char command, char* data, Print* output) {
             endValue = nextEntryID - currentValueLong;
           for (byte i = 0; i < endValue; i++) {
             currentValueLong = printLogN(output, currentValueLong) + 1;
-            chThdSleep(25);
+            vTaskDelay(25);
           }
         }
       } else {
@@ -739,41 +726,55 @@ void processLoggerCommand(char command, char* data, Print* output) {
   }
 }
 
-void dumpLoggerFlash(Print* output, uint32_t fromAddress, uint32_t toAddress) {
-  int bytesPerRow = 16;
-  int j = 0;
-  char buf[4];
-  sst.flashReadInit(fromAddress);
-  // go from first to last eeprom address
-  for (uint32_t i = fromAddress; i <= toAddress; i++) {
-    if (j == 0) {
-      sprintf(buf, "%03X", i);
-      output->print(buf);
-      output->print(F(": "));
-    }
-    sprintf(buf, "%02X ", sst.flashReadNextInt8());
-    j++;
-    if (j == bytesPerRow) {
-      j = 0;
-      output->println(buf);
-      chThdSleep(25);
-    } else {
-      output->print(buf);
-    }
-  }
-  sst.flashReadFinish();
-}
+// void dumpLoggerFlash(Print* output, uint32_t fromAddress, uint32_t toAddress) {
+//   int bytesPerRow = 16;
+//   int j = 0;
+//   char buf[4];
+//   sst.flashReadInit(fromAddress);
+//   // go from first to last eeprom address
+//   for (uint32_t i = fromAddress; i <= toAddress; i++) {
+//     if (j == 0) {
+//       sprintf(buf, "%03X", i);
+//       output->print(buf);
+//       output->print(F(": "));
+//     }
+//     sprintf(buf, "%02X ", sst.flashReadNextInt8());
+//     j++;
+//     if (j == bytesPerRow) {
+//       j = 0;
+//       output->println(buf);
+//       chThdSleep(25);
+//     } else {
+//       output->print(buf);
+//     }
+//   }
+//   sst.flashReadFinish();
+// }
 
 #endif
+
+
+void TaskLogger(void* pvParameters) {
+  (void)pvParameters;
+
+  vTaskDelay(5000);
+  writeLog(EVENT_ESP32_BOOT, 0);
+  vTaskDelay((long)LOG_INTERVAL - (long)(millis() / 1000UL) + 5UL);
+
+  while (true) {
+    writeLog(0, 0);
+    vTaskDelay(LOG_INTERVAL);
+  }
+}
 
 void taskLogger() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskLogger, "TaskLogger",
-                          4096,  // Crash if less than 4096 !!!!
+                          4096,
                                  // This stack size can be checked & adjusted by
                                  // reading the Stack Highwater
                           NULL,
-                          0,  // Priority, with 3 (configMAX_PRIORITIES - 1)
+                          3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
