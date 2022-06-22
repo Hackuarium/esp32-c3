@@ -167,11 +167,12 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   logsTimenow = (sTimenow *)realloc(logsTimenow, (nextEntryID + 1)*sizeof(sTimenow));
 
+  logsParams = (sParams *)realloc(logsParams, (nextEntryID + 1)*sizeof(sParams));
+
   logsEventNumber = (sEventNumber *)realloc(logsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber));
 
   logsParameterValue = (sParameterValue *)realloc(logsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue));
 
-  logsParams = (sParams *)realloc(logsParams, (nextEntryID + 1)*sizeof(sParams));
 
   /*****************************************************************************
     Reading Old Sequence
@@ -394,38 +395,54 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
     entryN = nextEntryID - MAX_NB_ENTRIES + NB_ENTRIES_PER_SECTOR;
   }
   prefs.begin("logger");
-  byte checkDigit = 0;
-  logs[nextEntryID].nextEntryID = prefs.getInt("nextEntryID");
-  for (byte i = 2; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
-    itoa(i,j,10);
-    uint16_t oneData = prefs.getUShort(j);
-    checkDigit ^= toHex(output, oneData);
-  }
+  uint8_t checkDigit = 0;
+  
+  /*****************************************************************************
+    Read and print parameters
+  *****************************************************************************/
+  // NextEntryID
+  size_t schLen = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen]; // prepare a buffer for the data
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen);
+  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 4]);
+  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 3]);
+  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 2]);
+  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 1]);
+
+  prefs.end();
+
   checkDigit ^= toHex(output, getQualifier());
   toHex(output, checkDigit);
   output->println("");
-  prefs.end();
   return entryN;
 }
 
-void Last_Log_To_SPI_buff(byte* buff) {
-  prefs.begin("logger");
-  sst.flashReadInit(findAddressOfEntryN(nextEntryID - 1));
-  for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
-    byte oneByte = sst.flashReadNextInt8();
-    buff[i] = oneByte;
-  }
-  sst.flashReadFinish();
-  chSemSignal(&lockTimeCriticalZone);
-}
+// void Last_Log_To_SPI_buff(byte* buff) {
+//   prefs.begin("logger");
+//   sst.flashReadInit(findAddressOfEntryN(nextEntryID - 1));
+//   for (byte i = 0; i < ENTRY_SIZE_LINEAR_LOGS; i++) {
+//     byte oneByte = sst.flashReadNextInt8();
+//     buff[i] = oneByte;
+//   }
+//   sst.flashReadFinish();
+//   chSemSignal(&lockTimeCriticalZone);
+// }
 
 void loadLastEntryToParameters() {
-  uint32_t addressOfEntryN = findAddressOfEntryN(nextEntryID - 1);
-  sst.flashReadInit(addressOfEntryN + 8);  // we skip entryID and epoch
-  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-    setParameter(i, sst.flashReadNextInt16());
+  prefs.begin("logger");
+
+  /*****************************************************************************
+    Read and print parameters
+  *****************************************************************************/
+  // NextEntryID
+  size_t schLen = prefs.getBytesLength("params");
+  uint8_t bufferParams[schLen]; // prepare a buffer for the data
+  prefs.getBytes("params", bufferParams, schLen);
+  prefs.end();
+  for (uint16_t i = (schLen - 2*NB_PARAMETERS_LINEAR_LOGS); i < schLen  + NB_PARAMETERS_LINEAR_LOGS; i+2) {
+    uint16_t parameter = (((uint16_t)bufferParams[i] << 8) && 0xFF00) || ((uint16_t)bufferParams[i + 1]);
+    setParameter(i, parameter);
   }
-  sst.flashReadFinish();
 }
 
 /*****************************************************************************
