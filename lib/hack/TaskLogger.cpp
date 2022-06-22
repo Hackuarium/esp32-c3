@@ -41,7 +41,7 @@ Preferences prefs;
 // Define structure to store logger
 typedef struct {
   int32_t nextEntryID;
-  int32_t timenow;
+  int32_t timeNow;
   int16_t eventNumber;
   int16_t parameterValue;
   uint16_t params[NB_PARAMETERS_LINEAR_LOGS];
@@ -69,7 +69,7 @@ typedef struct {
   uint8_t p1;
   uint8_t p2;
   uint8_t p3;
-} sTimenow;
+} sTimeNow;
 
 typedef struct {
   uint8_t p0[NB_PARAMETERS_LINEAR_LOGS];
@@ -115,7 +115,7 @@ Logger *logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
 
 sNextEntryID *logsNextEntryID = (sNextEntryID *)calloc(1, sizeof(sNextEntryID));
 
-sTimenow *logsTimenow = (sTimenow *)calloc(1, sizeof(sTimenow));
+sTimeNow *logsTimeNow = (sTimeNow *)calloc(1, sizeof(sTimeNow));
 
 sEventNumber *logsEventNumber = (sEventNumber *)calloc(1, sizeof(sEventNumber));
 
@@ -165,7 +165,7 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   *****************************************************************************/
   logsNextEntryID = (sNextEntryID *)realloc(logsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID));
 
-  logsTimenow = (sTimenow *)realloc(logsTimenow, (nextEntryID + 1)*sizeof(sTimenow));
+  logsTimeNow = (sTimeNow *)realloc(logsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow));
 
   logsParams = (sParams *)realloc(logsParams, (nextEntryID + 1)*sizeof(sParams));
 
@@ -180,7 +180,7 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // Obtain length and create buffer
   size_t schLen32 = prefs.getBytesLength("nextEntryID");
   char bufferNextEntryID[schLen32];
-  char bufferTimenow[schLen32];
+  char bufferTimeNow[schLen32];
 
   size_t schLen16 = prefs.getBytesLength("eventNumber");
   char bufferEventNumber[schLen16];
@@ -193,8 +193,8 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
   logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
-  prefs.getBytes("timenow", bufferTimenow, schLen32);
-  logsTimenow = (sTimenow *)bufferTimenow;
+  prefs.getBytes("timenow", bufferTimeNow, schLen32);
+  logsTimeNow = (sTimeNow *)bufferTimeNow;
 
   prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
   logsEventNumber = (sEventNumber *)bufferEventNumber;
@@ -294,13 +294,13 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
             Slave Select
   ******************************/
   uint16_t param = 0;
-  uint32_t timenow = now();
-  logs[nextEntryID].timenow = timenow;
+  uint32_t timeNow = now();
+  logs[nextEntryID].timeNow = timeNow;
 
-  logsTimenow[nextEntryID].p0 = (timenow >> 24) & 0xFF;
-  logsTimenow[nextEntryID].p1 = (timenow >> 16) & 0xFF;
-  logsTimenow[nextEntryID].p2 = (timenow >> 8) & 0xFF;
-  logsTimenow[nextEntryID].p3 = (timenow >> 0) & 0xFF;
+  logsTimeNow[nextEntryID].p0 = (timeNow >> 24) & 0xFF;
+  logsTimeNow[nextEntryID].p1 = (timeNow >> 16) & 0xFF;
+  logsTimeNow[nextEntryID].p2 = (timeNow >> 8) & 0xFF;
+  logsTimeNow[nextEntryID].p3 = (timeNow >> 0) & 0xFF;
 
   
   
@@ -455,47 +455,34 @@ void recoverLastEntryN() {
   uint32_t addressEntryN = ADDRESS_BEG;
   bool found = false;
 
-  while (addressEntryN < ADDRESS_LAST) {
-    sst.flashReadInit(addressEntryN);
-    ID_temp = sst.flashReadNextInt32();
-    Time_temp = sst.flashReadNextInt32();
-    sst.flashReadFinish();
+  prefs.begin("logger");
+  size_t schLen32 = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen32];
 
-#ifdef DEBUG_LOGS
-    Serial.print(F("ID_tmp: "));
-    Serial.println(ID_temp);
-    Serial.print(F("nextEntryID: "));
-    Serial.println(nextEntryID);
-#endif
+  size_t schLen32 = prefs.getBytesLength("timeNow");
+  char bufferTimeNow[schLen32];
 
-    // Test if first memory slot contains any information
-    if ((ID_temp == 0xFFFFFFFF) || (ID_temp < nextEntryID)) {
-      break;
-    }
-    addressEntryN += ENTRY_SIZE_LINEAR_LOGS;
-    nextEntryID =
-        ID_temp + 1;  // this will be the correct value in case of break
-    setTime(Time_temp);
+  // Read values
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
+  logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
-    // we implement a quick advance
-    if (addressEntryN < (ADDRESS_LAST - 128 * ENTRY_SIZE_LINEAR_LOGS)) {
-      sst.flashReadInit(addressEntryN + (128 * ENTRY_SIZE_LINEAR_LOGS));
-      ID_temp = sst.flashReadNextInt32();
-      sst.flashReadFinish();
-      if (ID_temp >= nextEntryID && ID_temp != 0xFFFFFFFF) {
-        addressEntryN += 127 * ENTRY_SIZE_LINEAR_LOGS;
-      }
-    }
+  ID_temp = (((uint32_t)bufferNextEntryID[0] << 24) && 0xFF000000) || (((uint32_t)bufferNextEntryID[1] << 16) && 0x00FF0000) || (((uint32_t)bufferNextEntryID[2] << 8) && 0x0000FF00) || (((uint32_t)bufferNextEntryID[3] << 24) && 0x000000FF);
 
-#ifdef DEBUG_LOGS
-    Serial.print(F("Current nextEntryID:"));
-    Serial.println(nextEntryID);
-#endif
+  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+  logsTimeNow = (sTimeNow *)bufferTimeNow;
+
+  Time_temp = (((uint32_t)bufferTimeNow[0] << 24) && 0xFF000000) || (((uint32_t)bufferTimeNow[1] << 16) && 0x00FF0000) || (((uint32_t)bufferTimeNow[2] << 8) && 0x0000FF00) || (((uint32_t)bufferTimeNow[3] << 24) && 0x000000FF);
+
+
+  // Test if first memory slot contains any information
+  if ((ID_temp == 0xFFFFFFFF) || (ID_temp < nextEntryID)) {
+    return;
   }
-#ifdef DEBUG_LOGS
-  Serial.print(F("Final nextEntryID:"));
-  Serial.println(nextEntryID);
-#endif
+
+  addressEntryN += ENTRY_SIZE_LINEAR_LOGS;
+  nextEntryID = ID_temp + 1;  // this will be the correct value in case of break
+  setTime(Time_temp);
+
   logActive = true;
 }
 
@@ -504,12 +491,12 @@ void recoverLastEntryN() {
  *****************************/
 // Setup the memory for future use
 // Need to be used only once at startup
-void setupMemory() {
-  SPI.begin();
-  SPI.setDataMode(SPI_MODE0);
-  SPI.setBitOrder(MSBFIRST);
-  sst.init();
-}
+// void setupMemory() {
+//   SPI.begin();
+//   SPI.setDataMode(SPI_MODE0);
+//   SPI.setBitOrder(MSBFIRST);
+//   sst.init();
+// }
 
 void printLastLog(Print* output) {
   printLogN(output, nextEntryID - 1);
