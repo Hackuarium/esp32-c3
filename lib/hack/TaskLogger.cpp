@@ -32,7 +32,7 @@ server
 // SEMAPHORE_DECL(lockTimeCriticalZone, 1); // only one process in some specific
 // zones
 
-// Create object
+// Create object for NVS memory space
 Preferences prefs;
 
 // Or remove the one key only
@@ -45,24 +45,15 @@ typedef struct {
   int16_t eventNumber;
   int16_t parameterValue;
   uint16_t params[NB_PARAMETERS_LINEAR_LOGS];
-} Logger;
+} sLogger;
 
+// Define structures with uint8_t vars to store data into NVS like Bytes
 typedef struct {
   uint8_t p0;
   uint8_t p1;
   uint8_t p2;
   uint8_t p3;
 } sNextEntryID;
-
-typedef struct {
-  uint8_t p0;
-  uint8_t p1;
-} sEventNumber;
-
-typedef struct {
-  uint8_t p0;
-  uint8_t p1;
-} sParameterValue;
 
 typedef struct {
   uint8_t p0;
@@ -75,6 +66,18 @@ typedef struct {
   uint8_t p0[NB_PARAMETERS_LINEAR_LOGS];
   uint8_t p1[NB_PARAMETERS_LINEAR_LOGS];
 } sParams;
+
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+} sEventNumber;
+
+typedef struct {
+  uint8_t p0;
+  uint8_t p1;
+} sParameterValue;
+
+
 
 /******************************************
    DEFINE PARTITION TABLE (default is PARTITION_TABLE_SINGLE_APP)
@@ -111,17 +114,17 @@ typedef struct {
 
 #define MAX_MULTI_LOG 64  // Allows to display long log on serial
 
-Logger *logs = (Logger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(Logger));
+sLogger *pLogs = (sLogger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(sLogger));
 
-sNextEntryID *logsNextEntryID = (sNextEntryID *)calloc(1, sizeof(sNextEntryID));
+sNextEntryID *pLogsNextEntryID = (sNextEntryID *)calloc(1, sizeof(sNextEntryID));
 
-sTimeNow *logsTimeNow = (sTimeNow *)calloc(1, sizeof(sTimeNow));
+sTimeNow *pLogsTimeNow = (sTimeNow *)calloc(1, sizeof(sTimeNow));
 
-sEventNumber *logsEventNumber = (sEventNumber *)calloc(1, sizeof(sEventNumber));
+sEventNumber *pLogsEventNumber = (sEventNumber *)calloc(1, sizeof(sEventNumber));
 
-sParameterValue *logsParameterValue = (sParameterValue *)calloc(1, sizeof(sParameterValue));
+sParameterValue *pLogsParameterValue = (sParameterValue *)calloc(1, sizeof(sParameterValue));
 
-sParams *logsParams = (sParams *)calloc(1, sizeof(sParams));
+sParams *pLogsParams = (sParams *)calloc(1, sizeof(sParams));
 
 
 uint32_t nextEntryID = 0;
@@ -163,15 +166,15 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   /*****************************************************************************
     Reallocating memory to store flash variables
   *****************************************************************************/
-  logsNextEntryID = (sNextEntryID *)realloc(logsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID));
+  pLogsNextEntryID = (sNextEntryID *)realloc(pLogsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID));
 
-  logsTimeNow = (sTimeNow *)realloc(logsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow));
+  pLogsTimeNow = (sTimeNow *)realloc(pLogsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow));
 
-  logsParams = (sParams *)realloc(logsParams, (nextEntryID + 1)*sizeof(sParams));
+  pLogsParams = (sParams *)realloc(pLogsParams, (nextEntryID + 1)*sizeof(sParams));
 
-  logsEventNumber = (sEventNumber *)realloc(logsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber));
+  pLogsEventNumber = (sEventNumber *)realloc(pLogsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber));
 
-  logsParameterValue = (sParameterValue *)realloc(logsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue));
+  pLogsParameterValue = (sParameterValue *)realloc(pLogsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue));
 
 
   /*****************************************************************************
@@ -182,43 +185,88 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   char bufferNextEntryID[schLen32];
   char bufferTimeNow[schLen32];
 
+  size_t schLenParams = prefs.getBytesLength("params");
+  char bufferParams[schLenParams];
+
   size_t schLen16 = prefs.getBytesLength("eventNumber");
   char bufferEventNumber[schLen16];
   char bufferParameterValue[schLen16];
 
-  size_t schLenParams = prefs.getBytesLength("params");
-  char bufferParams[schLenParams];
-
   // Read values
   prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
-  logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+  pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
-  prefs.getBytes("timenow", bufferTimeNow, schLen32);
-  logsTimeNow = (sTimeNow *)bufferTimeNow;
-
-  prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
-  logsEventNumber = (sEventNumber *)bufferEventNumber;
-
-  prefs.getBytes("parameterValue", bufferParameterValue, schLen16);
-  logsParameterValue = (sParameterValue *)bufferParameterValue;
+  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+  pLogsTimeNow = (sTimeNow *)bufferTimeNow;
 
   prefs.getBytes("params", bufferParams, schLenParams);
-  logsParams = (sParams *)bufferParams;
+  pLogsParams = (sParams *)bufferParams;
+
+  prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
+  pLogsEventNumber = (sEventNumber *)bufferEventNumber;
+
+  prefs.getBytes("parameterValue", bufferParameterValue, schLen16);
+  pLogsParameterValue = (sParameterValue *)bufferParameterValue;
 
   /*****************************************************************************
     Store new values
   *****************************************************************************/
-  logsNextEntryID[nextEntryID].p0 = (nextEntryID >> 24) & 0xFF;
-  logsNextEntryID[nextEntryID].p1 = (nextEntryID >> 16) & 0xFF;
-  logsNextEntryID[nextEntryID].p2 = (nextEntryID >> 8) & 0xFF;
-  logsNextEntryID[nextEntryID].p3 = (nextEntryID >> 0) & 0xFF;
+  uint16_t param = 0;
+  uint32_t timeNow = now();
 
-  /*****************************
-          Writing Sequence
-  ******************************/
-  prefs.putBytes("nextEntryID", logsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID));
+  // nextEntryID
+  pLogsNextEntryID[nextEntryID].p0 = (nextEntryID >> 24) & 0xFF;
+  pLogsNextEntryID[nextEntryID].p1 = (nextEntryID >> 16) & 0xFF;
+  pLogsNextEntryID[nextEntryID].p2 = (nextEntryID >> 8) & 0xFF;
+  pLogsNextEntryID[nextEntryID].p3 = (nextEntryID >> 0) & 0xFF;
 
-  prefs.end();  // finish the writing process
+  // timeNow
+  pLogsTimeNow[nextEntryID].p0 = (timeNow >> 24) & 0xFF;
+  pLogsTimeNow[nextEntryID].p1 = (timeNow >> 16) & 0xFF;
+  pLogsTimeNow[nextEntryID].p2 = (timeNow >> 8) & 0xFF;
+  pLogsTimeNow[nextEntryID].p3 = (timeNow >> 0) & 0xFF;
+
+  // params (A-Z)
+  for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
+    param = getParameter(i);  // 2 bytes per parameter
+    pLogsParams[nextEntryID].p0[i] = ((param >> 8) & 0xFF);
+    pLogsParams[nextEntryID].p1[i] = (param >> 0) & 0xFF;
+  }
+  
+  // eventNumber
+  pLogsEventNumber[nextEntryID].p0 = (eventNumber >> 8) & 0xFF;
+  pLogsEventNumber[nextEntryID].p1 = (eventNumber >> 0) & 0xFF;
+
+  // parameterValue
+  pLogsParameterValue[nextEntryID].p0 = (timeNow >> 8) & 0xFF;
+  pLogsParameterValue[nextEntryID].p1 = (timeNow >> 0) & 0xFF;
+
+  /*****************************************************************************
+    Writing Sequence
+  *****************************************************************************/
+  // nextEntryID
+  size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID));
+
+  // timeNow
+  size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + 1)*sizeof(sTimeNow));
+
+  // params (A-Z)
+  size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams));
+
+  // eventNumber
+  size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + 1)*sizeof(sEventNumber));
+
+  // parameterValue
+  size_t lenParameterValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + 1)*sizeof(sParameterValue));
+
+  prefs.end();  // Finish the writing process
+
+  // Free memory
+  free(pLogsNextEntryID);
+  free(pLogsTimeNow);
+  free(pLogsParams);
+  free(pLogsEventNumber);
+  free(pLogsParameterValue);
 
   /*****************************************************************************
     Check saved information
@@ -226,26 +274,18 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     And no other thread will change any of the values !!!!!!
   *****************************************************************************/
   bool isLogValid = true;
-  prefs.begin("logger");
-  schLen32 = prefs.getBytesLength("nextEntryID");
-  char buffer[schLen32];
-  prefs.getBytes("nextEntryID", buffer, schLen32);
-  bool checkNextEntryID = (buffer[schLen32 - 4] != logsNextEntryID[nextEntryID].p0) || (buffer[schLen32 - 3] != logsNextEntryID[nextEntryID].p1) || (buffer[schLen32 - 2] || logsNextEntryID[nextEntryID].p2) || (buffer[schLen32 - 1] != logsNextEntryID[nextEntryID].p3);
-  if (checkNextEntryID)
+
+  if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID))
+    isLogValid = false;
+  if (lenTimeNow != (schLen32 + 1)*sizeof(sTimeNow))
+    isLogValid = false;
+  if (lenParams != (schLenParams + 1)*sizeof(sParams))
+    isLogValid = false;
+  if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber))
+    isLogValid = false;
+  if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue))
     isLogValid = false;
 
-  // if (prefs.getInt("timenow") != logs[nextEntryID].timenow)
-  //   isLogValid = false;
-  // for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-  //   itoa(i,j,10);
-  //   if (prefs.getUShort(j) != logs[nextEntryID].params[i])
-  //     isLogValid = false;
-  // }
-  // if (prefs.getShort("event_number") != logs[nextEntryID].event_number)
-  //   isLogValid = false;
-  // if (prefs.getShort("parameter_value") != logs[nextEntryID].parameter_value)
-  //   isLogValid = false;
-  prefs.end();
   if (isLogValid) {
     // Update the value of the next event log position in the memory
     nextEntryID++;
@@ -255,127 +295,13 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     // if logger fails it is better to go back and erase the full sector
     // we can anyway not try to write if it was not erased !
     // and if we don't do this ... we will destroy the memory !
-    nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
+    // nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
   }
-
-  // Free memory
-  free(logsNextEntryID);
 
   /*****************************
          Out and Deselect
   ******************************/
   vTaskDelay(5);
-
-
-
-
-
-
-  // logs[nextEntryID].event_number = event_number;
-  // logs[nextEntryID].parameter_value = parameter_value;
-
-  // logsNextEntryID[nextEntryID].p0 = (nextEntryID >> 24) & 0xFF;
-  // logsNextEntryID[nextEntryID].p1 = (nextEntryID >> 16) & 0xFF;
-  // logsNextEntryID[nextEntryID].p2 = (nextEntryID >> 8) & 0xFF;
-  // logsNextEntryID[nextEntryID].p3 = (nextEntryID >> 0) & 0xFF;
-
-  // logsEvent_Number[nextEntryID].p0 = (event_number >> 8) & 0xFF;
-  // logsEvent_Number[nextEntryID].p1 = (event_number >> 0) & 0xFF;
-
-  // logsParameter_Value[nextEntryID].p0 = (parameter_value >> 8) & 0xFF;
-  // logsParameter_Value[nextEntryID].p1 = (parameter_value >> 0) & 0xFF;
-  
-
-  // if(logs[nextEntryID].nextEntryID != nextEntryID) {
-  //   logs[nextEntryID].nextEntryID = nextEntryID;
-  // }
-
-  /*****************************
-            Slave Select
-  ******************************/
-  uint16_t param = 0;
-  uint32_t timeNow = now();
-  logs[nextEntryID].timeNow = timeNow;
-
-  logsTimeNow[nextEntryID].p0 = (timeNow >> 24) & 0xFF;
-  logsTimeNow[nextEntryID].p1 = (timeNow >> 16) & 0xFF;
-  logsTimeNow[nextEntryID].p2 = (timeNow >> 8) & 0xFF;
-  logsTimeNow[nextEntryID].p3 = (timeNow >> 0) & 0xFF;
-
-  
-  
-  /************************************************************************************
-      Test if it is the begining of one sector, erase the sector of 4096 bytes
-    if needed  delay(2);
-    ************************************************************************************/
-  // if ((!(logs[nextEntryID].nextEntryID % NB_ENTRIES_PER_SECTOR))) {
-  //   long start = millis();
-
-  //   // Remove all preferences under the opened namespace
-  //   //preferences.clear();
-  //   prefs.clear();
-  // }
-
-  
-
-
-
-  /*****************************
-          Writing Sequence
-  ******************************/
-  // prefs.putInt("nextEntryID", logs[nextEntryID].nextEntryID);  // 4 bytes of the entry number, return 4
-  // prefs.putInt("timenow", logs[nextEntryID].timenow);  // 4 bytes of the timestamp in the memory using a mask, return 4
-  // for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-  //   logs[nextEntryID].params[i] = getParameter(i);
-  //   itoa(i,j,10);
-  //   prefs.putUShort(j, logs[nextEntryID].params[i]);  // 2 bytes per parameter, return 2
-  // }
-  // prefs.putShort("event_number", logs[nextEntryID].event_number);       // event, return 2
-  // prefs.putShort("parameter_value", logs[nextEntryID].parameter_value); // parameter value, return 2
-
-  // prefs.end();  // finish the writing process
-
-
-  /*****************************
-          Check saved information
-          We assume that the logger is high priority
-          And no other thread will change any of the values !!!!!!
-  ******************************/
-  // bool isLogValid = true;
-  // prefs.begin("logger");
-  // if (prefs.getInt("nextEntryID") != logs[nextEntryID].nextEntryID)
-  //   isLogValid = false;
-  // if (prefs.getInt("timenow") != logs[nextEntryID].timenow)
-  //   isLogValid = false;
-  // for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-  //   itoa(i,j,10);
-  //   if (prefs.getUShort(j) != logs[nextEntryID].params[i])
-  //     isLogValid = false;
-  // }
-  // if (prefs.getShort("event_number") != logs[nextEntryID].event_number)
-  //   isLogValid = false;
-  // if (prefs.getShort("parameter_value") != logs[nextEntryID].parameter_value)
-  //   isLogValid = false;
-  // prefs.end();
-  // if (isLogValid) {
-  //   // Update the value of the next event log position in the memory
-  //   nextEntryID++;
-  // } else {
-  //   Serial.print(F("Log fail "));
-  //   Serial.println(nextEntryID);
-  //   // if logger fails it is better to go back and erase the full sector
-  //   // we can anyway not try to write if it was not erased !
-  //   // and if we don't do this ... we will destroy the memory !
-  //   nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
-  // }
-
-  // // Free memory
-  // free(logsNextEntryID);
-
-  // /*****************************
-  //        Out and Deselect
-  // ******************************/
-  // vTaskDelay(5);
 }
 
 /******************************************************************************************
@@ -464,12 +390,12 @@ void recoverLastEntryN() {
 
   // Read values
   prefs.getBytes("nextEntryID", bufferNextEntryID, schLen1);
-  logsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+  pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
   ID_temp = (((uint32_t)bufferNextEntryID[0] << 24) && 0xFF000000) || (((uint32_t)bufferNextEntryID[1] << 16) && 0x00FF0000) || (((uint32_t)bufferNextEntryID[2] << 8) && 0x0000FF00) || (((uint32_t)bufferNextEntryID[3] << 24) && 0x000000FF);
 
   prefs.getBytes("timeNow", bufferTimeNow, schLen2);
-  logsTimeNow = (sTimeNow *)bufferTimeNow;
+  pLogsTimeNow = (sTimeNow *)bufferTimeNow;
 
   Time_temp = (((uint32_t)bufferTimeNow[0] << 24) && 0xFF000000) || (((uint32_t)bufferTimeNow[1] << 16) && 0x00FF0000) || (((uint32_t)bufferTimeNow[2] << 8) && 0x0000FF00) || (((uint32_t)bufferTimeNow[3] << 24) && 0x000000FF);
 
