@@ -366,8 +366,8 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
   size_t schLenParams = prefs.getBytesLength("params");
   uint8_t bufferParams[schLenParams]; // prepare a buffer for the data
   prefs.getBytes("params", bufferParams, schLenParams);
-  for (byte i = 2*NB_PARAMETERS_LINEAR_LOGS; i > 0; i--) {
-    checkDigit ^= toHex(output, bufferParams[schLenParams - i]);
+  for (byte i = entryN*sizeof(sParams); i < schLenParams; i++) {
+    checkDigit ^= toHex(output, bufferParams[i]);
   }
 
   // // eventNumber
@@ -465,18 +465,6 @@ void recoverLastEntryN() {
 
   logActive = true;
 }
-
-/*****************************
-  Memory related functions
- *****************************/
-// Setup the memory for future use
-// Need to be used only once at startup
-// void setupMemory() {
-//   SPI.begin();
-//   SPI.setDataMode(SPI_MODE0);
-//   SPI.setBitOrder(MSBFIRST);
-//   sst.init();
-// }
 
 void printLastLog(Print* output) {
   printLogN(output, nextEntryID - 1);
