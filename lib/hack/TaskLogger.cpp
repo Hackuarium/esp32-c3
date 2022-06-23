@@ -345,22 +345,24 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
   /*****************************************************************************
     Read and print parameters
   *****************************************************************************/
-  // // nextEntryID
-  // size_t schLen32 = prefs.getBytesLength("nextEntryID");
-  // uint8_t bufferNextEntryID[schLen32]; // prepare a buffer for the data
-  // prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
-  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 4]);
-  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 3]);
-  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 2]);
-  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 1]);
+  // nextEntryID
+  uint32_t index32 = entryN * sizeof(sNextEntryID);
+  size_t schLen32 = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen32]; // prepare a buffer for the data
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
 
-  // // timeNow
-  // uint8_t bufferTimeNow[schLen32]; // prepare a buffer for the data
-  // prefs.getBytes("timeNow", bufferTimeNow, schLen32);
-  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 4]);
-  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 3]);
-  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 2]);
-  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 1]);
+  checkDigit ^= toHex(output, bufferNextEntryID[index32]);
+  checkDigit ^= toHex(output, bufferNextEntryID[index32 + 1]);
+  checkDigit ^= toHex(output, bufferNextEntryID[index32 + 2]);
+  checkDigit ^= toHex(output, bufferNextEntryID[index32 + 3]);
+
+  // timeNow
+  uint8_t bufferTimeNow[schLen32]; // prepare a buffer for the data
+  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+  checkDigit ^= toHex(output, bufferTimeNow[index32]);
+  checkDigit ^= toHex(output, bufferTimeNow[index32 + 1]);
+  checkDigit ^= toHex(output, bufferTimeNow[index32 + 2]);
+  checkDigit ^= toHex(output, bufferTimeNow[index32 + 3]);
 
   // params (A-Z)
   size_t schLenParams = prefs.getBytesLength("params");
@@ -370,18 +372,19 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
     checkDigit ^= toHex(output, bufferParams[i]);
   }
 
-  // // eventNumber
-  // size_t schLen16 = prefs.getBytesLength("eventNumber");
-  // uint8_t bufferEventNumber[schLen16]; // prepare a buffer for the data
-  // prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
-  // checkDigit ^= toHex(output, bufferEventNumber[schLen16 - 2]);
-  // checkDigit ^= toHex(output, bufferEventNumber[schLen16 - 1]);
+  // eventNumber
+  uint32_t index16 = entryN * sizeof(sEventNumber);
+  size_t schLen16 = prefs.getBytesLength("eventNumber");
+  uint8_t bufferEventNumber[schLen16]; // prepare a buffer for the data
+  prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
+  checkDigit ^= toHex(output, bufferEventNumber[index16]);
+  checkDigit ^= toHex(output, bufferEventNumber[index16 + 1]);
 
-  // // parameterValue
-  // uint8_t bufferParamaterValue[schLen16]; // prepare a buffer for the data
-  // prefs.getBytes("parameterValue", bufferParamaterValue, schLen16);
-  // checkDigit ^= toHex(output, bufferParamaterValue[schLen16 - 2]);
-  // checkDigit ^= toHex(output, bufferParamaterValue[schLen16 - 1]);
+  // parameterValue
+  uint8_t bufferParamaterValue[schLen16]; // prepare a buffer for the data
+  prefs.getBytes("parameterValue", bufferParamaterValue, schLen16);
+  checkDigit ^= toHex(output, bufferParamaterValue[index16]);
+  checkDigit ^= toHex(output, bufferParamaterValue[index16 + 1]);
 
   prefs.end();
 
