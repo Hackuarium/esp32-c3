@@ -156,12 +156,6 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   ********************************/
   if (!logActive)
     return;
-  
-  // Open Preferences with my-app namespace. Each application module, library, 
-  // etc has to use a namespace name to prevent key name collisions. We will 
-  // open storage in RW-mode (second parameter has to be false).
-  // Note: Namespace name is limited to 15 chars.
-  prefs.begin("logger");
 
   /*****************************************************************************
     Reallocating memory to store flash variables
@@ -176,6 +170,17 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   pLogsParameterValue = (sParameterValue *)realloc(pLogsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue));
 
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+  
+  // Open Preferences with my-app namespace. Each application module, library, 
+  // etc has to use a namespace name to prevent key name collisions. We will 
+  // open storage in RW-mode (second parameter has to be false).
+  // Note: Namespace name is limited to 15 chars.
+  prefs.begin("logger");
 
   /*****************************************************************************
     Reading Old Sequence
@@ -261,6 +266,11 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   prefs.end();  // Finish the writing process
 
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
+
   // Free memory
   free(pLogsNextEntryID);
   free(pLogsTimeNow);
@@ -320,26 +330,70 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
       (entryN < (nextEntryID - MAX_NB_ENTRIES + NB_ENTRIES_PER_SECTOR))) {
     entryN = nextEntryID - MAX_NB_ENTRIES + NB_ENTRIES_PER_SECTOR;
   }
+
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+
+  // Open namespace
   prefs.begin("logger");
+
   uint8_t checkDigit = 0;
   
   /*****************************************************************************
     Read and print parameters
   *****************************************************************************/
-  // NextEntryID
-  size_t schLen = prefs.getBytesLength("nextEntryID");
-  uint8_t bufferNextEntryID[schLen]; // prepare a buffer for the data
-  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen);
-  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 4]);
-  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 3]);
-  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 2]);
-  checkDigit ^= toHex(output, bufferNextEntryID[schLen - 1]);
+  // // nextEntryID
+  // size_t schLen32 = prefs.getBytesLength("nextEntryID");
+  // uint8_t bufferNextEntryID[schLen32]; // prepare a buffer for the data
+  // prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
+  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 4]);
+  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 3]);
+  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 2]);
+  // checkDigit ^= toHex(output, bufferNextEntryID[schLen32 - 1]);
+
+  // // timeNow
+  // uint8_t bufferTimeNow[schLen32]; // prepare a buffer for the data
+  // prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 4]);
+  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 3]);
+  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 2]);
+  // checkDigit ^= toHex(output, bufferTimeNow[schLen32 - 1]);
+
+  // params (A-Z)
+  size_t schLenParams = prefs.getBytesLength("params");
+  uint8_t bufferParams[schLenParams]; // prepare a buffer for the data
+  prefs.getBytes("params", bufferParams, schLenParams);
+  for (byte i = 2*NB_PARAMETERS_LINEAR_LOGS; i > 0; i--) {
+    checkDigit ^= toHex(output, bufferParams[schLenParams - i]);
+  }
+
+  // // eventNumber
+  // size_t schLen16 = prefs.getBytesLength("eventNumber");
+  // uint8_t bufferEventNumber[schLen16]; // prepare a buffer for the data
+  // prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
+  // checkDigit ^= toHex(output, bufferEventNumber[schLen16 - 2]);
+  // checkDigit ^= toHex(output, bufferEventNumber[schLen16 - 1]);
+
+  // // parameterValue
+  // uint8_t bufferParamaterValue[schLen16]; // prepare a buffer for the data
+  // prefs.getBytes("parameterValue", bufferParamaterValue, schLen16);
+  // checkDigit ^= toHex(output, bufferParamaterValue[schLen16 - 2]);
+  // checkDigit ^= toHex(output, bufferParamaterValue[schLen16 - 1]);
 
   prefs.end();
 
   checkDigit ^= toHex(output, getQualifier());
   toHex(output, checkDigit);
   output->println("");
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
+
   return entryN;
 }
 
@@ -360,7 +414,7 @@ void loadLastEntryToParameters() {
   /*****************************************************************************
     Read and print parameters
   *****************************************************************************/
-  // NextEntryID
+  // params
   size_t schLen = prefs.getBytesLength("params");
   uint8_t bufferParams[schLen]; // prepare a buffer for the data
   prefs.getBytes("params", bufferParams, schLen);
