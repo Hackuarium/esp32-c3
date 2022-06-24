@@ -610,6 +610,8 @@ void readFlash(Print* output, long firstRecord) {
    We will check when we have a change to FF at the ID
 */
 
+// NOT IMPLEMENTED
+
 void debugFlash(Print* output) {
   output->print(F("Debug changes"));
   byte isFF = 2;
