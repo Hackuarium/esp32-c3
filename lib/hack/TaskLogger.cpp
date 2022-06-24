@@ -45,7 +45,15 @@ typedef struct {
   int16_t eventNumber;
   int16_t parameterValue;
   uint16_t params[NB_PARAMETERS_LINEAR_LOGS];
-} sLogger;
+} sLogger_t;
+
+// Define structure to test
+typedef struct {
+  uint8_t varA;
+  uint8_t varB;
+  uint8_t varC;
+  uint8_t varD;
+} sTest_t;
 
 // Define structures with uint8_t vars to store data into NVS like Bytes
 typedef struct {
@@ -53,29 +61,29 @@ typedef struct {
   uint8_t p1;
   uint8_t p2;
   uint8_t p3;
-} sNextEntryID;
+} sNextEntryID_t;
 
 typedef struct {
   uint8_t p0;
   uint8_t p1;
   uint8_t p2;
   uint8_t p3;
-} sTimeNow;
+} sTimeNow_t;
 
 typedef struct {
   uint8_t p0[NB_PARAMETERS_LINEAR_LOGS];
   uint8_t p1[NB_PARAMETERS_LINEAR_LOGS];
-} sParams;
+} sParams_t;
 
 typedef struct {
   uint8_t p0;
   uint8_t p1;
-} sEventNumber;
+} sEventNumber_t;
 
 typedef struct {
   uint8_t p0;
   uint8_t p1;
-} sParameterValue;
+} sParameterValue_t;
 
 
 
@@ -114,17 +122,17 @@ typedef struct {
 
 #define MAX_MULTI_LOG 64  // Allows to display long log on serial
 
-sLogger *pLogs = (sLogger  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(sLogger));
+sLogger_t *pLogs = (sLogger_t  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(sLogger_t));
 
-sNextEntryID *pLogsNextEntryID = (sNextEntryID *)calloc(1, sizeof(sNextEntryID));
+sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(1, sizeof(sNextEntryID_t));
 
-sTimeNow *pLogsTimeNow = (sTimeNow *)calloc(1, sizeof(sTimeNow));
+sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc(1, sizeof(sTimeNow_t));
 
-sEventNumber *pLogsEventNumber = (sEventNumber *)calloc(1, sizeof(sEventNumber));
+sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc(1, sizeof(sEventNumber_t));
 
-sParameterValue *pLogsParameterValue = (sParameterValue *)calloc(1, sizeof(sParameterValue));
+sParameterValue_t *pLogsParameterValue = (sParameterValue_t *)calloc(1, sizeof(sParameterValue_t));
 
-sParams *pLogsParams = (sParams *)calloc(1, sizeof(sParams));
+sParams_t *pLogsParams = (sParams_t *)calloc(1, sizeof(sParams_t));
 
 
 uint32_t nextEntryID = 0;
@@ -160,15 +168,15 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   /*****************************************************************************
     Reallocating memory to store flash variables
   *****************************************************************************/
-  pLogsNextEntryID = (sNextEntryID *)realloc(pLogsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID));
+  pLogsNextEntryID = (sNextEntryID_t *)realloc(pLogsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID_t));
 
-  pLogsTimeNow = (sTimeNow *)realloc(pLogsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow));
+  pLogsTimeNow = (sTimeNow_t *)realloc(pLogsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow_t));
 
-  pLogsParams = (sParams *)realloc(pLogsParams, (nextEntryID + 1)*sizeof(sParams));
+  pLogsParams = (sParams_t *)realloc(pLogsParams, (nextEntryID + 1)*sizeof(sParams_t));
 
-  pLogsEventNumber = (sEventNumber *)realloc(pLogsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber));
+  pLogsEventNumber = (sEventNumber_t *)realloc(pLogsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber_t));
 
-  pLogsParameterValue = (sParameterValue *)realloc(pLogsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue));
+  pLogsParameterValue = (sParameterValue_t *)realloc(pLogsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue_t));
 
   /*
    * Enter Critical Zone
@@ -199,19 +207,19 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   // Read values
   prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
-  pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+  pLogsNextEntryID = (sNextEntryID_t *)bufferNextEntryID;
 
   prefs.getBytes("timeNow", bufferTimeNow, schLen32);
-  pLogsTimeNow = (sTimeNow *)bufferTimeNow;
+  pLogsTimeNow = (sTimeNow_t *)bufferTimeNow;
 
   prefs.getBytes("params", bufferParams, schLenParams);
-  pLogsParams = (sParams *)bufferParams;
+  pLogsParams = (sParams_t *)bufferParams;
 
   prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
-  pLogsEventNumber = (sEventNumber *)bufferEventNumber;
+  pLogsEventNumber = (sEventNumber_t *)bufferEventNumber;
 
   prefs.getBytes("parameterValue", bufferParameterValue, schLen16);
-  pLogsParameterValue = (sParameterValue *)bufferParameterValue;
+  pLogsParameterValue = (sParameterValue_t *)bufferParameterValue;
 
   /*****************************************************************************
     Store new values
@@ -250,19 +258,19 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     Writing Sequence
   *****************************************************************************/
   // nextEntryID
-  size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID));
+  size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID_t));
 
   // timeNow
-  size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + 1)*sizeof(sTimeNow));
+  size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + 1)*sizeof(sTimeNow_t));
 
   // params (A-Z)
-  size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams));
+  size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams_t));
 
   // eventNumber
-  size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + 1)*sizeof(sEventNumber));
+  size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + 1)*sizeof(sEventNumber_t));
 
   // parameterValue
-  size_t lenParameterValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + 1)*sizeof(sParameterValue));
+  size_t lenParameterValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + 1)*sizeof(sParameterValue_t));
 
   prefs.end();  // Finish the writing process
 
@@ -285,15 +293,15 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   *****************************************************************************/
   bool isLogValid = true;
 
-  if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID))
+  if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID_t))
     isLogValid = false;
-  if (lenTimeNow != (schLen32 + 1)*sizeof(sTimeNow))
+  if (lenTimeNow != (schLen32 + 1)*sizeof(sTimeNow_t))
     isLogValid = false;
-  if (lenParams != (schLenParams + 1)*sizeof(sParams))
+  if (lenParams != (schLenParams + 1)*sizeof(sParams_t))
     isLogValid = false;
-  if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber))
+  if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber_t))
     isLogValid = false;
-  if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue))
+  if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue_t))
     isLogValid = false;
 
   if (isLogValid) {
@@ -346,7 +354,7 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
     Read and print parameters
   *****************************************************************************/
   // nextEntryID
-  uint32_t index32 = entryN * sizeof(sNextEntryID);
+  uint32_t index32 = entryN * sizeof(sNextEntryID_t);
   size_t schLen32 = prefs.getBytesLength("nextEntryID");
   uint8_t bufferNextEntryID[schLen32]; // prepare a buffer for the data
   prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
@@ -368,12 +376,12 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
   size_t schLenParams = prefs.getBytesLength("params");
   uint8_t bufferParams[schLenParams]; // prepare a buffer for the data
   prefs.getBytes("params", bufferParams, schLenParams);
-  for (byte i = entryN*sizeof(sParams); i < schLenParams; i++) {
+  for (byte i = entryN*sizeof(sParams_t); i < schLenParams; i++) {
     checkDigit ^= toHex(output, bufferParams[i]);
   }
 
   // eventNumber
-  uint32_t index16 = entryN * sizeof(sEventNumber);
+  uint32_t index16 = entryN * sizeof(sEventNumber_t);
   size_t schLen16 = prefs.getBytesLength("eventNumber");
   uint8_t bufferEventNumber[schLen16]; // prepare a buffer for the data
   prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
@@ -453,7 +461,7 @@ void recoverLastEntryN() {
   // timeNow
   prefs.getBytes("timeNow", bufferTimeNow, schLen32);
 
-  // pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+  // pLogsNextEntryID = (sNextEntryID_t *)bufferNextEntryID;
 
   ID_temp = (((uint32_t)bufferNextEntryID[schLen32 - 4] << 24) & 0xFF000000) | (((uint32_t)bufferNextEntryID[schLen32 - 3] << 16) & 0x00FF0000) | (((uint32_t)bufferNextEntryID[schLen32 - 2] << 8) & 0x0000FF00) | (((uint32_t)bufferNextEntryID[schLen32 - 1] << 0) & 0x000000FF);
 
@@ -473,51 +481,75 @@ void printLastLog(Print* output) {
 }
 
 void formatFlash(Print* output) {
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+
   prefs.begin("logger");
   // Remove all preferences under the opened namespace
   if(prefs.clear()) {
+    nextEntryID = 0;
     output->println(F("OK"));
   }
   else {
     output->println(F("Format flash ERROR!"));
   }
-  nextEntryID = 0;
+
   prefs.end();
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
 }
 
 void testFlash(Print* output) {
   output->println(F("W/R / validate"));
-  output->println(F("You need to format after test lf1234"));
-  for (int i = 0; i < ADDRESS_MAX / SECTOR_SIZE; i++) {
-    uint32_t sectorFlash = i * SECTOR_SIZE;
-    // sst.flashSectorErase(sectorFlash);
-    for (byte j = 0; j < SECTOR_SIZE / 64; j++) {
-      long address = (long)i * SECTOR_SIZE + (long)j * 64;
-      // sst.flashWriteInit(address);
-      byte result = 0;
-      for (byte k = 0; k < 64; k++) {
-        result ^= (k + 13);
-        // sst.flashWriteNextInt8(k + 13);
-      }
-      // sst.flashWriteFinish();
-      // sst.flashReadInit(address);
-      for (byte k = 0; k < 64; k++) {
-        // result ^= sst.flashReadNextInt8();
-      }
-      // sst.flashReadFinish();
-      if (result == 0) {
-        if (j == 0 && i % 4 == 0) {
-          output->print(".");
-        }
-        if (j == 0 && i % 256 == 255) {
-          output->println("");
-        }
-      } else {
-        output->print(F("Failed: "));
-        output->println(address);
-      }
-    }
+  // output->println(F("You need to format after test lf1234"));
+
+  sTest_t *pTest = (sTest_t  *)calloc(3, sizeof(sTest_t));
+
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+
+  prefs.begin("test"); // use "test" namespace
+  uint8_t content[] = {9, 30, 235, 255, 20, 15, 0, 1}; // two entries
+  prefs.putBytes("test_A", content, sizeof(content));
+  size_t schLen = prefs.getBytesLength("test_A");
+  char buffer[schLen]; // prepare a buffer for the data
+  prefs.getBytes("test_A", buffer, schLen);
+  if (schLen % sizeof(sTest_t)) { // simple check that data fits
+    log_e("Data is not correct size!");
+    output->println(F("Data is not correct size!"));
+    return;
   }
+  pTest = (sTest_t *) buffer; // cast the bytes into a struct ptr
+  output->printf("%02d:%02d %d/%d\n", 
+    pTest[1].varA, pTest[1].varB,
+    pTest[1].varC, pTest[1].varD);
+  pTest[2] = {8, 30, 20, 21}; // add a third entry
+  // force the struct array into a byte array
+  prefs.putBytes("test_A", pTest, 3*sizeof(sTest_t)); 
+  schLen = prefs.getBytesLength("test_A");
+  char buffer2[schLen];
+  prefs.getBytes("test_A", buffer2, schLen);
+  for (int x = 0; x < schLen; x++) output->printf("%02X ", buffer2[x]);
+  output->println(); 
+
+  prefs.clear();
+  prefs.remove("test_A");
+
+  prefs.end();
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
 }
 
 void readFlash(Print* output, long firstRecord) {
