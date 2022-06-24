@@ -420,6 +420,12 @@ uint32_t printLogN(Print* output, uint32_t entryN) {
 // }
 
 void loadLastEntryToParameters() {
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+
   prefs.begin("logger");
 
   /*****************************************************************************
@@ -430,10 +436,16 @@ void loadLastEntryToParameters() {
   uint8_t bufferParams[schLen]; // prepare a buffer for the data
   prefs.getBytes("params", bufferParams, schLen);
   prefs.end();
+
   for (uint16_t i = (schLen - 2*NB_PARAMETERS_LINEAR_LOGS); i < schLen  + NB_PARAMETERS_LINEAR_LOGS; i+2) {
     uint16_t parameter = (((uint16_t)bufferParams[i] << 8) && 0xFF00) || ((uint16_t)bufferParams[i + 1]);
     setParameter(i, parameter);
   }
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
 }
 
 /*****************************************************************************
@@ -445,6 +457,12 @@ void recoverLastEntryN() {
   uint32_t Time_temp = 0;
   uint32_t addressEntryN = ADDRESS_BEG;
   bool found = false;
+
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
 
   prefs.begin("logger");
   size_t schLen32 = prefs.getBytesLength("nextEntryID");
@@ -461,7 +479,12 @@ void recoverLastEntryN() {
   // timeNow
   prefs.getBytes("timeNow", bufferTimeNow, schLen32);
 
-  // pLogsNextEntryID = (sNextEntryID_t *)bufferNextEntryID;
+  prefs.end();
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
 
   ID_temp = (((uint32_t)bufferNextEntryID[schLen32 - 4] << 24) & 0xFF000000) | (((uint32_t)bufferNextEntryID[schLen32 - 3] << 16) & 0x00FF0000) | (((uint32_t)bufferNextEntryID[schLen32 - 2] << 8) & 0x0000FF00) | (((uint32_t)bufferNextEntryID[schLen32 - 1] << 0) & 0x000000FF);
 
