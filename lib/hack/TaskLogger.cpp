@@ -439,30 +439,29 @@ void recoverLastEntryN() {
   bool found = false;
 
   prefs.begin("logger");
-  size_t schLen1 = prefs.getBytesLength("nextEntryID");
-  uint8_t bufferNextEntryID[schLen1];
+  size_t schLen32 = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen32];
 
-  size_t schLen2 = prefs.getBytesLength("timeNow");
-  char bufferTimeNow[schLen2];
+  uint8_t bufferTimeNow[schLen32];
 
-  // Read values
-  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen1);
-  pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
+  /*****************************************************************************
+    Read values
+  *****************************************************************************/
+  // nextEntryID
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
 
-  ID_temp = (((uint32_t)bufferNextEntryID[0] << 24) && 0xFF000000) || (((uint32_t)bufferNextEntryID[1] << 16) && 0x00FF0000) || (((uint32_t)bufferNextEntryID[2] << 8) && 0x0000FF00) || (((uint32_t)bufferNextEntryID[3] << 24) && 0x000000FF);
+  // timeNow
+  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
 
-  prefs.getBytes("timeNow", bufferTimeNow, schLen2);
-  pLogsTimeNow = (sTimeNow *)bufferTimeNow;
+  // pLogsNextEntryID = (sNextEntryID *)bufferNextEntryID;
 
-  Time_temp = (((uint32_t)bufferTimeNow[0] << 24) && 0xFF000000) || (((uint32_t)bufferTimeNow[1] << 16) && 0x00FF0000) || (((uint32_t)bufferTimeNow[2] << 8) && 0x0000FF00) || (((uint32_t)bufferTimeNow[3] << 24) && 0x000000FF);
+  ID_temp = (((uint32_t)bufferNextEntryID[schLen32 - 4] << 24) & 0xFF000000) | (((uint32_t)bufferNextEntryID[schLen32 - 3] << 16) & 0x00FF0000) | (((uint32_t)bufferNextEntryID[schLen32 - 2] << 8) & 0x0000FF00) | (((uint32_t)bufferNextEntryID[schLen32 - 1] << 0) & 0x000000FF);
 
+  Time_temp = (((uint32_t)bufferTimeNow[0] << 24) & 0xFF000000) | (((uint32_t)bufferTimeNow[1] << 16) & 0x00FF0000) | (((uint32_t)bufferTimeNow[2] << 8) & 0x0000FF00) | (((uint32_t)bufferTimeNow[3] << 24) & 0x000000FF);
 
-  // Test if first memory slot contains any information
-  if ((ID_temp == 0xFFFFFFFF) || (ID_temp < nextEntryID)) {
-    return;
-  }
-
-  addressEntryN += ENTRY_SIZE_LINEAR_LOGS;
+  /*****************************************************************************
+    Store values
+  *****************************************************************************/
   nextEntryID = ID_temp + 1;  // this will be the correct value in case of break
   setTime(Time_temp);
 
