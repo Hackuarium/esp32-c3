@@ -465,7 +465,7 @@ void recoverLastEntryN() {
 
   ID_temp = (((uint32_t)bufferNextEntryID[schLen32 - 4] << 24) & 0xFF000000) | (((uint32_t)bufferNextEntryID[schLen32 - 3] << 16) & 0x00FF0000) | (((uint32_t)bufferNextEntryID[schLen32 - 2] << 8) & 0x0000FF00) | (((uint32_t)bufferNextEntryID[schLen32 - 1] << 0) & 0x000000FF);
 
-  Time_temp = (((uint32_t)bufferTimeNow[0] << 24) & 0xFF000000) | (((uint32_t)bufferTimeNow[1] << 16) & 0x00FF0000) | (((uint32_t)bufferTimeNow[2] << 8) & 0x0000FF00) | (((uint32_t)bufferTimeNow[3] << 24) & 0x000000FF);
+  Time_temp = (((uint32_t)bufferTimeNow[schLen32 - 4] << 24) & 0xFF000000) | (((uint32_t)bufferTimeNow[schLen32 - 3] << 16) & 0x00FF0000) | (((uint32_t)bufferTimeNow[schLen32 - 2] << 8) & 0x0000FF00) | (((uint32_t)bufferTimeNow[schLen32 - 1] << 24) & 0x000000FF);
 
   /*****************************************************************************
     Store values
@@ -554,21 +554,56 @@ void testFlash(Print* output) {
 
 void readFlash(Print* output, long firstRecord) {
   output->println(F("Index / Address / ID / Epoch"));
-  for (int i = firstRecord; i < ADDRESS_MAX / SECTOR_SIZE; i++) {
+
+  /*
+   * Enter Critical Zone
+   */
+  portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&myMutex);
+
+  prefs.begin("logger");
+  size_t schLen32 = prefs.getBytesLength("nextEntryID");
+  uint8_t bufferNextEntryID[schLen32];
+
+  uint8_t bufferTimeNow[schLen32];
+
+  /*****************************************************************************
+    Read values
+  *****************************************************************************/
+  // nextEntryID
+  prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
+
+  // timeNow
+  prefs.getBytes("timeNow", bufferTimeNow, schLen32);
+
+  prefs.end();
+
+  /*
+   * Exit Critical Zone
+   */
+  taskEXIT_CRITICAL(&myMutex);
+
+  uint32_t index = 0;
+  uint32_t ID_temp = 0;
+  uint32_t Time_temp = 0;
+
+  for (int i = firstRecord; i < schLen32; i+4) {
     if (i == (firstRecord + 256))
       break;
-    long address = findAddressOfEntryN(i);
-    // sst.flashReadInit(address);
-    output->print(i);
+    
+    ID_temp = (((uint32_t)bufferNextEntryID[i] << 24) & 0xFF000000) | (((uint32_t)bufferNextEntryID[i + 1] << 16) & 0x00FF0000) | (((uint32_t)bufferNextEntryID[i + 2] << 8) & 0x0000FF00) | (((uint32_t)bufferNextEntryID[i + 3] << 0) & 0x000000FF);
+
+    Time_temp = (((uint32_t)bufferTimeNow[i] << 24) & 0xFF000000) | (((uint32_t)bufferTimeNow[i + 1] << 16) & 0x00FF0000) | (((uint32_t)bufferTimeNow[i + 2] << 8) & 0x0000FF00) | (((uint32_t)bufferTimeNow[i + 3] << 24) & 0x000000FF);
+
+    output->print(index);
     output->print(" ");
-    output->print(address, HEX);
+    output->print(i, HEX);
     output->print(" ");
-    // output->print(sst.flashReadNextInt32(), HEX);
+    output->print(ID_temp, HEX);
     output->print(" ");
-    // output->print(sst.flashReadNextInt32(), HEX);
+    output->print(Time_temp, HEX);
     output->println("");
-    // sst.flashReadFinish();
-  }
+  }  
 }
 
 /*
