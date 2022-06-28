@@ -53,11 +53,11 @@ void TaskMQTT(void* pvParameters) {
 
   while (true) {
     while (WiFi.status() != WL_CONNECTED) {
-      vTaskDelay(5000);
+      vTaskDelay(1000);
     }
 
     while (true) {
-      vTaskDelay(20 * 1000);
+      vTaskDelay(5 * 1000);
       if (WiFi.status() != WL_CONNECTED) {
         break;
       }
@@ -79,7 +79,6 @@ void TaskMQTT(void* pvParameters) {
       StringStream stream((String&)mqttMessage);
       printResult("uc", &stream);
       mqttClient.publish(logPublishTopic, 1, true, &mqttMessage[0]);
-      vTaskDelay(40 * 1000);
     }
   }
 }
@@ -99,9 +98,9 @@ void sendCommandResultWithCommand(char* command) {
 }
 
 void onMqttPublish(uint16_t packetId) {
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+  // Serial.println("Publish acknowledged.");
+  // Serial.print("  packetId: ");
+  // Serial.println(packetId);
   setParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_PUBLISHED);
 }
 
@@ -150,8 +149,8 @@ void onMqttMessage(char* topic,
                    size_t len,
                    size_t index,
                    size_t total) {
-  if (false) {
-    Serial.println("Publish received.");
+  if (true) {
+    Serial.println("Message received.");
     Serial.print("  topic: ");
     Serial.println(topic);
     Serial.print("  len: ");
