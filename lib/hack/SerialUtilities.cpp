@@ -37,18 +37,28 @@ static void printFreeMemory(Print* output) {
   uint8_t nbTasks = uxTaskGetNumberOfTasks();
   output->println(nbTasks);
 
-  /*
-    for (uint8_t i=0; i<nbTasks; i++) {
-       output->println(uxTaskGetStackHighWaterMark(0));
-    }
-    */
+  output->println(xPortGetFreeHeapSize());
+  output->println(xPortGetMinimumEverFreeHeapSize());
+
+  for (uint8_t i = 0; i < nbTasks; i++) {
+  }
+
+  TaskHandle_t taskBlinkHandle = xTaskGetHandle("TaskBlink");
+  output->print("Task blink: ");
+  output->println(uxTaskGetStackHighWaterMark(taskBlinkHandle));
+  TaskHandle_t taskMqttHandle = xTaskGetHandle("TaskMQTT");
+  output->print("Task MQTT: ");
+  output->println(uxTaskGetStackHighWaterMark(taskMqttHandle));
+
+  //  vTaskList(buffer);
+
   /*
   vTaskList(ptrTaskList);
   output->println(F("Task  State   Prio    Stack    Num"));
   output->println(F("----------------------------------"));
   output->print(ptrTaskList);
+  //  output->println(uxTaskGetSystemState()),
   */
-  //  uxTaskGetSystemState();
 
   output->print(F("Free heap: "));
   output->println(ESP.getFreeHeap());
