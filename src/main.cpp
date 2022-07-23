@@ -13,6 +13,7 @@ void taskOneWire();
 void taskWifi();
 void taskOTA();
 void taskBatteryLevel();
+void taskInternalTemperature();
 void taskWire();
 
 void setup() {
@@ -25,6 +26,7 @@ void setup() {
   taskOTA();
   taskWifi();
   taskBatteryLevel();
+  taskInternalTemperature();
   taskMQTT();
   taskOneWire();
   taskNTPD();
