@@ -97,35 +97,24 @@ void printHelp(Print* output) {
 char ptrTaskList[600];
 
 static void printFreeMemory(Print* output) {
-  output->print(F("Number of tasks: "));
-  uint8_t nbTasks = uxTaskGetNumberOfTasks();
-  output->println(nbTasks);
+  output->printf("Number of tasks: %u\n", uxTaskGetNumberOfTasks());
 
-  output->println(xPortGetFreeHeapSize());
-  output->println(xPortGetMinimumEverFreeHeapSize());
+  uint32_t free = ESP.getFreeHeap() / 1024;
+  uint32_t total = ESP.getHeapSize() / 1024;
+  uint32_t used = total - free;
+  uint32_t min = ESP.getMinFreeHeap() / 1024;
 
-  for (uint8_t i = 0; i < nbTasks; i++) {
-  }
+  output->printf("Heap: %u KB free, %u KB used, (%u KB total)\n", free, used,
+                 total);
+  output->printf("Minimum free heap size during uptime was: %u KB\n", min);
 
+  output->println("Minimum free process stack space:");
   TaskHandle_t taskBlinkHandle = xTaskGetHandle("TaskBlink");
-  output->print("Task blink: ");
+  output->print("- blink: ");
   output->println(uxTaskGetStackHighWaterMark(taskBlinkHandle));
   TaskHandle_t taskMqttHandle = xTaskGetHandle("TaskMQTT");
-  output->print("Task MQTT: ");
+  output->print("- MQTT: ");
   output->println(uxTaskGetStackHighWaterMark(taskMqttHandle));
-
-  //  vTaskList(buffer);
-
-  /*
-  vTaskList(ptrTaskList);
-  output->println(F("Task  State   Prio    Stack    Num"));
-  output->println(F("----------------------------------"));
-  output->print(ptrTaskList);
-  //  output->println(uxTaskGetSystemState()),
-  */
-
-  output->print(F("Free heap: "));
-  output->println(ESP.getFreeHeap());
 }
 
 static void printInfo(Print* output) {
@@ -133,29 +122,30 @@ static void printInfo(Print* output) {
   esp_chip_info(&info);
 
   output->printf("ESP-IDF Version: %s\n", ESP.getSdkVersion());
-  printf("\n");
-  printf("Chip info:\n");
-  printf("\tModel: %s\n", ESP.getChipModel());
-  printf("\tRevison number: %d\n", ESP.getChipRevision());
-  printf("\tCores: %d\n", ESP.getChipCores());
-  printf("\tClock: %d MHz\n", ESP.getCpuFreqMHz());
-  printf("\tFeatures:%s%s%s%s%s\r\n",
-         info.features & CHIP_FEATURE_WIFI_BGN ? " 802.11bgn " : "",
-         info.features & CHIP_FEATURE_BLE ? " BLE " : "",
-         info.features & CHIP_FEATURE_BT ? " BT " : "",
-         info.features & CHIP_FEATURE_EMB_FLASH ? " Embedded-Flash "
-                                                : " External-Flash ",
-         info.features & CHIP_FEATURE_EMB_PSRAM ? " Embedded-PSRAM" : "");
+  output->printf("\n");
+  output->printf("Chip info:\n");
+  output->printf("- Model: %s\n", ESP.getChipModel());
+  output->printf("- Revision number: %d\n", ESP.getChipRevision());
+  output->printf("- Cores: %d\n", ESP.getChipCores());
+  output->printf("- Clock: %d MHz\n", ESP.getCpuFreqMHz());
+  output->printf(
+      "- Features:%s%s%s%s%s\r\n",
+      info.features & CHIP_FEATURE_WIFI_BGN ? " 802.11bgn " : "",
+      info.features & CHIP_FEATURE_BLE ? " BLE " : "",
+      info.features & CHIP_FEATURE_BT ? " BT " : "",
+      info.features & CHIP_FEATURE_EMB_FLASH ? " Embedded-Flash "
+                                             : " External-Flash ",
+      info.features & CHIP_FEATURE_EMB_PSRAM ? " Embedded-PSRAM" : "");
 
-  printf("EFuse MAC: %s\n", mac2String(ESP.getEfuseMac()).c_str());
+  output->printf("EFuse MAC: %s\n", mac2String(ESP.getEfuseMac()).c_str());
 
-  printf("Flash size: %d MB (mode: %s, speed: %d MHz)\n",
-         ESP.getFlashChipSize() / (1024 * 1024), getFlashModeStr(),
-         ESP.getFlashChipSpeed() / (1024 * 1024));
-  printf("PSRAM size: %d MB\n", ESP.getPsramSize() / (1024 * 1024));
+  output->printf("Flash size: %d MB (mode: %s, speed: %d MHz)\n",
+                 ESP.getFlashChipSize() / (1024 * 1024), getFlashModeStr(),
+                 ESP.getFlashChipSpeed() / (1024 * 1024));
+  output->printf("PSRAM size: %d MB\n", ESP.getPsramSize() / (1024 * 1024));
 
-  printf("Sketch size: %d KB\n", ESP.getSketchSize() / (1024));
-  printf("Sketch MD5: %s\n", ESP.getSketchMD5().c_str());
+  output->printf("Sketch size: %d KB\n", ESP.getSketchSize() / (1024));
+  output->printf("Sketch MD5: %s\n", ESP.getSketchMD5().c_str());
 }
 
 void processUtilitiesCommand(char command,
