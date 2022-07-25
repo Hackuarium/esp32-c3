@@ -24,7 +24,8 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_WEIGHT 14
 #define PARAM_WEIGHT_G 15
 
-#define PARAM_STATUS 21
+#define PARAM_UPTIME_H 20   // U
+#define PARAM_STATUS 21     // V
 #define PARAM_BATTERY 22    // W
 #define PARAM_CHARGING 23   // X
 #define PARAM_WIFI_RSSI 24  // Y
