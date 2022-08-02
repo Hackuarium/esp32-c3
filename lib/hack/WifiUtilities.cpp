@@ -6,6 +6,7 @@ char wifiTemp[40];
 void printWifiHelp(Print* output) {
   output->println(F("(wi) Wifi info"));
   output->println(F("(ws) Wifi SSID"));
+   output->println(F("(wu) Wifi Username"));
   output->println(F("(wp) Wifi password"));
   output->println(F("(wm) Wifi MDNS"));
   output->println(F("(wq) MQTT broker"));
@@ -24,6 +25,12 @@ void processWifiCommand(char command,
       output->println(getParameter(PARAM_WIFI_RSSI));
       output->print("SSID: ");
       getParameter("wifi.ssid", wifiTemp);
+      output->println(wifiTemp);
+      output->print("Username: ");
+      getParameter("wifi.username", wifiTemp);
+      output->println(wifiTemp);
+      output->print("Identity: ");
+      getParameter("wifi.identity", wifiTemp);
       output->println(wifiTemp);
       output->print("Password: ");
       getParameter("wifi.password", wifiTemp);
@@ -83,6 +90,14 @@ void processWifiCommand(char command,
         setParameter("wifi.ssid", paramValue);
         output->println(paramValue);
       }
+      break;
+        case 'u':
+     setParameter("wifi.username", paramValue);
+      output->println(paramValue);
+      break;
+       case 'id':
+     setParameter("wifi.identity", paramValue);
+      output->println(paramValue);
       break;
     default:
       printWifiHelp(output);
