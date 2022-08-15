@@ -4,12 +4,13 @@
 void deepSleep(int seconds);
 
 void taskBlink();
-void taskSi7021();
+//void taskSi7021();
 void taskSerial();
 void taskNTPD();
-void taskMQTT();
-void taskBluetooth();
-void taskOneWire();
+//void taskMQTT();
+//void taskBluetooth();
+//void taskOneWire();
+void taskDHT22();
 void taskWifi();
 void taskOTA();
 void taskBatteryLevel();
@@ -21,12 +22,14 @@ void setup() {
 
   setupParameters();
   taskSerial();
-  taskSi7021();
+ // taskSi7021();
   taskOTA();
   taskWifi();
   taskBatteryLevel();
-  taskMQTT();
-  taskOneWire();
+//  taskMQTT();
+//  taskOneWire();
+ taskDHT22();
+
   taskNTPD();
   taskWire();
   // taskBluetooth();
