@@ -2,6 +2,7 @@
 #include "./params.h"
 #include "esp_wpa2.h"
 
+
 char ssid[30];
 char password[30];
 // the wifi also requires username and password
@@ -29,10 +30,23 @@ void TaskWifi(void* pvParameters) {
   if (strlen(identity) == 0) {
     strcpy(identity, username);
   }
+  //parameter wifi type
+bool wifi_Enterprise_type = false;
+  // if identity and username not defined use domestic WPA2 to connect to wifi
+  if (strlen(identity) == 0 && strlen(username) == 0) {
+    Serial.println("Using domestic WPA2");
+    wifi_Enterprise_type = false;
+
+  }
+  // if identity and username defined use WPA2 Enterprise to connect to wifi
+  else {
     esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity, strlen(identity));
     esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username, strlen(username));
     esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password, strlen(password));
     esp_wifi_sta_wpa2_ent_enable();
+wifi_Enterprise_type = true;
+
+  }
   /**
     int counter = 0;
     // Wait for connection
@@ -56,9 +70,13 @@ void TaskWifi(void* pvParameters) {
       setParameter(PARAM_WIFI_RSSI, -1);
       Serial.println("WIFI not connected, trying to connect");
   
-
+if (wifi_Enterprise_type == true) {
+  WiFi.begin(ssid);
+}
+else {
+  WiFi.begin(ssid, password);
+}
   
-      WiFi.begin(ssid);
       // WiFi.reconnect();
       vTaskDelay(5000);
       if (WiFi.status() == WL_CONNECTED) {
