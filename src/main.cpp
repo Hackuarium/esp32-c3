@@ -7,13 +7,15 @@ void taskBlink();
 //void taskSi7021();
 void taskSerial();
 void taskNTPD();
-//void taskMQTT();
-//void taskBluetooth();
-//void taskOneWire();
 void taskDHT22();
+void taskMQTT();
+void taskBluetooth();
+void taskOneWire();
+void taskUptime();
 void taskWifi();
 void taskOTA();
 void taskBatteryLevel();
+void taskInternalTemperature();
 void taskWire();
 
 void setup() {
@@ -26,11 +28,13 @@ void setup() {
   taskOTA();
   taskWifi();
   taskBatteryLevel();
-//  taskMQTT();
-//  taskOneWire();
- taskDHT22();
-
+  taskDHT22();
+  taskMQTT();
+  taskOneWire();
   taskNTPD();
+  taskInternalTemperature();
+  taskBatteryLevel();
+  taskUptime();
   taskWire();
   // taskBluetooth();
   taskBlink();
