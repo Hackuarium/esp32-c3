@@ -59,9 +59,9 @@ int wireReadIntRegister(uint8_t address, uint8_t registerAddress) {
   return wireReadInt(address);
 }
 
-int wireCopyParameter(uint8_t address,
-                      uint8_t registerAddress,
-                      uint8_t parameterID) {
+void wireCopyParameter(uint8_t address,
+                       uint8_t registerAddress,
+                       uint8_t parameterID) {
   setParameter(parameterID, wireReadIntRegister(address, registerAddress));
 }
 

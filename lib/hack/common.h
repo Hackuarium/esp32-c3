@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define LED_BUILTIN 7
+#define LED_ON_BOARD 7
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];

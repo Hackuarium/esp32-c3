@@ -3,12 +3,12 @@
 void TaskBlink(void* pvParameters) {
   (void)pvParameters;
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_ON_BOARD, OUTPUT);
 
   while (true) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(LED_ON_BOARD, HIGH);
     vTaskDelay(2);
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED_ON_BOARD, LOW);
     vTaskDelay(100);
   }
 }
