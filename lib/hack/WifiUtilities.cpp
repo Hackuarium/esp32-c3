@@ -1,3 +1,4 @@
+#include <WiFi.h>
 #include "./common.h"
 #include "./params.h"
 
@@ -6,8 +7,9 @@ char wifiTemp[40];
 void printWifiHelp(Print* output) {
   output->println(F("(wi) Wifi info"));
   output->println(F("(ws) Wifi SSID"));
-   output->println(F("(wu) Wifi Username"));
+  output->println(F("(wu) Wifi Username"));
   output->println(F("(wp) Wifi password"));
+  output->println(F("(wd) Wifi identify"));
   output->println(F("(wm) Wifi MDNS"));
   output->println(F("(wq) MQTT broker"));
   output->println(F("(wl) MQTT log publish topic"));
@@ -25,6 +27,8 @@ void processWifiCommand(char command,
       output->println(getParameter(PARAM_WIFI_RSSI));
       output->print("SSID: ");
       getParameter("wifi.ssid", wifiTemp);
+      output->print("IP address: ");
+      output->println(WiFi.localIP());
       output->println(wifiTemp);
       output->print("Username: ");
       getParameter("wifi.username", wifiTemp);
@@ -91,12 +95,12 @@ void processWifiCommand(char command,
         output->println(paramValue);
       }
       break;
-        case 'u':
-     setParameter("wifi.username", paramValue);
+    case 'u':
+      setParameter("wifi.username", paramValue);
       output->println(paramValue);
       break;
-       case 'id':
-     setParameter("wifi.identity", paramValue);
+    case 'd':
+      setParameter("wifi.identity", paramValue);
       output->println(paramValue);
       break;
     default:
