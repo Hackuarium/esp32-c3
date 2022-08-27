@@ -24,7 +24,7 @@ void processWifiCommand(char command,
     case 'i':
       output->println("Wifi information");
       output->print("RSSI: ");
-      output->println(getParameter(PARAM_WIFI_RSSI));
+      output->println(WiFi.RSSI());
       output->print("SSID: ");
       getParameter("wifi.ssid", wifiTemp);
       output->print("IP address: ");
