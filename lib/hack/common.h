@@ -2,7 +2,7 @@
 
 #define LED_BUILTIN 7
 
-#define MAX_PARAM 52
+#define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_TEMPERATURE 0
@@ -58,7 +58,42 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_GATE8_IN 50
 #define PARAM_GATE8_OUT 51
 
-// minimal 300s to prevent desctruction of EEPROM. Should last 22 years
-// with 300s
+#define PARAM_BRIGHTNESS 52
+#define PARAM_INTENSITY 53
+#define PARAM_SPEED 54
+#define PARAM_CURRENT_PROGRAM 55
+#define PARAM_COLOR_MODEL 56
+#define PARAM_COLOR_CHANGE_SPEED 57
+#define PARAM_BACKGROUND_BRIGHTNESS 58
+#define PARAM_NB_ROWS 59
+#define PARAM_NB_COLUMNS 60
+#define PARAM_LAYOUT_MODEL 61
+#define PARAM_COLOR_LED_MODEL 62
+#define PARAM_COLOR_DECREASE_SPEED 63
+#define PARAM_DIRECTION 64
+#define PARAM_LED_RED 65
+#define PARAM_LED_GREEN 66
+#define PARAM_LED_BLUE 67
+#define PARAM_COMMAND_1 68
+#define PARAM_COMMAND_2 69
+#define PARAM_COMMAND_3 70
+#define PARAM_COMMAND_4 71
+#define PARAM_COMMAND_5 72
+#define PARAM_COMMAND_6 73
+#define PARAM_COMMAND_7 74
+#define PARAM_COMMAND_8 75
+#define PARAM_NB_PLAYERS 76
+#define PARAM_FCT_COLOR_MODEL 77
+#define PARAM_WIN_LIMIT 78
+#define PARAM_SUNRISE_OFFSET 79
+#define PARAM_SUNSET_OFFSET 80
+// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+#define PARAM_ACTION_1 81
+#define PARAM_ACTION_2 82
+#define PARAM_ACTION_3 83
+#define PARAM_ACTION_4 84
+#define PARAM_SCHEDULE 85
+
+#define MAX_LED 256
 
 #define THR_WIRE_MASTER 1

@@ -112,6 +112,9 @@ static void printFreeMemory(Print* output) {
   TaskHandle_t taskBlinkHandle = xTaskGetHandle("TaskBlink");
   output->print("- blink: ");
   output->println(uxTaskGetStackHighWaterMark(taskBlinkHandle));
+  TaskHandle_t taskPixelsHandle = xTaskGetHandle("TaskPixels");
+  output->print("- Pixels: ");
+  output->println(uxTaskGetStackHighWaterMark(taskPixelsHandle));
   TaskHandle_t taskMqttHandle = xTaskGetHandle("TaskMQTT");
   output->print("- MQTT: ");
   output->println(uxTaskGetStackHighWaterMark(taskMqttHandle));

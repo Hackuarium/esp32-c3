@@ -55,16 +55,16 @@ CRGB getBackgroundColor() {
   if (brightness < 1) {
     return CRGB(0, 0, 0);
   }
-  return CRGB(getParameter(PARAM_RED) * brightness / 255,
-              getParameter(PARAM_GREEN) * brightness / 255,
-              getParameter(PARAM_BLUE) * brightness / 255);
+  return CRGB(getParameter(PARAM_LED_RED) * brightness / 255,
+              getParameter(PARAM_LED_GREEN) * brightness / 255,
+              getParameter(PARAM_LED_BLUE) * brightness / 255);
 }
 
 CRGB getColor(uint8_t colorModel, uint8_t hsbChangeSpeed, uint8_t brightness) {
   if (colorModel == COLOR_FIXED) {
-    return CRGB(getParameter(PARAM_RED) * brightness / 255,
-                getParameter(PARAM_GREEN) * brightness / 255,
-                getParameter(PARAM_BLUE) * brightness / 255);
+    return CRGB(getParameter(PARAM_LED_RED) * brightness / 255,
+                getParameter(PARAM_LED_GREEN) * brightness / 255,
+                getParameter(PARAM_LED_BLUE) * brightness / 255);
   }
   if (colorModel == COLOR_ORANGE) {  // moving red orange yellow
     hsvStatus = (hsvStatus + hsbChangeSpeed) % 120;

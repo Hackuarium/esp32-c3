@@ -1,14 +1,16 @@
-#include "./common.h"
+t pu #include "./common.h"
 #include "./params.h"
 
-void deepSleep(int seconds);
+    void
+    deepSleep(int seconds);
 
 void taskBlink();
-//void taskSi7021();
+void taskSi7021();
 void taskSerial();
 void taskNTPD();
 void taskDHT22();
 void taskMQTT();
+void taskPixels();
 void taskBluetooth();
 void taskOneWire();
 void taskUptime();
@@ -23,19 +25,18 @@ void setup() {
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();
+  taskPixels();
   taskSerial();
- // taskSi7021();
+  taskSi7021();
   taskOTA();
   taskWifi();
-  taskBatteryLevel();
-  taskDHT22();
-  taskMQTT();
-  taskOneWire();
-  taskNTPD();
-  taskInternalTemperature();
-  taskBatteryLevel();
-  taskUptime();
-  taskWire();
+  // taskMQTT();
+  // taskOneWire();
+  //  taskNTPD();
+  //  taskInternalTemperature();
+  //  taskBatteryLevel();
+  // taskUptime();
+  // taskWire();
   // taskBluetooth();
   taskBlink();
 
