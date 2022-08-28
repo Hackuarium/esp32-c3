@@ -1,4 +1,4 @@
-#include "FastLED.h"
+#include <Adafruit_NeoPixel.h>
 #include "common.h"
 #include "font53.h"
 #include "params.h"
@@ -13,17 +13,17 @@
 #define SNOW_MASK 0b0000000000000010
 #define LIGHTNING_MASK 0b0000000000100000
 
-void sunriseDisplay(CRGB pixels[]);
-void currentDisplay(CRGB pixels[]);
-void fullMeteoDisplay(CRGB pixels[]);
-void compact(CRGB pixels[]);
+void sunriseDisplay(Adafruit_NeoPixel& pixels);
+void currentDisplay(Adafruit_NeoPixel& pixels);
+void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
+void compact(Adafruit_NeoPixel& pixels);
 
 char* hourMinute = new char[6];
 
-void updateMeteo(CRGB pixels[]) {
+void updateMeteo(Adafruit_NeoPixel& pixels) {
   // Display the time
 
-  blank(pixels);
+  pixels.clear();
 
   if (getParameter(PARAM_NB_COLUMNS) < 16) {
     compact(pixels);
@@ -44,18 +44,20 @@ void updateMeteo(CRGB pixels[]) {
   }
 }
 
-void currentDisplay(CRGB pixels[]) {
+void currentDisplay(Adafruit_NeoPixel& pixels) {
   getDayMonth(hourMinute);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   // day
   for (uint8_t i = 0; i < 2; ++i) {
     uint8_t ascii = (uint8_t)hourMinute[i];
-    paintSymbol(pixels, ascii, i * 4, 0, CRGB(0xe2, 0xd8, 0x10));
+    paintSymbol(pixels, ascii, i * 4, 0,
+                Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
   }
   // month
   for (uint8_t i = 3; i < 5; ++i) {
     uint8_t ascii = (uint8_t)hourMinute[i];
-    paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0, CRGB(0xe2, 0xd8, 0x10));
+    paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0,
+                Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
   }
 
   float_t* currentWeather = getCurrentWeather();
@@ -70,19 +72,21 @@ void currentDisplay(CRGB pixels[]) {
 
   for (uint8_t i = 0; i < temperature.length(); ++i) {
     uint8_t ascii = (uint8_t)temperature.charAt(i);
-    paintSymbol(pixels, ascii, i * 4, 6, CRGB(0xd9, 0x13, 0x8a));
+    paintSymbol(pixels, ascii, i * 4, 6,
+                Adafruit_NeoPixel::Color(0xd9, 0x13, 0x8a));
   }
 
   int intHumidity = round(currentWeather[1]);
   String humidity = String(intHumidity) + "%";
   for (uint8_t i = 0; i < humidity.length(); ++i) {
     uint8_t ascii = (uint8_t)humidity.charAt(i);
-    paintSymbol(pixels, ascii, 5 + i * 4, 11, CRGB(0x12, 0xa4, 0xd9));
+    paintSymbol(pixels, ascii, 5 + i * 4, 11,
+                Adafruit_NeoPixel::Color(0x12, 0xa4, 0xd9));
   }
 }
 
-void sunriseDisplay(CRGB pixels[]) {
-  CRGB color = CRGB(255, 127, 0);
+void sunriseDisplay(Adafruit_NeoPixel& pixels) {
+  uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
   {
     char* sunrise = getSunrise();
     // hours
@@ -111,7 +115,7 @@ void sunriseDisplay(CRGB pixels[]) {
   }
 }
 
-void fullMeteoDisplay(CRGB pixels[]) {
+void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   // what about the current forecast
   float_t* forecast = getForecast();
   getHourMinute(hourMinute);
@@ -160,10 +164,10 @@ void fullMeteoDisplay(CRGB pixels[]) {
       for (uint8_t j = 0; j <= temperatureIntensity; j++) {
         if (temperature >= 0) {
           uint16_t led = getLedIndex(11 - j, i / 4 + 7);
-          pixels[led] = CRGB(255 * dim, 0, 0);
+          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255 * dim, 0, 0));
         } else {
           uint16_t led = getLedIndex(12 + j, i / 4 + 7);
-          pixels[led] = CRGB(0, 0, 255 * dim);
+          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255 * dim));
         }
       }
     } else {  // 10 degree only positive
@@ -171,14 +175,16 @@ void fullMeteoDisplay(CRGB pixels[]) {
       uint8_t twos = ((uint8_t)temperature - tens * 10) / 2;
       for (uint8_t j = 0; j < tens; j++) {
         uint16_t led = getLedIndex(15 - j, i / 4 + 7);
-        pixels[led] = CRGB(255 * dim, 0, 255 * dim);
+        pixels.setPixelColor(led,
+                             Adafruit_NeoPixel::Color(255 * dim, 0, 255 * dim));
       }
       for (uint8_t j = 0; j < twos; j++) {
         uint16_t led = getLedIndex(15 - j - tens, i / 4 + 7);
         if (j < 5) {
-          pixels[led] = CRGB(255 * dim, 0, 0);
+          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255 * dim, 0, 0));
         } else {
-          pixels[led] = CRGB(255 * dim, 63 * dim, 63 * dim);
+          pixels.setPixelColor(
+              led, Adafruit_NeoPixel::Color(255 * dim, 63 * dim, 63 * dim));
         }
       }
     }
@@ -188,9 +194,9 @@ void fullMeteoDisplay(CRGB pixels[]) {
         for (uint8_t j = 0; j <= temperatureIntensity; j++) {
           uint16_t led = getLedIndex(7 - j+4, i / 4 +7);
           if (temperature >= 0) {
-               pixels[led]=CRGB(255,0,0);
+               pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255,0,0));
           } else {
-               pixels[led]=CRGB(0,0,255);
+               pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0,0,255));
           }
         }
     */
@@ -203,15 +209,18 @@ void fullMeteoDisplay(CRGB pixels[]) {
     for (uint8_t j = 0; j < rainIntensity; j++) {
       if (weather & RAIN_MASK) {
         uint16_t led = getLedIndex(14 - j, i / 4 - 1);
-        pixels[led] = CRGB(0, 192 * dim, 255 * dim);
+        pixels.setPixelColor(led,
+                             Adafruit_NeoPixel::Color(0, 192 * dim, 255 * dim));
       }
       if (weather & SNOW_MASK && (!firstHalf || (!(weather & RAIN_MASK)))) {
         uint16_t led = getLedIndex(14 - j, i / 4 - 1);
-        pixels[led] = CRGB(255 * dim, 255 * dim, 255 * dim);
+        pixels.setPixelColor(
+            led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 255 * dim));
       }
       if ((weather & LIGHTNING_MASK) && firstTenth) {
         uint16_t led = getLedIndex(14 - j, i / 4 - 1);
-        pixels[led] = CRGB(255 * dim, 255 * dim, 0);
+        pixels.setPixelColor(led,
+                             Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));
       }
     }
 
@@ -219,17 +228,19 @@ void fullMeteoDisplay(CRGB pixels[]) {
 
     if (weather & SUN_MASK) {
       uint16_t led = getLedIndex(15, i / 4 - 1);
-      pixels[led] = CRGB(255 * dim, 140 * dim, 0);
+      pixels.setPixelColor(led,
+                           Adafruit_NeoPixel::Color(255 * dim, 140 * dim, 0));
     }
     if (((weather & (FOG_MASK | CLOUD_MASK)) && firstHalf) ||
         (weather & SUN_MASK) == 0) {
       uint16_t led = getLedIndex(15, i / 4 - 1);
-      pixels[led] = CRGB(127 * dim, 127 * dim, 127 * dim);
+      pixels.setPixelColor(
+          led, Adafruit_NeoPixel::Color(127 * dim, 127 * dim, 127 * dim));
     }
   }
 }
 
-void compact(CRGB pixels[]) {
+void compact(Adafruit_NeoPixel& pixels) {
   uint8_t slot = floor((getSeconds() % 20) / 5);
 
   if (false) {
@@ -238,9 +249,9 @@ void compact(CRGB pixels[]) {
     for (uint8_t i = 0; i < 16; i++) {
       uint16_t led = getLedIndex(6, i);
       if (i < seconds) {
-        pixels[led] = CRGB(255, 255, 255);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 255));
       } else {
-        pixels[led] = CRGB(0, 0, 0);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 0));
       }
     }
   }
@@ -287,40 +298,40 @@ void compact(CRGB pixels[]) {
       for (uint8_t j = 0; j <= temperatureIntensity; j++) {
         uint16_t led = getLedIndex(7 - j, i / 4 - 1);
         if (temperature >= 0) {
-          pixels[led] = CRGB(255, 0, 0);
+          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 0, 0));
         } else {
-          pixels[led] = CRGB(0, 0, 255);
+          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255));
         }
       }
     } else if (slot == 1) {  // RAIN
       int rainIntensity = rain < 0.1 ? 1 : floor(log10(rain) + 3);
       for (uint8_t j = 0; j < rainIntensity; j++) {
         uint16_t led = getLedIndex(7 - j, i / 4 - 1);
-        pixels[led] = CRGB(0, 255, 0);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 255, 0));
       }
     } else {  // GENERAL INFO
       bool firstHalf = (millis() % 1000) < 500;
       bool firstTenth = (millis() % 1000) < 100;
       if (weather & SUN_MASK) {
         uint16_t led = getLedIndex(7, i / 4 - 1);
-        pixels[led] = CRGB(255, 140, 0);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 140, 0));
       }
       if (((weather & (FOG_MASK | CLOUD_MASK)) && firstHalf) ||
           (weather & SUN_MASK) == 0) {
         uint16_t led = getLedIndex(7, i / 4 - 1);
-        pixels[led] = CRGB(127, 127, 127);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(127, 127, 127));
       }
       if (weather & RAIN_MASK && firstHalf) {
         uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels[led] = CRGB(0, 0, 255);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255));
       }
       if (weather & SNOW_MASK && !firstHalf) {
         uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels[led] = CRGB(255, 255, 255);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 255));
       }
       if ((weather & LIGHTNING_MASK) && firstTenth) {
         uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels[led] = CRGB(255, 255, 0);
+        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 0));
       }
     }
   }

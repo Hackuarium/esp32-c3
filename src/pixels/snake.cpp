@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
@@ -20,7 +20,7 @@ struct player_t {
   uint8_t id;
   position_t head;
   uint8_t length;
-  CRGB color;
+  uint32_t color;
   uint8_t directionParameter;
   uint8_t from;
   uint8_t to;
@@ -31,14 +31,14 @@ struct player_t {
 
 player_t players[4];
 
-void updatePlayers(CRGB pixels[], player_t players[]);
-void updateFood(CRGB pixels[]);
+void updatePlayers(Adafruit_NeoPixel& pixels, player_t players[]);
+void updateFood(Adafruit_NeoPixel& pixels);
 bool isEndGame(player_t players[]);
-void resetSnake(CRGB pixels[]);
-void displayResults(CRGB pixels[], player_t players[]);
-void convertToFood(CRGB pixels[], uint8_t id);
+void resetSnake(Adafruit_NeoPixel& pixels);
+void displayResults(Adafruit_NeoPixel& pixels, player_t players[]);
+void convertToFood(Adafruit_NeoPixel& pixels, uint8_t id);
 
-void updateSnake(CRGB pixels[]) {
+void updateSnake(Adafruit_NeoPixel& pixels) {
   snakeCounter++;
 
   if (getParameter(PARAM_NB_PLAYERS) != previousNumberPlayers) {
@@ -64,21 +64,23 @@ void updateSnake(CRGB pixels[]) {
   }
 }
 
-void resetSnake(CRGB pixels[]) {
-  blank(pixels);
+void resetSnake(Adafruit_NeoPixel& pixels) {
+  pixels.clear();
 
   if (getParameter(PARAM_NB_PLAYERS) < 1 ||
       getParameter(PARAM_NB_PLAYERS) > 4) {
     setParameter(PARAM_NB_PLAYERS, 4);
   }
 
-  players[0] = {1, {0, 0}, 1, CRGB(255, 0, 0), PARAM_COMMAND_1, 0, 0, {0}, 0};
+  players[0] = {
+      1, {0, 0}, 1, Adafruit_NeoPixel::Color(255, 0, 0), PARAM_COMMAND_1, 0,
+      0, {0},    0};
   players[0].leds[0] = getLedIndex(0, 0);
   players[1] = {
       2,
       {getParameter(PARAM_NB_ROWS) - 1, getParameter(PARAM_NB_COLUMNS) - 1},
       1,
-      CRGB(0, 0, 255),
+      Adafruit_NeoPixel::Color(0, 0, 255),
       PARAM_COMMAND_2,
       0,
       0,
@@ -89,7 +91,7 @@ void resetSnake(CRGB pixels[]) {
   players[2] = {3,
                 {getParameter(PARAM_NB_COLUMNS) - 1, 0},
                 1,
-                CRGB(0, 255, 0),
+                Adafruit_NeoPixel::Color(0, 255, 0),
                 PARAM_COMMAND_3,
                 0,
                 0,
@@ -100,7 +102,7 @@ void resetSnake(CRGB pixels[]) {
   players[3] = {4,
                 {0, getParameter(PARAM_NB_COLUMNS) - 1},
                 1,
-                CRGB(255, 0, 255),
+                Adafruit_NeoPixel::Color(255, 0, 255),
                 PARAM_COMMAND_4,
                 0,
                 0,
@@ -118,23 +120,23 @@ void resetSnake(CRGB pixels[]) {
   }
 }
 
-void updateFood(CRGB pixels[]) {
+void updateFood(Adafruit_NeoPixel& pixels) {
   for (uint16_t i = 0; i < MAX_LED; i++) {
     if (stateSnake[i] == 99) {
       stateSnake[i] = 0;
-      pixels[i] = CRGB(0);
+      pixels.setPixelColor(i, Adafruit_NeoPixel::Color(0, 0, 0));
     }
   }
   for (uint16_t i = 0; i < 40; i++) {
     uint16_t led = random(0, MAX_LED);
     if (stateSnake[led] == 0) {
-      pixels[led] = CRGB(255, 255, 0);
+      pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 0));
       stateSnake[led] = 99;
     }
   }
 }
 
-void updatePlayers(CRGB pixels[], player_t players[]) {
+void updatePlayers(Adafruit_NeoPixel& pixels, player_t players[]) {
   for (uint8_t i = 0; i < getParameter(PARAM_NB_PLAYERS); i++) {
     if (players[i].status == HAS_LOST) {
       players[i].status = HAS_LOST_PREVIOUSLY;
@@ -178,7 +180,7 @@ void updatePlayers(CRGB pixels[], player_t players[]) {
     if (stateSnake[newHead] == 99) {
       // food !
       stateSnake[newHead] = players[i].id;
-      pixels[newHead] = players[i].color;
+      pixels.setPixelColor(newHead, players[i].color);
       if ((players[i].to - players[i].from + 1) >=
           getParameter(PARAM_WIN_LIMIT)) {
         players[i].status = HAS_WON;
@@ -186,8 +188,9 @@ void updatePlayers(CRGB pixels[], player_t players[]) {
     } else if (stateSnake[newHead] == 0) {
       stateSnake[newHead] = players[i].id;
       stateSnake[players[i].leds[players[i].from]] = 0;
-      pixels[players[i].leds[players[i].from++]] = CRGB(0);
-      pixels[newHead] = players[i].color;
+      pixels.setPixelColor(players[i].leds[players[i].from++],
+                           Adafruit_NeoPixel::Color(0, 0, 0));
+      pixels.setPixelColor(newHead, players[i].color);
     } else {
       // collision !!
       players[i].status = HAS_LOST;
@@ -214,11 +217,11 @@ void updatePlayers(CRGB pixels[], player_t players[]) {
   }
 }
 
-void convertToFood(CRGB pixels[], uint8_t id) {
+void convertToFood(Adafruit_NeoPixel& pixels, uint8_t id) {
   for (uint16_t i = 0; i < MAX_LED; i++) {
     if (stateSnake[i] == id) {
       stateSnake[i] = 99;
-      pixels[i] = CRGB(255, 255, 0);
+      pixels.setPixelColor(i, Adafruit_NeoPixel::Color(255, 255, 0));
     }
   }
 }
@@ -243,7 +246,7 @@ bool isEndGame(player_t players[]) {
   return false;
 }
 
-void displayResults(CRGB pixels[], player_t players[]) {
+void displayResults(Adafruit_NeoPixel& pixels, player_t players[]) {
   bool winners = false;
   uint8_t nbLost = 0;
 
@@ -276,7 +279,7 @@ void displayResults(CRGB pixels[], player_t players[]) {
     while (true) {
       uint8_t playerIndex = counter++ % getParameter(PARAM_NB_PLAYERS);
       if (players[playerIndex].status == HAS_WON) {
-        pixels[i] = players[playerIndex].color;
+        pixels.setPixelColor(i, players[playerIndex].color);
         break;
       }
     }

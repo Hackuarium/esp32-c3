@@ -1,3 +1,3 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
-void updateFirework(CRGB pixels[], uint8_t state[]);
+void updateFirework(Adafruit_NeoPixel& pixels, uint8_t state[]);

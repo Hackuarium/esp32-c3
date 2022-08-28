@@ -1,14 +1,14 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
 
 unsigned int waveCounter = 0;
 
-void updateWave(CRGB pixels[]) {
+void updateWave(Adafruit_NeoPixel& pixels) {
   if ((waveCounter++ % (21 - getParameter(PARAM_SPEED))) != 0)
     return;
-  CRGB nextColor = getColor();
+  uint32_t nextColor = getColor();
   uint8_t direction = getDirection();
 
   switch (direction) {
@@ -20,10 +20,10 @@ void updateWave(CRGB pixels[]) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
         }
-        pixels[led] = nextColor;
+        pixels.setPixelColor(led, nextColor);
       }
       break;
     case 2:
@@ -34,10 +34,10 @@ void updateWave(CRGB pixels[]) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
         }
-        pixels[led] = nextColor;
+        pixels.setPixelColor(led, nextColor);
       }
       break;
     case 3:
@@ -48,10 +48,10 @@ void updateWave(CRGB pixels[]) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
         }
-        pixels[led] = nextColor;
+        pixels.setPixelColor(led, nextColor);
       }
       break;
     case 4:
@@ -62,10 +62,10 @@ void updateWave(CRGB pixels[]) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
         }
-        pixels[led] = nextColor;
+        pixels.setPixelColor(led, nextColor);
       }
       break;
   }

@@ -1,4 +1,4 @@
-#include "FastLED.h"
+#include <Adafruit_NeoPixel.h>
 #include "common.h"
 #include "pixels.h"
 
@@ -69,24 +69,27 @@ const uint16_t font53[96] = {
     0b0000000000000000   // 95
 };
 
-void paintSymbol(CRGB pixels[],
+void paintSymbol(Adafruit_NeoPixel& pixels,
                  uint8_t ascii,
                  uint8_t x,
                  uint8_t y,
-                 CRGB color) {
+                 uint32_t color) {
   uint16_t symbol = font53[ascii - 32];
   for (uint8_t bit = 0; bit < 15; bit++) {
     int8_t column = x + bit % 3;
     int8_t row = y + bit / 3;
     uint16_t led = getLedIndex(row, column);
     if (bitRead(symbol, 15 - bit)) {
-      pixels[led] = color;
+      pixels.setPixelColor(led, color);
     } else {
-      pixels[led] = CRGB(0);
+      pixels.setPixelColor(led, 0);
     }
   }
 }
 
-void paintSymbol(CRGB pixels[], uint8_t ascii, uint8_t x, uint8_t y) {
-  paintSymbol(pixels, ascii, x, y, CRGB(255, 0, 255));
+void paintSymbol(Adafruit_NeoPixel& pixels,
+                 uint8_t ascii,
+                 uint8_t x,
+                 uint8_t y) {
+  paintSymbol(pixels, ascii, x, y, Adafruit_NeoPixel::Color(255, 0, 255));
 }

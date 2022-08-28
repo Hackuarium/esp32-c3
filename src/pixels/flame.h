@@ -1,4 +1,3 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
-
-void updateFlame(CRGB pixels[]);
+void updateFlame(Adafruit_NeoPixel& pixels);

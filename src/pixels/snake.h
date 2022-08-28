@@ -1,5 +1,5 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
-void updateSnake(CRGB pixels[]);
+void updateSnake(Adafruit_NeoPixel& pixels);
 
-void resetSnake(CRGB pixels[]);
+void resetSnake(Adafruit_NeoPixel& pixels);

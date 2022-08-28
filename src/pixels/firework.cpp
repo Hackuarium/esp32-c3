@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
@@ -14,7 +14,7 @@ State:
 */
 
 // We will store in state if it is the head of the comet
-void updateFirework(CRGB pixels[], uint8_t state[]) {
+void updateFirework(Adafruit_NeoPixel& pixels, uint8_t state[]) {
   fireworkCounter++;
   if ((fireworkCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet
@@ -28,7 +28,7 @@ void updateFirework(CRGB pixels[], uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
           state[led] = 5;
         }
@@ -44,7 +44,7 @@ void updateFirework(CRGB pixels[], uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
           state[led] = 5;
         }
@@ -60,7 +60,7 @@ void updateFirework(CRGB pixels[], uint8_t state[]) {
       }
 
       if (state[led] == 0) {
-        pixels[led] = getBackgroundColor();
+        pixels.setPixelColor(led, getBackgroundColor());
       };
     }
   }

@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
@@ -6,7 +6,7 @@
 unsigned int cometCounter = 0;
 
 // We will store in state if it is the head of the comet
-void updateComet(CRGB pixels[], uint8_t state[]) {
+void updateComet(Adafruit_NeoPixel& pixels, uint8_t state[]) {
   cometCounter++;
   if ((cometCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet
@@ -20,7 +20,7 @@ void updateComet(CRGB pixels[], uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
           state[led] = 5;
         }
@@ -36,7 +36,7 @@ void updateComet(CRGB pixels[], uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
           state[led] = 5;
         }
@@ -52,7 +52,7 @@ void updateComet(CRGB pixels[], uint8_t state[]) {
       }
 
       if (state[led] == 0) {
-        pixels[led] = getBackgroundColor();
+        pixels.setPixelColor(led, getBackgroundColor());
       };
     }
   }

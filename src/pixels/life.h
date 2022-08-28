@@ -1,6 +1,5 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
+void updateLife(Adafruit_NeoPixel& pixels);
 
-void updateLife(CRGB pixels[]) ;
-
-void resetLife(CRGB pixels[]) ;
+void resetLife(Adafruit_NeoPixel& pixels);

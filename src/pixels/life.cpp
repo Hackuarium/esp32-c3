@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
@@ -15,11 +15,11 @@ uint8_t previousActive = 0;
 uint8_t stableActive = 0;
 uint16_t generation = 0;
 
-void updateLife(CRGB pixels[]);
-void resetLife(CRGB pixels[]);
-void paintLife(CRGB pixels[]);
+void updateLife(Adafruit_NeoPixel& pixels);
+void resetLife(Adafruit_NeoPixel& pixels);
+void paintLife(Adafruit_NeoPixel& pixels);
 
-void updateLife(CRGB pixels[]) {
+void updateLife(Adafruit_NeoPixel& pixels) {
   if (getParameter(PARAM_COMMAND_1) == -1) {
     resetLife(pixels);
     setParameter(PARAM_COMMAND_1, 0);
@@ -84,7 +84,7 @@ void updateLife(CRGB pixels[]) {
   paintLife(pixels);
 }
 
-void paintLife(CRGB pixels[]) {
+void paintLife(Adafruit_NeoPixel& pixels) {
   // paint
   uint8_t nbActive = 0;
   for (uint16_t i = 0; i < MAX_LED; i++) {
@@ -92,13 +92,13 @@ void paintLife(CRGB pixels[]) {
       nbActive++;
       setColor(pixels, i);
     } else {
-      pixels[i] = CRGB(0, 0, 0);
+      pixels.setPixelColor(i, 0);
     }
   }
   if (nbActive == previousActive) {
     stableActive++;
     if (stableActive > 50) {  // display the nb generation
-      blank(pixels);
+      pixels.clear();
       String generationStr = String(generation - 51);
       for (uint8_t i = 0; i < generationStr.length(); ++i) {
         uint8_t ascii = (uint8_t)generationStr.charAt(i);
@@ -107,11 +107,13 @@ void paintLife(CRGB pixels[]) {
       String idStr = String((uint16_t)getParameter(PARAM_COMMAND_3));
       for (uint8_t i = 0; i < min(4, (int)idStr.length()); ++i) {
         uint8_t ascii = (uint8_t)idStr.charAt(i);
-        paintSymbol(pixels, ascii, i * 4, 6, CRGB(0, 255, 255));
+        paintSymbol(pixels, ascii, i * 4, 6,
+                    Adafruit_NeoPixel::Color(0, 255, 255));
       }
       for (uint8_t i = 4; i < idStr.length(); ++i) {
         uint8_t ascii = (uint8_t)idStr.charAt(i);
-        paintSymbol(pixels, ascii, i * 4 + 6, 10, CRGB(0, 255, 127));
+        paintSymbol(pixels, ascii, i * 4 + 6, 10,
+                    Adafruit_NeoPixel::Color(0, 255, 127));
       }
     } else {
       generation++;
@@ -132,7 +134,7 @@ void paintLife(CRGB pixels[]) {
   }
 }
 
-void resetLife(CRGB pixels[]) {
+void resetLife(Adafruit_NeoPixel& pixels) {
   if (getParameter(PARAM_SPEED) == 20) {
     setParameter(PARAM_COMMAND_3, getParameter(PARAM_COMMAND_3) + 1);
   } else if (getParameter(PARAM_COMMAND_2) == 0) {
@@ -142,7 +144,7 @@ void resetLife(CRGB pixels[]) {
   }
   srand(getParameter(PARAM_COMMAND_3));
 
-  blank(pixels);
+  pixels.clear();
   for (uint16_t i = 0; i < MAX_LED; i++) {
     lifeState[i] = {0, 0};
   }

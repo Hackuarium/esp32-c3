@@ -1,8 +1,8 @@
 #include "pixels.h"
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "Arduino.h"
-#include "FastLED.h"
 #include "inttypes.h"
 
 #define HSV_RANDOM 60
@@ -38,33 +38,36 @@ uint8_t getHSVSpeedChange() {
 // 10: hsl
 // 11: hsl random
 
-CRGB getColor() {
+uint32_t getColor() {
   return getColor(getParameter(PARAM_COLOR_MODEL), getHSVSpeedChange());
 }
 
-CRGB getColor(uint8_t hsbChangeSpeed) {
+uint32_t getColor(uint8_t hsbChangeSpeed) {
   return getColor(getParameter(PARAM_COLOR_MODEL), hsbChangeSpeed);
 }
 
-CRGB getColor(uint8_t colorModel, uint8_t hsbChangeSpeed) {
+uint32_t getColor(uint8_t colorModel, uint8_t hsbChangeSpeed) {
   return getColor(colorModel, hsbChangeSpeed, 255);
 }
 
-CRGB getBackgroundColor() {
+uint32_t getBackgroundColor() {
   int16_t brightness = getParameter(PARAM_BACKGROUND_BRIGHTNESS);
   if (brightness < 1) {
-    return CRGB(0, 0, 0);
+    return 0;
   }
-  return CRGB(getParameter(PARAM_LED_RED) * brightness / 255,
-              getParameter(PARAM_LED_GREEN) * brightness / 255,
-              getParameter(PARAM_LED_BLUE) * brightness / 255);
+  return Adafruit_NeoPixel::Color(
+      (uint8_t)(getParameter(PARAM_LED_RED) * brightness / 255),
+      (uint8_t)(getParameter(PARAM_LED_GREEN) * brightness / 255),
+      (uint8_t)(getParameter(PARAM_LED_BLUE) * brightness / 255));
 }
 
-CRGB getColor(uint8_t colorModel, uint8_t hsbChangeSpeed, uint8_t brightness) {
+uint32_t getColor(uint8_t colorModel,
+                  uint8_t hsbChangeSpeed,
+                  uint8_t brightness) {
   if (colorModel == COLOR_FIXED) {
-    return CRGB(getParameter(PARAM_LED_RED) * brightness / 255,
-                getParameter(PARAM_LED_GREEN) * brightness / 255,
-                getParameter(PARAM_LED_BLUE) * brightness / 255);
+    return (getParameter(PARAM_LED_RED) * brightness / 255) << 16 |
+           (getParameter(PARAM_LED_GREEN) * brightness / 255) << 8 |
+           getParameter(PARAM_LED_BLUE) * brightness / 255;
   }
   if (colorModel == COLOR_ORANGE) {  // moving red orange yellow
     hsvStatus = (hsvStatus + hsbChangeSpeed) % 120;
@@ -104,32 +107,28 @@ CRGB getColor(uint8_t colorModel, uint8_t hsbChangeSpeed, uint8_t brightness) {
   }
 }
 
-CRGB getHSV360(uint16_t h, uint8_t s, uint8_t v) {
-  // todo
-  CRGB crgb;
-  hsv2rgb_rainbow(CHSV((uint8_t)((uint32_t)h * 255 / 360), s, v), crgb);
-  return crgb;
+uint32_t getHSV360(uint16_t h, uint8_t s, uint8_t v) {
+  return Adafruit_NeoPixel::ColorHSV(h * (65535 / 360), s, v);
 }
 
-void setColor(CRGB pixels[], uint16_t led) {
-  CRGB color = getColor();
-  pixels[led] = color;
+void setColor(Adafruit_NeoPixel& pixels, uint16_t led) {
+  pixels.setPixelColor(led, getColor());
 }
 
-void setFullIntensityColor(CRGB pixels[], uint16_t led) {
+void setFullIntensityColor(Adafruit_NeoPixel& pixels, uint16_t led) {
   uint32_t color =
       getColor(getParameter(PARAM_COLOR_MODEL), getHSVSpeedChange(), 255);
   uint8_t r = (color >> 16) & 255;
   uint8_t g = (color >> 8) & 255;
   uint8_t b = (color >> 0) & 255;
-  pixels[led] = CRGB(r, g, b);
+  pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
 }
 
-bool decreaseColor(CRGB pixels[], uint16_t led, uint8_t increment) {
-  CRGB color = pixels[led];
-  uint8_t r = color.r;
-  uint8_t g = color.g;
-  uint8_t b = color.b;
+bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
+  uint32_t color = pixels.getPixelColor(led);
+  uint8_t r = (color >> 16) & 255;
+  uint8_t g = (color >> 8) & 255;
+  uint8_t b = (color >> 0) & 255;
   if (r > increment) {
     r -= increment;
   } else {
@@ -145,11 +144,11 @@ bool decreaseColor(CRGB pixels[], uint16_t led, uint8_t increment) {
   } else {
     b = 0;
   }
-  pixels[led] = CRGB(r, g, b);
+  pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
   return r == 0 && g == 0 && b == 0;
 }
 
-bool decreaseColor(CRGB pixels[], uint16_t led) {
+bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led) {
   uint8_t increment = 0;
   if (getParameter(PARAM_COLOR_DECREASE_SPEED) >= 2) {
     increment = pow(2, getParameter(PARAM_COLOR_DECREASE_SPEED) - 2);
@@ -168,12 +167,6 @@ uint16_t mapping[MAX_LED];
  */
 uint16_t getLedIndex(uint16_t led) {
   return mapping[led];
-}
-
-void blank(CRGB pixels[]) {
-  for (uint16_t i = 0; i < MAX_LED; i++) {
-    pixels[i] = CRGB(0);
-  }
 }
 
 uint16_t getLedIndex(uint8_t row, uint8_t column) {

@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
@@ -8,7 +8,7 @@ unsigned int spiralCounter = 0;
 int16_t getSpiralNextLedIndex(uint8_t row, uint8_t column, uint8_t direction);
 
 // We will store in state if it is the head of the spiral
-void updateSpiral(CRGB pixels[], uint8_t state[]) {
+void updateSpiral(Adafruit_NeoPixel& pixels, uint8_t state[]) {
   spiralCounter++;
   if ((spiralCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the spiral
@@ -23,7 +23,7 @@ void updateSpiral(CRGB pixels[], uint8_t state[]) {
           int16_t nextLedIndex = getSpiralNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led] | 128;
-            pixels[nextLedIndex] = pixels[led];
+            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
           }
           state[led] =
               5;  // current led becomes 'normal' meaning it may decrease
@@ -41,7 +41,7 @@ void updateSpiral(CRGB pixels[], uint8_t state[]) {
       }
 
       if (state[led] == 0) {
-        pixels[led] = getBackgroundColor();
+        pixels.setPixelColor(led, getBackgroundColor());
       };
     }
   }

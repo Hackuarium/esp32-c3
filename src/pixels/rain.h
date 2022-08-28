@@ -1,3 +1,3 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
-void updateRain(CRGB pixels[], uint8_t state[]);
+void updateRain(Adafruit_NeoPixel& pixels, uint8_t state[]);

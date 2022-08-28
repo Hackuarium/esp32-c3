@@ -1,17 +1,17 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels.h"
 
-void updateRain(CRGB pixels[], uint8_t state[]) {
+void updateRain(Adafruit_NeoPixel& pixels, uint8_t state[]) {
   for (int led = 0; led < MAX_LED; led++) {
-    if(state[led]==1) {
+    if (state[led] == 1) {
       if (decreaseColor(pixels, led)) {
-      state[led]=0;
+        state[led] = 0;
       }
-    } 
-    if(  state[led]==0) {
-      pixels[led]=getBackgroundColor();
+    }
+    if (state[led] == 0) {
+      pixels.setPixelColor(led, getBackgroundColor());
     };
   }
 
@@ -26,7 +26,7 @@ void updateRain(CRGB pixels[], uint8_t state[]) {
 
   for (uint8_t i = 0; i < nbEvents; i++) {
     int led = random(0, MAX_LED);
-    state[led]=1;
+    state[led] = 1;
     setColor(pixels, led);
   }
 }

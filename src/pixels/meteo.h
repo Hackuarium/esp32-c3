@@ -1,3 +1,3 @@
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 
-void updateMeteo(CRGB pixels[]);
+void updateMeteo(Adafruit_NeoPixel& pixels);
