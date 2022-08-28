@@ -34,7 +34,7 @@ void TaskPixels(void* pvParameters) {
   setAndSaveParameter(PARAM_NB_ROWS, 16);
   setAndSaveParameter(PARAM_NB_COLUMNS, 16);
   setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);  // 1 is for square, otherwise 0
-  setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_RGB);
+  setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);  // NEO_GRB for square
   setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
   setAndSaveParameter(PARAM_DIRECTION, 1);
   setAndSaveParameter(PARAM_LED_RED, 127);
@@ -52,8 +52,6 @@ void TaskPixels(void* pvParameters) {
   pixels.begin();
 
   uint8_t state[MAX_LED] = {0};
-
-  pixels.updateType(getParameter(PARAM_COLOR_LED_MODEL));
 
   pixels.clear();
   pixels.show();
@@ -86,6 +84,17 @@ void TaskPixels(void* pvParameters) {
     }
     */
     pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
+
+    /*
+    #define NEO_RGB ((0 << 6) | (0 << 4) | (1 << 2) | (2))
+    #define NEO_RBG ((0 << 6) | (0 << 4) | (2 << 2) | (1))
+    #define NEO_GRB ((1 << 6) | (1 << 4) | (0 << 2) | (2))
+    #define NEO_GBR ((2 << 6) | (2 << 4) | (0 << 2) | (1))
+    #define NEO_BRG ((1 << 6) | (1 << 4) | (2 << 2) | (0))
+    #define NEO_BGR ((2 << 6) | (2 << 4) | (1 << 2) | (0))
+    */
+
+    pixels.updateType(getParameter(PARAM_COLOR_LED_MODEL));
 
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {

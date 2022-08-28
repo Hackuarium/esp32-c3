@@ -1,5 +1,9 @@
-//const server = "http://test.local/";
-let servers = ["/"];
+// we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
+const prefix = "B";
+
+// const server = "http://192.168.1.178/";
+const server = "/";
+let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
   servers = urlParams
@@ -45,6 +49,9 @@ async function sendCommand(command) {
       element.value = command.substring(1);
     }
   }
+  if (command.match(/^[A-Z][0-9,]+$/)) {
+    command = prefix + command;
+  }
 
   const results = [];
 
@@ -75,7 +82,15 @@ async function sendFunction() {
 async function reloadSettings() {
   let result = await sendCommand("uc");
   // TODO we could check the checkDigit ...
-  for (let i = 0; i < Math.min(result.length, 104); i = i + 4) {
+
+  if (prefix) {
+    const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
+    result = result.substring(shift, shift + 104);
+  } else {
+    result = result.substring(8); // first 8 symbols is epoch
+  }
+
+  for (let i = 0; i < result.length; i = i + 4) {
     let code = String.fromCharCode(65 + i / 4);
     let value = parseInt(result.substring(i, i + 4), 16);
     let elements = document.querySelectorAll(
@@ -97,8 +112,6 @@ async function reloadSettings() {
   for (let element of elements) {
     element.value =
       "#" + result.substr(42, 2) + result.substr(46, 2) + result.substr(50, 2);
-    console.log(element.value);
   }
-  console.log(result);
 }
 reloadSettings();

@@ -27,9 +27,11 @@ void processWifiCommand(char command,
       output->println(WiFi.RSSI());
       output->print("SSID: ");
       getParameter("wifi.ssid", wifiTemp);
+      output->println(wifiTemp);
       output->print("IP address: ");
       output->println(WiFi.localIP());
-      output->println(wifiTemp);
+      output->print("Mac address: ");
+      output->println(WiFi.macAddress());
       output->print("Username: ");
       getParameter("wifi.username", wifiTemp);
       output->println(wifiTemp);
@@ -55,12 +57,14 @@ void processWifiCommand(char command,
       getParameter("mqtt.publish", wifiTemp);
       output->println(wifiTemp);
 
-      struct tm timeinfo;
-      if (!getLocalTime(&timeinfo)) {
-        output->println("Failed to obtain time");
-        return;
-      }
-      output->println(&timeinfo, "Time: %A, %B %d %Y %H:%M:%S");
+      /*
+            struct tm timeinfo;
+            if (!getLocalTime(&timeinfo)) {
+              output->println("Failed to obtain time");
+              return;
+            }
+            output->println(&timeinfo, "Time: %A, %B %d %Y %H:%M:%S");
+            */
 
       break;
     case 'm':
