@@ -2,7 +2,6 @@
 #include "./params.h"
 #include "esp_wpa2.h"
 
-
 char ssid[30];
 char password[30];
 // the wifi also requires username and password
@@ -24,14 +23,14 @@ void TaskWifi(void* pvParameters) {
   WiFi.mode(WIFI_STA);
   // WiFi.begin(ssid, password);
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
- // WiFi.disconnect(true);
-        //
-// if identity not defined use ursername as identity
+  // WiFi.disconnect(true);
+  //
+  // if identity not defined use ursername as identity
   if (strlen(identity) == 0) {
     strcpy(identity, username);
   }
-  //parameter wifi type
-bool wifi_Enterprise_type = false;
+  // parameter wifi type
+  bool wifi_Enterprise_type = false;
   // if identity and username not defined use domestic WPA2 to connect to wifi
   if (strlen(identity) == 0 && strlen(username) == 0) {
     Serial.println("Using domestic WPA2");
@@ -40,43 +39,26 @@ bool wifi_Enterprise_type = false;
   }
   // if identity and username defined use WPA2 Enterprise to connect to wifi
   else {
-    esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity, strlen(identity));
-    esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username, strlen(username));
-    esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password, strlen(password));
+    esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)identity, strlen(identity));
+    esp_wifi_sta_wpa2_ent_set_username((uint8_t*)username, strlen(username));
+    esp_wifi_sta_wpa2_ent_set_password((uint8_t*)password, strlen(password));
     esp_wifi_sta_wpa2_ent_enable();
-wifi_Enterprise_type = true;
-
+    wifi_Enterprise_type = true;
   }
-  /**
-    int counter = 0;
-    // Wait for connection
-    while (WiFi.status() != WL_CONNECTED && counter++ < 100) {
-      vTaskDelay(500);
-      Serial.print(".");
-    }
-    **/
 
-  /**
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(ssid);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    **/
   while (true) {
     vTaskDelay(1000);
     byte counter = 0;
     while (WiFi.status() != WL_CONNECTED && counter++ < 10) {
       setParameter(PARAM_WIFI_RSSI, -1);
       Serial.println("WIFI not connected, trying to connect");
-  
-if (wifi_Enterprise_type == true) {
-  WiFi.begin(ssid);
-}
-else {
-  WiFi.begin(ssid, password);
-}
-  
+
+      if (wifi_Enterprise_type == true) {
+        WiFi.begin(ssid);
+      } else {
+        WiFi.begin(ssid, password);
+      }
+
       // WiFi.reconnect();
       vTaskDelay(5000);
       if (WiFi.status() == WL_CONNECTED) {
@@ -102,5 +84,3 @@ void taskWifi() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
-
-

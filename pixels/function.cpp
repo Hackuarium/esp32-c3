@@ -1,13 +1,13 @@
+#include <Adafruit_NeoPixel.h>
 #include "../tinyexpr/tinyexpr.h"
 #include "./pixels.h"
-#include "FastLED.h"
 #include "params.h"
 
 uint32_t epoch = 0;
 
 char expression[256];
 
-void updateFunction(CRGB pixels[]) {
+void updateFunction(Adafruit_NeoPixel& pixels) {
   double x, y, i, t;
   int pixel;
   t = (double)epoch / 25;
@@ -25,13 +25,18 @@ void updateFunction(CRGB pixels[]) {
           result *= 255;
           if (i < MAX_LED) {
             if (result < 0) {
-              pixels[pixel] = CRGB(result < -255 ? 255 : -result, 0, 0);
+              pixels.setPixelColor(
+                  pixel, Adafruit_NeoPixel::Color(result < -255 ? 255 : -result,
+                                                  0, 0));
             } else {
-              pixels[pixel] = CRGB(0, 0, result > 255 ? 255 : result);
+              pixels.setPixelColor(
+                  pixel,
+                  Adafruit_NeoPixel::Color(0, 0, result > 255 ? 255 : result));
             }
           }
         } else {
-          pixels[pixel] = getHSV360((((uint16_t)result) % 360), 255, 255);
+          pixels.setPixelColor(pixel,
+                               getHSV360((((uint16_t)result) % 360), 255, 255));
         }
       }
     }
@@ -39,9 +44,9 @@ void updateFunction(CRGB pixels[]) {
   } else {
     for (int i = 0; i < MAX_LED; i++) {
       if ((t - round(t)) < 0) {
-        pixels[i] = CRGB(255, 0, 0);
+        pixels.setPixelColor(i, Adafruit_NeoPixel::Color(255, 0, 0));
       } else {
-        pixels[i] = CRGB(0, 0, 0);
+        pixels.setPixelColor(i, Adafruit_NeoPixel::Color(0, 0, 0));
       }
     }
 

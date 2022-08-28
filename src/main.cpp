@@ -1,9 +1,7 @@
-t pu #include "./common.h"
+#include "./common.h"
 #include "./params.h"
 
-    void
-    deepSleep(int seconds);
-
+void deepSleep(int seconds);
 void taskBlink();
 void taskSi7021();
 void taskSerial();
@@ -18,6 +16,7 @@ void taskWifi();
 void taskOTA();
 void taskBatteryLevel();
 void taskInternalTemperature();
+void taskWebserver();
 void taskWire();
 
 void setup() {
@@ -27,9 +26,10 @@ void setup() {
   setupParameters();
   taskPixels();
   taskSerial();
-  taskSi7021();
-  taskOTA();
+  //  taskSi7021();
+  //  taskOTA();
   taskWifi();
+  taskWebserver();
   // taskMQTT();
   // taskOneWire();
   //  taskNTPD();

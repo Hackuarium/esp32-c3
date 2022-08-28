@@ -31,16 +31,18 @@ void TaskPixels(void* pvParameters) {
   setAndSaveParameter(PARAM_COLOR_MODEL, 7);
   setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
   setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-  setAndSaveParameter(PARAM_NB_ROWS, 1);
-  setAndSaveParameter(PARAM_NB_COLUMNS, 256);
-  setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
+  setAndSaveParameter(PARAM_NB_ROWS, 16);
+  setAndSaveParameter(PARAM_NB_COLUMNS, 16);
+  setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);  // 1 is for square, otherwise 0
   setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_RGB);
   setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-  setAndSaveParameter(PARAM_DIRECTION, 0);
+  setAndSaveParameter(PARAM_DIRECTION, 1);
   setAndSaveParameter(PARAM_LED_RED, 127);
   setAndSaveParameter(PARAM_LED_GREEN, 63);
   setAndSaveParameter(PARAM_LED_BLUE, 0);
   setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+
+  updateMapping();
 
   TickType_t xLastWakeTime;
   const TickType_t xFrequency = 40;
@@ -74,16 +76,17 @@ void TaskPixels(void* pvParameters) {
 
     // doAction();
 
-    pixels.setBrightness(20);
     // Turn off the device on sunset / sunrise schedule
     /*
     if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
         (isNight() && getParameterBit(PARAM_SCHEDULE, 1))) {
-      pixels.setBrightness(getParameter(PARAM_BRIGHTNESS)); // super slow ????
+      pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
     } else {
       pixels.setBrightness(0);
     }
     */
+    pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
+
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {
         /**

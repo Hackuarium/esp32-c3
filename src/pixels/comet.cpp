@@ -10,7 +10,6 @@ void updateComet(Adafruit_NeoPixel& pixels, uint8_t state[]) {
   cometCounter++;
   if ((cometCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet
-
     for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
       for (int16_t column = getParameter(PARAM_NB_COLUMNS) - 1; column >= 0;
            column--) {
@@ -83,5 +82,6 @@ void updateComet(Adafruit_NeoPixel& pixels, uint8_t state[]) {
       return;
   }
   state[led] = direction;
+
   setColor(pixels, led);
 }

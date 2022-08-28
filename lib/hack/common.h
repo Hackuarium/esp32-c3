@@ -58,42 +58,53 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_GATE8_IN 50
 #define PARAM_GATE8_OUT 51
 
-#define PARAM_BRIGHTNESS 52
-#define PARAM_INTENSITY 53
-#define PARAM_SPEED 54
-#define PARAM_CURRENT_PROGRAM 55
-#define PARAM_COLOR_MODEL 56
-#define PARAM_COLOR_CHANGE_SPEED 57
-#define PARAM_BACKGROUND_BRIGHTNESS 58
-#define PARAM_NB_ROWS 59
-#define PARAM_NB_COLUMNS 60
-#define PARAM_LAYOUT_MODEL 61
-#define PARAM_COLOR_LED_MODEL 62
-#define PARAM_COLOR_DECREASE_SPEED 63
-#define PARAM_DIRECTION 64
-#define PARAM_LED_RED 65
-#define PARAM_LED_GREEN 66
-#define PARAM_LED_BLUE 67
-#define PARAM_COMMAND_1 68
-#define PARAM_COMMAND_2 69
-#define PARAM_COMMAND_3 70
-#define PARAM_COMMAND_4 71
-#define PARAM_COMMAND_5 72
-#define PARAM_COMMAND_6 73
-#define PARAM_COMMAND_7 74
-#define PARAM_COMMAND_8 75
-#define PARAM_NB_PLAYERS 76
-#define PARAM_FCT_COLOR_MODEL 77
-#define PARAM_WIN_LIMIT 78
-#define PARAM_SUNRISE_OFFSET 79
-#define PARAM_SUNSET_OFFSET 80
-// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
-#define PARAM_ACTION_1 81
-#define PARAM_ACTION_2 82
-#define PARAM_ACTION_3 83
-#define PARAM_ACTION_4 84
-#define PARAM_SCHEDULE 85
+#define THR_WIRE_MASTER 1
 
+/*
+ * JUST FOR PIXELs WS2812
+ */
 #define MAX_LED 256
 
-#define THR_WIRE_MASTER 1
+#define PARAM_BRIGHTNESS 52             // BA
+#define PARAM_INTENSITY 53              // BB
+#define PARAM_SPEED 54                  // BC
+#define PARAM_CURRENT_PROGRAM 55        // BD
+#define PARAM_COLOR_MODEL 56            // BE
+#define PARAM_COLOR_CHANGE_SPEED 57     // BF
+#define PARAM_COLOR_DECREASE_SPEED 58   // BG
+#define PARAM_BACKGROUND_BRIGHTNESS 59  // BH
+
+#define PARAM_NB_ROWS 60     // BI
+#define PARAM_NB_COLUMNS 61  // BJ
+
+#define PARAM_LED_RED 62    // BK
+#define PARAM_LED_GREEN 63  // BL
+#define PARAM_LED_BLUE 64   // BM
+
+#define PARAM_FCT_COLOR_MODEL 65  // BN
+#define PARAM_DIRECTION 66        // BO
+#define PARAM_COMMAND_1 67        // BP
+#define PARAM_COMMAND_2 68        // BQ
+#define PARAM_COMMAND_3 69        // BR
+#define PARAM_COMMAND_4 70        // BS
+#define PARAM_NB_PLAYERS 71       // BT
+#define PARAM_WIN_LIMIT 72        // BU
+#define PARAM_COMMAND_5 73        // BV
+#define PARAM_COMMAND_6 74        // BW
+#define PARAM_COMMAND_7 75        // BX
+#define PARAM_COMMAND_8 76        // BY
+
+#define PARAM_LAYOUT_MODEL 77     // BZ
+#define PARAM_COLOR_LED_MODEL 78  // CA
+#define PARAM_SCHEDULE 79         // CB
+// Allows to turn on before or after sunset (in minutes)
+#define PARAM_SUNSET_OFFSET 80   // CC
+#define PARAM_SUNRISE_OFFSET 81  // CD
+// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+#define PARAM_ACTION_1 82  // CE
+// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+#define PARAM_ACTION_2 83  // CF
+// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+#define PARAM_ACTION_3 84  // CG
+// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+#define PARAM_ACTION_4 85  // CH
