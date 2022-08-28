@@ -3,6 +3,7 @@
 #include "./common.h"
 #include "./params.h"
 #include "./taskOneWire.h"
+#include "./taskPixels.h"
 #include "./taskWire.h"
 
 #define SERIAL_BUFFER_LENGTH 256
@@ -167,6 +168,11 @@ void printResult(char* data, Print* output) {
     case 'o':
       oneWireInfo(output);
       break;
+#ifdef THR_PIXELS
+    case 'p':
+      processPixelsCommand(data[1], paramValue, output);
+      break;
+#endif
     case 's':
       printParameters(output);
       break;

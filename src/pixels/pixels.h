@@ -30,3 +30,5 @@ uint16_t getLedIndex(position_t& position);
 void updateMapping();
 
 uint8_t getHSVSpeedChange();
+
+void copyPixelColor(Adafruit_NeoPixel& pixels, uint16_t from, uint16_t to);

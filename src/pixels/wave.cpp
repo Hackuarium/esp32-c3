@@ -12,7 +12,7 @@ void updateWave(Adafruit_NeoPixel& pixels) {
   uint8_t direction = getDirection();
 
   switch (direction) {
-    case 1:
+    case 1:  // left to right
       for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
         uint16_t led = 0;
         for (int16_t column = getParameter(PARAM_NB_COLUMNS) - 1; column >= 0;
@@ -20,7 +20,7 @@ void updateWave(Adafruit_NeoPixel& pixels) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
         }
         pixels.setPixelColor(led, nextColor);
@@ -34,7 +34,7 @@ void updateWave(Adafruit_NeoPixel& pixels) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
         }
         pixels.setPixelColor(led, nextColor);
@@ -48,7 +48,7 @@ void updateWave(Adafruit_NeoPixel& pixels) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
         }
         pixels.setPixelColor(led, nextColor);
@@ -62,7 +62,7 @@ void updateWave(Adafruit_NeoPixel& pixels) {
           led = getLedIndex(row, column);
           int16_t nextLedIndex = getNextLedIndex(row, column, direction);
           if (nextLedIndex >= 0) {
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
         }
         pixels.setPixelColor(led, nextColor);

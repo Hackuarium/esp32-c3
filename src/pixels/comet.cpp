@@ -19,7 +19,7 @@ void updateComet(Adafruit_NeoPixel& pixels, uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
           state[led] = 5;
         }
@@ -35,7 +35,7 @@ void updateComet(Adafruit_NeoPixel& pixels, uint8_t state[]) {
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
           state[led] = 5;
         }

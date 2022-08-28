@@ -86,6 +86,9 @@ void printHelp(Print* output) {
 #ifdef THR_EEPROM_LOGGER
   output->println(F("(l)og"));
 #endif
+#ifdef THR_PIXELS
+  output->println(F("(p)ixels"));
+#endif
   output->println(F("(o)neWire"));
   output->println(F("(s)ettings"));
   output->println(F("(u)tilities"));

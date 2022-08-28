@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include "./params.h"
+
 #include "esp_wpa2.h"
 
 char ssid[30];
@@ -60,7 +61,7 @@ void TaskWifi(void* pvParameters) {
       }
 
       // WiFi.reconnect();
-      vTaskDelay(5000);
+      vTaskDelay(2000);
       if (WiFi.status() == WL_CONNECTED) {
         Serial.println("WIFI connected");
       }

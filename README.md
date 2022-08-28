@@ -105,27 +105,27 @@ loadtest -n 1000 -c 4 http://square.patiny.com/command/A
 
 ## Setup
 
-Z: Layout model
-AA: 0 (RGB), 1 (BRG)
-AB: bit 0: day, bit 1: night
-AC: Allows to turn on before or after sunset (in minutes)
-AD: Allows to turn off before or after sunrise (in minutes)
-AE: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-AF: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-AG: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-AH: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
+BZ: Layout model
+CA: 0 (RGB), 1 (BRG)
+CB: bit 0: day, bit 1: night
+CC: Allows to turn on before or after sunset (in minutes)
+CD: Allows to turn off before or after sunrise (in minutes)
+CE: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
+CF: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
+CG: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
+CH: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
 
-AC-30: 30 minutes before sunset
-AD30: 30 minutes after sunrise
+CC-30: 30 minutes before sunset
+CD30: 30 minutes after sunrise
 
-AE: 60*22+2000*2 = 5320 at 10PM reduce the intensity to
-AF: 60*7+2000*15 = 30420 at 7AM intensity to max
+CE: 60*22+2000*2 = 5320 at 10PM reduce the intensity to
+CF: 60*7+2000*15 = 30420 at 7AM intensity to max
 
-AE5320,30420,-1,-1
+CE5320,30420,-1,-1
 
 Full power in the evening but reduce at 10PM and turn off at 12PM
 Turn on in the morning at 5AM but not too strong
-AC-30,30,30960,9320,0,8300
+CC-30,30,30960,9320,0,8300
 
 Reduced power mode (for Christmas)
-AC-30,30,8960,9320,0,8300
+CC-30,30,8960,9320,0,8300

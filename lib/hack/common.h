@@ -2,6 +2,8 @@
 
 #define LED_ON_BOARD 7
 
+#define THR_PIXELS 1
+
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
 

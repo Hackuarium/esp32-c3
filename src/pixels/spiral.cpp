@@ -23,7 +23,7 @@ void updateSpiral(Adafruit_NeoPixel& pixels, uint8_t state[]) {
           int16_t nextLedIndex = getSpiralNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led] | 128;
-            pixels.setPixelColor(nextLedIndex, pixels.getPixelColor(led));
+            copyPixelColor(pixels, led, nextLedIndex);
           }
           state[led] =
               5;  // current led becomes 'normal' meaning it may decrease

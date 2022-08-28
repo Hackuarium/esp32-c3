@@ -124,6 +124,13 @@ void setFullIntensityColor(Adafruit_NeoPixel& pixels, uint16_t led) {
   pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
 }
 
+void copyPixelColor(Adafruit_NeoPixel& pixels, uint16_t from, uint16_t to) {
+  uint8_t* data = pixels.getPixels();
+  data[to * 3] = data[from * 3];
+  data[to * 3 + 1] = data[from * 3 + 1];
+  data[to * 3 + 2] = data[from * 3 + 2];
+}
+
 bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
   uint32_t color = pixels.getPixelColor(led);
   uint8_t r = (color >> 16) & 255;

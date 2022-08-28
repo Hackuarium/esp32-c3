@@ -24,15 +24,17 @@ void setup() {
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();
+#ifdef THR_PIXELS
   taskPixels();
+#endif
   taskSerial();
   //  taskSi7021();
-  //  taskOTA();
+  taskOTA();
   taskWifi();
   taskWebserver();
   // taskMQTT();
   // taskOneWire();
-  //  taskNTPD();
+  taskNTPD();
   //  taskInternalTemperature();
   //  taskBatteryLevel();
   // taskUptime();

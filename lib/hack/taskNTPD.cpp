@@ -1,40 +1,53 @@
 #include "./taskNTPD.h"
 #include <WiFi.h>
-#include <sys/time.h>
+// #include <sys/time.h>
 #include "./common.h"
 #include "./taskNTPD.h"
+#include "esp_sntp.h"
 
 const char* ntpServer = "pool.ntp.org";
 // summer winter time: 7200 for summer, 3600 for winter
 const long gmtOffset_sec = 7200;
 const int daylightOffset_sec = 0;
 struct tm timeInfo;
+time_t now;
+char strftime_buf[64];
 
 // TODO This task is useless and code can be moved to wifi
 // can also add a paraemter for daylightOffset
 void TaskNTPD(void* pvParameters) {
+  // Set timezone to China Standard Time
+  setenv("TZ", "GMT-2", 1);
+  tzset();
+
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(5000);
   }
 
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
   while (true) {
-    //    if(!getLocalTime(&timeInfo)){
-    //      Serial.println("Failed to obtain time");
-    //    }
-    vTaskDelay(15 * 60 * 1000);
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+    vTaskDelay(60 * 60 * 1000);
   }
 }
 
+void printTime(Print* output) {
+  time(&now);
+  localtime_r(&now, &timeInfo);
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeInfo);
+  output->println(strftime_buf);
+}
+
 void getHourMinute(char* hourMinute) {
-  // todo we should use local time
-  getLocalTime(&timeInfo);
+  time(&now);
+  localtime_r(&now, &timeInfo);
   strftime(hourMinute, 6, "%H:%M", &timeInfo);
 }
 
 void getDayMonth(char* dayMonth) {
-  getLocalTime(&timeInfo);
+  time(&now);
+  localtime_r(&now, &timeInfo);
   strftime(dayMonth, 6, "%d-%m", &timeInfo);
 }
 
@@ -52,17 +65,20 @@ unsigned long getEpoch() {
 }
 
 int16_t getHourMinute() {
-  getLocalTime(&timeInfo);
+  time(&now);
+  localtime_r(&now, &timeInfo);
   return timeInfo.tm_hour * 60 + timeInfo.tm_min;
 }
 
 uint8_t getHour() {
-  getLocalTime(&timeInfo);
+  time(&now);
+  localtime_r(&now, &timeInfo);
   return timeInfo.tm_hour;
 }
 
 int getSeconds() {
-  getLocalTime(&timeInfo);
+  time(&now);
+  localtime_r(&now, &timeInfo);
   return timeInfo.tm_sec;
 }
 

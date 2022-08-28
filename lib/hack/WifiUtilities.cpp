@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include "./common.h"
 #include "./params.h"
+#include "taskNTPD.h"
 
 char wifiTemp[40];
 
@@ -57,14 +58,7 @@ void processWifiCommand(char command,
       getParameter("mqtt.publish", wifiTemp);
       output->println(wifiTemp);
 
-      /*
-            struct tm timeinfo;
-            if (!getLocalTime(&timeinfo)) {
-              output->println("Failed to obtain time");
-              return;
-            }
-            output->println(&timeinfo, "Time: %A, %B %d %Y %H:%M:%S");
-            */
+      printTime(output);
 
       break;
     case 'm':
