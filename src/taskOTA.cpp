@@ -22,7 +22,7 @@ void TaskOTA(void* pvParameters) {
       })
       .onEnd([]() {
         Serial.println("\nCompleted");
-        MDNS.end();
+        // MDNS.end();
         vTaskDelay(200);
         WiFi.disconnect();  // disconnect to wifi to have a clean restart
         vTaskDelay(2000);

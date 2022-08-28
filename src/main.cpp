@@ -14,6 +14,7 @@ void taskOneWire();
 void taskUptime();
 void taskWifi();
 void taskOTA();
+void taskMDNS();
 void taskBatteryLevel();
 void taskInternalTemperature();
 void taskWebserver();
@@ -30,6 +31,7 @@ void setup() {
   taskSerial();
   //  taskSi7021();
   taskOTA();
+  taskMDNS();  // incompatible with taskOTA
   taskWifi();
   taskWebserver();
   // taskMQTT();
