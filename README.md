@@ -118,14 +118,19 @@ CH: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
 CC-30: 30 minutes before sunset
 CD30: 30 minutes after sunrise
 
-CE: 60*22+2000*2 = 5320 at 10PM reduce the intensity to
-CF: 60*7+2000*15 = 30420 at 7AM intensity to max
+CE: 60*22+2000*2 = 5320 at 10PM reduce the intensity to 2
+CF: 60*7+2000*15 = 30420 at 7AM intensity to max (15)
 
 CE5320,30420,-1,-1
 
 Full power in the evening but reduce at 10PM and turn off at 12PM
 Turn on in the morning at 5AM but not too strong
-CC-30,30,30960,9320,0,8300
+CB2,-30,30,30960,3320,0,2300
+
+- 30960: at 16h we set brightness to max (15)
+- 3320: at 22h we set brightness to 4
+- 0: at 0h we set brightness to 0
+- 2300: at 5h we set brightness to 4
 
 Reduced power mode (for Christmas)
-CC-30,30,8960,9320,0,8300
+CB3,-30,30,8960,9320,0,8300

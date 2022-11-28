@@ -3,6 +3,7 @@
 #define LED_ON_BOARD 7
 
 #define THR_PIXELS 1
+#define THR_FORECAST 1
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
@@ -98,7 +99,7 @@ extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_LAYOUT_MODEL 77     // BZ
 #define PARAM_COLOR_LED_MODEL 78  // CA
-#define PARAM_SCHEDULE 79         // CB
+#define PARAM_SCHEDULE 79         // CB - 1 day, 2 night, 3 day+night
 // Allows to turn on before or after sunset (in minutes)
 #define PARAM_SUNSET_OFFSET 80   // CC
 #define PARAM_SUNRISE_OFFSET 81  // CD

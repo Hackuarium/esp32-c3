@@ -11,6 +11,7 @@ void taskMQTT();
 void taskPixels();
 void taskBluetooth();
 void taskOneWire();
+void taskForecast();
 void taskUptime();
 void taskWifi();
 void taskOTA();
@@ -34,11 +35,14 @@ void setup() {
   taskMDNS();  // incompatible with taskOTA
   taskWifi();
   taskWebserver();
+#ifdef THR_FORECAST
+  taskForecast();
+#endif
   // taskMQTT();
   // taskOneWire();
   taskNTPD();
-  //  taskInternalTemperature();
-  //  taskBatteryLevel();
+  // taskInternalTemperature();
+  // taskBatteryLevel();
   // taskUptime();
   // taskWire();
   // taskBluetooth();

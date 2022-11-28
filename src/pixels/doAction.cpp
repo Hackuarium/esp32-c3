@@ -14,11 +14,11 @@ void doAction() {
     int16_t brightness = currentActionValue / 2000;
     int16_t hourMinute = currentActionValue - brightness * 2000;
     /*
-    Serial.print(currentHourMinute);
-    Serial.print(" ");
-    Serial.print(brightness);
-    Serial.print(" ");
-    Serial.println(hourMinute);
+        Serial.print(currentHourMinute);
+        Serial.print(" ");
+        Serial.print(brightness);
+        Serial.print(" ");
+        Serial.println(hourMinute);
     */
     if (currentHourMinute == hourMinute) {
       brightness *= 16;

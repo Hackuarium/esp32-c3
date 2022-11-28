@@ -166,7 +166,7 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_LED_RED, 127);
       setAndSaveParameter(PARAM_LED_GREEN, 63);
       setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+      setAndSaveParameter(PARAM_SCHEDULE, 2);  // on during the night
       // Full power in the evening but reduce at 10PM and
       // turn off at 12PM Turn on in the morning at 5AM but not too strong
       setAndSaveParameter(PARAM_SUNSET_OFFSET, -30);
