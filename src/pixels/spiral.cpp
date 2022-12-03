@@ -8,7 +8,7 @@ unsigned int spiralCounter = 0;
 int16_t getSpiralNextLedIndex(uint8_t row, uint8_t column, uint8_t direction);
 
 // We will store in state if it is the head of the spiral
-void updateSpiral(Adafruit_NeoPixel& pixels, uint8_t state[]) {
+void updateSpiral(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   spiralCounter++;
   if ((spiralCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the spiral

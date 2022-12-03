@@ -31,8 +31,8 @@ void setup() {
 #endif
   taskSerial();
   //  taskSi7021();
-  taskOTA();
-  taskMDNS();  // incompatible with taskOTA
+  //  taskOTA();
+  //  taskMDNS();  // incompatible with taskOTA
   taskWifi();
   taskWebserver();
 #ifdef THR_FORECAST

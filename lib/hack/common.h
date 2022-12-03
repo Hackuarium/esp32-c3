@@ -3,7 +3,7 @@
 #define LED_ON_BOARD 7
 
 #define THR_PIXELS 1
-#define THR_FORECAST 1
+// #define THR_FORECAST 1
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
@@ -66,7 +66,7 @@ extern int16_t parameters[MAX_PARAM];
 /*
  * JUST FOR PIXELs WS2812
  */
-#define MAX_LED 256
+#define MAX_LED 800
 
 #define PARAM_BRIGHTNESS 52             // BA
 #define PARAM_INTENSITY 53              // BB

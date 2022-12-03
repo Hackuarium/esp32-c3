@@ -2,7 +2,7 @@
 const prefix = "B";
 
 // const server = "http://192.168.1.178/";
-const server = "/";
+const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {

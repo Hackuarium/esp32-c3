@@ -242,12 +242,15 @@ int16_t getNextLedIndex(uint8_t row, uint8_t column, uint8_t direction) {
 
 /**
  * Generates the mapping
+ *
+ * (0,0) is on the top left
  */
 void updateMapping() {
   uint8_t nbRow = getParameter(PARAM_NB_ROWS);
   uint8_t nbColumn = getParameter(PARAM_NB_COLUMNS);
 
-  if (getParameter(PARAM_LAYOUT_MODEL) == 0) {
+  if (getParameter(PARAM_LAYOUT_MODEL) ==
+      0) {  // normal square horizontal lines
     for (uint8_t row = 0; row < nbRow; row++) {
       for (uint8_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
@@ -255,6 +258,19 @@ void updateMapping() {
           mapping[led] = led;
         } else {
           mapping[led] = row * nbColumn + nbColumn - column - 1;
+        }
+      }
+    }
+  } else if (getParameter(PARAM_LAYOUT_MODEL) ==
+             1) {  // vertical lines like christmas tree that starts in the
+                   // bottom
+    for (uint8_t row = 0; row < nbRow; row++) {
+      for (uint8_t column = 0; column < nbColumn; column++) {
+        uint16_t led = row * nbColumn + column;
+        if (row % 2 == 0) {
+          mapping[led] = (column + 1) * nbRow - row - 1;
+        } else {
+          mapping[led] = column * nbRow + row;
         }
       }
     }

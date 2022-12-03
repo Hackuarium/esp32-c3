@@ -14,7 +14,7 @@ State:
 */
 
 // We will store in state if it is the head of the comet
-void updateFirework(Adafruit_NeoPixel& pixels, uint8_t state[]) {
+void updateFirework(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   fireworkCounter++;
   if ((fireworkCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet

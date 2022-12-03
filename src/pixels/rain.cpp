@@ -3,7 +3,7 @@
 #include "./params.h"
 #include "./pixels.h"
 
-void updateRain(Adafruit_NeoPixel& pixels, uint8_t state[]) {
+void updateRain(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   for (int led = 0; led < MAX_LED; led++) {
     if (state[led] == 1) {
       if (decreaseColor(pixels, led)) {
