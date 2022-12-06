@@ -201,6 +201,7 @@ void processPixelsCommand(char command,
       updateMapping();
       break;
     case 'b':
+
       setAndSaveParameter(PARAM_BRIGHTNESS, 63);
       setAndSaveParameter(PARAM_INTENSITY, 2);
       setAndSaveParameter(PARAM_SPEED, 17);
@@ -218,6 +219,21 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_LED_GREEN, 63);
       setAndSaveParameter(PARAM_LED_BLUE, 0);
       setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+      setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
+      setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
+      setAndSaveParameter(PARAM_ACTION_1,
+                          30960);  // at 16h brightness to max (15)
+      setAndSaveParameter(PARAM_ACTION_2,
+                          11080);  // at 18h brightness to 5
+      setAndSaveParameter(PARAM_ACTION_3,
+                          3320);               // at 22h brightness to 1
+      setAndSaveParameter(PARAM_ACTION_4, 0);  // at 0h brightness to 0
+      setAndSaveParameter(PARAM_ACTION_5,
+                          2300);  // at 5h brightness to 1
+      // at 5h we set brightness to 1      setAndSaveParameter(PARAM_ACTION_6,
+      // 10420);
+      setAndSaveParameter(PARAM_ACTION_7, 540);  // at 7h we set brightness to 5
+      setAndSaveParameter(PARAM_ACTION_8, -1);   // ignore
 
       updateMapping();
       break;

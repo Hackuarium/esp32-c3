@@ -132,5 +132,16 @@ CB2,-30,30,30960,3320,0,2300
 - 0: at 0h we set brightness to 0
 - 2300: at 5h we set brightness to 4
 
-Reduced power mode (for Christmas)
-CB3,-30,30,8960,9320,0,8300
+### Christmas
+
+We don't use sunrise / sunset but fixed time
+
+- 30960: at 16h we set brightness to max (15)
+- 11080: at 18h we set brightness to 5
+- 3320: at 22h we set brightness to 1
+- 0: at 0h we set brightness to 0
+- 2300: at 5h we set brightness to 1
+- 10420: at 7h we set brightness to 5
+- 540: at 9h we set brightness to 0
+
+CB3,0,0,30960,11080,3320,0,2300,10420,540

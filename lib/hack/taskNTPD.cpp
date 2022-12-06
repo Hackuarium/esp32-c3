@@ -7,8 +7,6 @@
 
 const char* ntpServer = "pool.ntp.org";
 // summer winter time: 7200 for summer, 3600 for winter
-const long gmtOffset_sec = 7200;
-const int daylightOffset_sec = 0;
 struct tm timeInfo;
 time_t now;
 char strftime_buf[64];
@@ -16,8 +14,7 @@ char strftime_buf[64];
 // TODO This task is useless and code can be moved to wifi
 // can also add a paraemter for daylightOffset
 void TaskNTPD(void* pvParameters) {
-  // Set timezone to China Standard Time
-  setenv("TZ", "GMT-2", 1);
+  setenv("TZ", "GMT-1", 1);  // -1 = winter, -2 = summer
   tzset();
 
   while (WiFi.status() != WL_CONNECTED) {

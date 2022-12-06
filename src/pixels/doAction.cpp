@@ -1,8 +1,9 @@
 #include "./common.h"
 #include "./params.h"
 #include "taskNTPD.h"
-uint8_t ACTIONS[4] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
-                      PARAM_ACTION_4};
+uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
+                      PARAM_ACTION_4, PARAM_ACTION_5, PARAM_ACTION_6,
+                      PARAM_ACTION_7, PARAM_ACTION_8};
 
 void doAction() {
   int16_t currentHourMinute = getHourMinute();
@@ -24,7 +25,9 @@ void doAction() {
       brightness *= 16;
       if (brightness > 230)
         brightness = 255;
-      setParameter(PARAM_BRIGHTNESS, brightness);
+      if (getParameter(PARAM_BRIGHTNESS) != brightness) {
+        setAndSaveParameter(PARAM_BRIGHTNESS, brightness);
+      }
     }
   }
 }

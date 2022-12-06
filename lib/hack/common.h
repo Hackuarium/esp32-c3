@@ -111,3 +111,7 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_ACTION_3 84  // CG
 // Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
 #define PARAM_ACTION_4 85  // CH
+#define PARAM_ACTION_5 86  // CI
+#define PARAM_ACTION_6 87  // CJ
+#define PARAM_ACTION_7 88  // CK
+#define PARAM_ACTION_8 89  // CL
