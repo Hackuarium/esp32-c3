@@ -5,7 +5,9 @@
 #include "./pixels/doAction.h"
 #include "./pixels/firework.h"
 #include "./pixels/flame.h"
-//#include "./pixels/function.h"
+#include "./pixels/line.h"
+// #include "./pixels/function.h"
+#include <freertos/task.h>
 #include "./pixels/life.h"
 #include "./pixels/meteo.h"
 #include "./pixels/pixels.h"
@@ -77,6 +79,8 @@ void TaskPixels(void* pvParameters) {
     pixels.updateType(getParameter(PARAM_COLOR_LED_MODEL));
 
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    pixels.show();  // Send the updated pixel colors to the hardware.
+
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {
         /**
       case 0:
@@ -122,17 +126,19 @@ void TaskPixels(void* pvParameters) {
         updateFirework(pixels, state);
         break;
       case 11:
+        updateLine(pixels);
+        break;
+      case 12:
         updateTest(pixels);
         break;
     }
-    pixels.show();  // Send the updated pixel colors to the hardware.
   }
 }
 
 void taskPixels() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskPixels, "TaskPixels",
-                          10000,  // This stack size can be checked & adjusted
+                          15000,  // This stack size can be checked & adjusted
                                   // by reading the Stack Highwater
                           NULL,
                           3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
@@ -144,6 +150,7 @@ void printPixelsHelp(Print* output) {
   output->println(F("(pc) Reset parameters for cube"));
   output->println(F("(ps) Reset parameters for square"));
   output->println(F("(pb) Reset parameters for big christmas tree"));
+  output->println(F("(pl) Reset parameters for line"));
 }
 
 void processPixelsCommand(char command,
@@ -201,7 +208,6 @@ void processPixelsCommand(char command,
       updateMapping();
       break;
     case 'b':
-
       setAndSaveParameter(PARAM_BRIGHTNESS, 63);
       setAndSaveParameter(PARAM_INTENSITY, 2);
       setAndSaveParameter(PARAM_SPEED, 17);
@@ -230,11 +236,42 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_ACTION_4, 0);  // at 0h brightness to 0
       setAndSaveParameter(PARAM_ACTION_5,
                           2300);  // at 5h brightness to 1
-      // at 5h we set brightness to 1      setAndSaveParameter(PARAM_ACTION_6,
-      // 10420);
-      setAndSaveParameter(PARAM_ACTION_7, 540);  // at 7h we set brightness to 5
+
+      setAndSaveParameter(PARAM_ACTION_6,
+                          10420);                // at 7h we set brightness to 5
+      setAndSaveParameter(PARAM_ACTION_7, 540);  // at 9h we set brightness to 0
       setAndSaveParameter(PARAM_ACTION_8, -1);   // ignore
 
+      updateMapping();
+      break;
+    case 'l':
+      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
+      setAndSaveParameter(PARAM_INTENSITY, 2);
+      setAndSaveParameter(PARAM_SPEED, 17);
+      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 11);
+      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
+      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
+      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
+      setAndSaveParameter(PARAM_NB_ROWS, 1);
+      setAndSaveParameter(PARAM_NB_COLUMNS, 800);
+      setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
+      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
+      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
+      setAndSaveParameter(PARAM_DIRECTION, 1);
+      setAndSaveParameter(PARAM_LED_RED, 127);
+      setAndSaveParameter(PARAM_LED_GREEN, 63);
+      setAndSaveParameter(PARAM_LED_BLUE, 0);
+      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+      setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
+      setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
+      setAndSaveParameter(PARAM_ACTION_1, -1);
+      setAndSaveParameter(PARAM_ACTION_2, -1);
+      setAndSaveParameter(PARAM_ACTION_3, -1);
+      setAndSaveParameter(PARAM_ACTION_4, -1);
+      setAndSaveParameter(PARAM_ACTION_5, -1);
+      setAndSaveParameter(PARAM_ACTION_6, -1);
+      setAndSaveParameter(PARAM_ACTION_7, -1);
+      setAndSaveParameter(PARAM_ACTION_8, -1);
       updateMapping();
       break;
     default:

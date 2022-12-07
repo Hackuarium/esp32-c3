@@ -27,13 +27,13 @@ void setup() {
 
   setupParameters();
 #ifdef THR_PIXELS
-  taskPixels();
+  // taskPixels();
 #endif
   taskSerial();
   //  taskSi7021();
   //  taskOTA();
   //  taskMDNS();  // incompatible with taskOTA
-  taskWifi();
+  // taskWifi();
   taskWebserver();
 #ifdef THR_FORECAST
   taskForecast();

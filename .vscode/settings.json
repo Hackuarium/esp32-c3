@@ -2,6 +2,8 @@
   "files.associations": {
     "random": "cpp",
     "functional": "cpp",
-    "cmath": "cpp"
+    "cmath": "cpp",
+    "atomic": "cpp",
+    "cstdint": "cpp"
   }
 }

@@ -15,15 +15,15 @@ if (urlParams && urlParams.get("servers")) {
 let timerId = undefined;
 let lastEvent = Date.now();
 let throttle = 200;
-async function sendSlowlyCommand(command) {
+async function sendSlowlyCommand(command, value) {
   clearTimeout(timerId);
   if (Date.now() - lastEvent > throttle) {
     lastEvent = Date.now();
-    sendCommand(command);
+    sendCommand(command, value);
   } else {
     timerId = setTimeout(() => {
       lastEvent = Date.now();
-      sendCommand(command);
+      sendCommand(command, value);
     }, throttle - (Date.now() - lastEvent));
   }
 }
@@ -39,14 +39,14 @@ async function getCurrentSettings() {
   return result;
 }
 
-async function sendCommand(command) {
+async function sendCommand(command, value) {
   console.log(command);
   if (command.match(/^[A-Z][0-9]+$/)) {
     let elements = document.querySelectorAll(
       `[data-label=${command.substring(0, 1)}]`
     );
     for (let element of elements) {
-      element.value = command.substring(1);
+      element.value = value || command.substring(1);
     }
   }
   if (command.match(/^[A-Z][0-9,]+$/)) {
@@ -56,10 +56,14 @@ async function sendCommand(command) {
   const results = [];
 
   for (let server of servers) {
-    const response = await fetch(
-      server + "command" + "?value=" + encodeURIComponent(command)
-    );
-    results.push(await response.text());
+    try {
+      const response = await fetch(
+        server + "command" + "?value=" + encodeURIComponent(command)
+      );
+      results.push(await response.text());
+    } catch (e) {
+      console.log("Can not access: " + server);
+    }
   }
   document.getElementById("result").value = results.join("\n");
   return results.join("\n");
@@ -96,8 +100,13 @@ async function reloadSettings() {
     let elements = document.querySelectorAll(
       `[data-label="${code}"]:not([type="radio"])`
     );
-    for (let element of elements) {
-      element.value = value;
+    for (const element of elements) {
+      if (element.getAttribute("type") === "color") {
+        // color on 15 bits
+        element.value = color12ToHex(value);
+      } else {
+        element.value = value;
+      }
     }
     // radio button
     elements = document.querySelectorAll(
@@ -107,11 +116,49 @@ async function reloadSettings() {
       element.setAttribute("checked", "checked");
     }
   }
+
   // color button (in KLM)
   let elements = document.querySelectorAll(`[data-label="KLM"]`);
   for (let element of elements) {
     element.value =
       "#" + result.substr(42, 2) + result.substr(46, 2) + result.substr(50, 2);
+  }
+}
+
+function colorHexTo12(value) {
+  const rgb = value.match(/[A-Za-z0-9]{2}/g).map((v) => parseInt(v, 16));
+  const color =
+    ((rgb[0] >> 4) << 8) + ((rgb[1] >> l) << 4) + ((rgb[2] >> 4) << 0);
+  return color;
+}
+
+function color12ToHex(value) {
+  const result =
+    "#" +
+    ("00" + Number((value & 0xf00) >> 4).toString(16)).slice(-2) +
+    ("00" + Number((value & 0x0f0) >> 0).toString(16)).slice(-2) +
+    ("00" + Number((value & 0x00f) << 4).toString(16)).slice(-2);
+  console.log(value, result);
+  return result;
+}
+
+function addColorModelsButtons(models) {
+  const modelsElement = document.getElementById("models");
+  if (!models || !modelsElement) return;
+  for (const model of models) {
+    const colors = model.map((color) => color12ToHex(color)).join(",");
+    const button = document.createElement("button");
+    button.setAttribute("class", "text-xl w-1/5 text-white");
+    button.style.setProperty(
+      "background-image",
+      "linear-gradient(to right, " + colors + ")"
+    );
+    const command =
+      "P" + model.slice(0, 4).join(",") + "V" + model.slice(4, 8).join(",");
+    button.onmousedown = () => {
+      sendCommand(command);
+    };
+    modelsElement.appendChild(button);
   }
 }
 reloadSettings();
