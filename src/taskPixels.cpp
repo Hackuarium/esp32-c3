@@ -255,7 +255,7 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_NB_ROWS, 1);
       setAndSaveParameter(PARAM_NB_COLUMNS, 800);
       setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
-      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
+      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_RGB);
       setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
       setAndSaveParameter(PARAM_DIRECTION, 1);
       setAndSaveParameter(PARAM_LED_RED, 127);

@@ -1,8 +1,8 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
 const prefix = "B";
 
-// const server = "http://192.168.1.178/";
-const server = "";
+const server = "http://192.168.1.161/";
+//const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
@@ -28,15 +28,46 @@ async function sendSlowlyCommand(command, value) {
   }
 }
 
-async function getCurrentSettings() {
+async function getSettings() {
   const response = await fetch(servers[0] + "command" + "?value=uc");
-  const result = await response.text();
+  let result = await response.text();
+  if (prefix) {
+    const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
+    result = result.substring(shift, shift + 104);
+  } else {
+    result = result.substring(8); // first 8 symbols is epoch
+  }
   const parameters = [];
-  for (let i = 0; i < Math.min(result.length, 60); i = i + 4) {
+  for (let i = 0; i < Math.min(result.length, 104); i = i + 4) {
     parameters.push(parseInt(result.substr(i, 4), 16));
   }
+  console.log(parameters);
+  return parameters;
+}
+
+async function getCurrentSettings() {
+  console.log("CURRENT");
+  let parameters = await getSettings();
+  parameters = parameters.slice(0, 15);
   document.getElementById("result").value = "A" + parameters.join(",");
   return result;
+}
+
+async function getCurrentLineColor() {
+  let parameters = await getSettings();
+  console.log(parameters);
+  const colors =
+    "[" +
+    parameters
+      .slice(15, 19)
+      .concat(parameters.slice(21, 25))
+      .map((value) => "0x" + ("000" + value.toString(16)).slice(-3))
+      .join(", ") +
+    "],";
+  document.getElementById("result").value = colors;
+  // [0xf00, 0x0f0, 0x00f, 0x000 ,0xf00, 0x0f0, 0x00f, 0x000 ],
+
+  return colors;
 }
 
 async function sendCommand(command, value) {
@@ -97,6 +128,7 @@ async function reloadSettings() {
   for (let i = 0; i < result.length; i = i + 4) {
     let code = String.fromCharCode(65 + i / 4);
     let value = parseInt(result.substring(i, i + 4), 16);
+    console.log(code, value);
     let elements = document.querySelectorAll(
       `[data-label="${code}"]:not([type="radio"])`
     );
@@ -128,7 +160,7 @@ async function reloadSettings() {
 function colorHexTo12(value) {
   const rgb = value.match(/[A-Za-z0-9]{2}/g).map((v) => parseInt(v, 16));
   const color =
-    ((rgb[0] >> 4) << 8) + ((rgb[1] >> l) << 4) + ((rgb[2] >> 4) << 0);
+    ((rgb[0] >> 4) << 8) + ((rgb[1] >> 4) << 4) + ((rgb[2] >> 4) << 0);
   return color;
 }
 
@@ -148,17 +180,17 @@ function addColorModelsButtons(models) {
   for (const model of models) {
     const colors = model.map((color) => color12ToHex(color)).join(",");
     const button = document.createElement("button");
-    button.setAttribute("class", "text-xl w-1/5 text-white");
+    button.setAttribute("class", "text-xl w-1/4 h-8 text-white");
     button.style.setProperty(
       "background-image",
       "linear-gradient(to right, " + colors + ")"
     );
-    const command =
-      "P" + model.slice(0, 4).join(",") + "V" + model.slice(4, 8).join(",");
-    button.onmousedown = () => {
-      sendCommand(command);
+    button.onmousedown = async () => {
+      await sendCommand(prefix + "P" + model.slice(0, 4).join(","));
+      await sendCommand(prefix + "V" + model.slice(4, 8).join(","));
+      await reloadSettings();
     };
-    modelsElement.appendChild(button);
+    modelsElement.append(button);
   }
 }
 reloadSettings();

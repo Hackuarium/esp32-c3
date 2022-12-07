@@ -36,7 +36,7 @@ void updateFirework(Adafruit_NeoPixel& pixels, uint16_t state[]) {
     }
 
     for (int16_t row = getParameter(PARAM_NB_ROWS) - 1; row >= 0; row--) {
-      for (uint8_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
+      for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
            column++) {
         uint16_t led = getLedIndex(row, column);
         if ((state[led] == 2) ||

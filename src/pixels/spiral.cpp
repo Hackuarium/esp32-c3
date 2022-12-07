@@ -52,7 +52,7 @@ void updateSpiral(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   }
 
   uint8_t row = random(0, getParameter(PARAM_NB_ROWS));
-  uint8_t column = random(0, getParameter(PARAM_NB_COLUMNS));
+  uint16_t column = random(0, getParameter(PARAM_NB_COLUMNS));
   int16_t led;
   uint8_t direction = getDirection();
   switch (direction & 7) {

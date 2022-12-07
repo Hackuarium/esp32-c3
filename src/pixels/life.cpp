@@ -40,7 +40,7 @@ void updateLife(Adafruit_NeoPixel& pixels) {
   uint8_t nbColumns = getParameter(PARAM_NB_COLUMNS);
   // calculate numbers of neighbours
   for (uint8_t row = 0; row < nbRows; row++) {
-    for (uint8_t column = 0; column < nbColumns; column++) {
+    for (uint16_t column = 0; column < nbColumns; column++) {
       uint16_t led = getLedIndex(row, column);
       lifeState[getLedIndex(row, column)].neighbours =
           lifeState[getLedIndex((row + nbRows - 1) % 16,
@@ -61,7 +61,7 @@ void updateLife(Adafruit_NeoPixel& pixels) {
 
   // kill or create
   for (uint8_t row = 0; row < nbRows; row++) {
-    for (uint8_t column = 0; column < nbColumns; column++) {
+    for (uint16_t column = 0; column < nbColumns; column++) {
       uint16_t led = getLedIndex(row, column);
       if (lifeState[led].state) {
         if (lifeState[led].neighbours < 2) {

@@ -252,7 +252,7 @@ void updateMapping() {
   if (getParameter(PARAM_LAYOUT_MODEL) ==
       0) {  // normal square horizontal lines
     for (uint8_t row = 0; row < nbRow; row++) {
-      for (uint8_t column = 0; column < nbColumn; column++) {
+      for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         if (row % 2 == 0) {
           mapping[led] = led;
@@ -265,7 +265,7 @@ void updateMapping() {
              1) {  // vertical lines like christmas tree that starts in the
                    // bottom
     for (uint8_t row = 0; row < nbRow; row++) {
-      for (uint8_t column = 0; column < nbColumn; column++) {
+      for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         if (row % 2 == 0) {
           mapping[led] = (column + 1) * nbRow - row - 1;
@@ -276,7 +276,7 @@ void updateMapping() {
     }
   } else {
     for (uint8_t row = 0; row < nbRow; row++) {
-      for (uint8_t column = 0; column < nbColumn; column++) {
+      for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         uint16_t squareShift = (row > 7 ? 128 : 0) + (column > 7 ? 64 : 0);
         if (row % 2 == 0) {

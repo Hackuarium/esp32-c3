@@ -18,27 +18,13 @@
 
 
 <body style="zoom: 1.5">
-  <div class="flex flex-nowrap" id="models">
-	<button class="text-xl bg-red-600 w-1/5 text-white" onmousedown="sendCommand('A100,2,5,1,7,6,4,6'); sendCommand('K0,255,0,144')">Green tree 1</button>
+  <div class="flex flex-wrap" id="models">
  </div>
   <div>
-  <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D1')">Rain mode</button>
+  <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D11')">Line mode</button>
   Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
-  Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('H'+value)" min="0" max="255"></input><br>
-  Color: <select data-label="E" onchange="sendCommand('E'+this.value)">
-    <option value="0">Fixed</option>
-    <option value="1">Orangish</option>
-    <option value="2">Random orangish</option>
-    <option value="3">Geenish</option>
-    <option value="4">Random greenish</option>
-    <option value="5">Violetish</option>
-    <option value="6">Random violetish</option>
-    <option value="7">Rainbow</option>
-    <option value="8">Random rainbow</option>
-    <option value="9">Random</option>
-  </select><br>
-  If color is fixed:<br>
-  <input type="color" data-label="P" style="width: 25px"
+    Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('C'+this.value)" min="0" max="20"></input><br>
+    <input type="color" data-label="P" style="width: 25px"
     oninput="sendSlowlyCommand('P'+colorHexTo12(value), value)"></input>
   <input type="color" data-label="Q" style="width: 25px"
     oninput="sendSlowlyCommand('Q'+colorHexTo12(value), value)"></input>
@@ -57,13 +43,8 @@
     
     
     <br>
-  If not fixed:<br>
-  Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('F'+this.value)" min="0"
-    max="10"></input><br>
-  Fading speed: <input data-label="G" type="range" oninput="sendSlowlyCommand('G'+this.value)" min="0"
-    max="9"></input><br>
-  Other options:<br>
-  Number of events: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
+
+  Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
     max="7"></input><br>
 </div>
 
@@ -76,6 +57,7 @@
   <button class="border-2 border-black" onmousedown="sendCommand('h')">Help</button>
   <button class="border-2 border-black" onmousedown="sendCommand('s')">Settings</button>
   <button class="border-2 border-black" onmousedown="getCurrentSettings()">Current settings</button>
+  <button class="border-2 border-black" onmousedown="getCurrentLineColor()">Current color settings</button>
   <h1>Advanced</h1>
   <form>
     <input type="text" class="border-2 border-black" name="command"> <input type="submit"
@@ -88,9 +70,18 @@
 
 <script>
   const models = [
-    [0xf00, 0x0f0, 0x00f, 0x000 ,0xf00, 0x0f0, 0x00f, 0x000 ],
-    [0xf00, 0xf00, 0xf00, 0xf00 ,0xf00, 0xf00, 0xf00, 0xf00 ],
-    [0xf00, 0xf00, 0xf00, 0xf00 ,0xf00, 0xf00, 0xf00, 0xf00 ]
+    [0xf00, 0x0f0, 0x00f, 0x000 ,0xf00, 0x0f0, 0x00f, 0x000],
+    [0xf0d, 0x20f, 0x30f, 0x00f, 0xf00, 0xf10, 0xf40, 0x2f0],
+    [0xf00, 0xf00, 0xf00, 0xf00 ,0xf00, 0xf00, 0xf00, 0xf00],
+    [0x0f0, 0x0f0, 0x0f0, 0x0f0 ,0x0f0, 0x0f0, 0x0f0, 0x0f0],
+    [0x00f, 0x00f, 0x00f, 0x00f ,0x00f, 0x00f, 0x00f, 0x00f],
+    [0xf70, 0xfd0, 0x30f, 0x00f, 0xf00, 0xf10, 0xf40, 0x2f0],
+    [0xf70, 0xfd0, 0x30f, 0x00f, 0xf00, 0xf10, 0xf40, 0x2f0],
+    [0xf70, 0xf00, 0xf00, 0xfff, 0xf10, 0xf00, 0xf40, 0xf60],
+    [0x01f, 0x08f, 0x04f, 0xfff, 0x0ef, 0xfff, 0x09f, 0x00f],
+    [0x0f0, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0x0f0],
+
+
   ];
   addColorModelsButtons(models)
 </script>

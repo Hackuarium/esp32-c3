@@ -18,9 +18,12 @@ void updateLine(Adafruit_NeoPixel& pixels) {
     return;
 
   lineShift++;
+  if (getParameter(PARAM_SPEED) > 10) {
+    lineShift += getParameter(PARAM_SPEED) - 10;
+  }
 
   for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
-    for (uint8_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
+    for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
          column++) {
       uint16_t led = row * getParameter(PARAM_NB_COLUMNS) + column;
       pixels.setPixelColor(led, getPixelColor(led, lineShift));
@@ -29,7 +32,7 @@ void updateLine(Adafruit_NeoPixel& pixels) {
 }
 
 uint32_t getPixelColor(uint16_t led, uint16_t shift) {
-  uint16_t pixelWidth = 16;
+  uint16_t pixelWidth = pow(2, getParameter(PARAM_INTENSITY) + 4);
   uint16_t index = (led + lineShift) % getParameter(PARAM_NB_COLUMNS);
   uint8_t howClose = index % pixelWidth;
   uint8_t color1Index = (index - howClose) / pixelWidth;
@@ -41,12 +44,12 @@ uint32_t getPixelColor(uint16_t led, uint16_t shift) {
   float_t percent1 = 1 - ((float)howClose / (float)pixelWidth);
   float_t percent2 = 1 - percent1;
 
-  float_t r1 = (color1 & 0b111110000000000) >> 7;
-  float_t g1 = (color1 & 0b000001111100000) >> 2;
-  float_t b1 = (color1 & 0b000000000011111) << 3;
-  float_t r2 = (color2 & 0b111110000000000) >> 7;
-  float_t g2 = (color2 & 0b000001111100000) >> 2;
-  float_t b2 = (color2 & 0b000000000011111) << 3;
+  float_t r1 = (color1 & 0xf00) >> 4;
+  float_t g1 = (color1 & 0x0f0) >> 0;
+  float_t b1 = (color1 & 0x00f) << 4;
+  float_t r2 = (color2 & 0xf00) >> 4;
+  float_t g2 = (color2 & 0x0f0) >> 0;
+  float_t b2 = (color2 & 0x00f) << 4;
 
   return (((int)(r1 * percent1 + r2 * percent2) << 16)) +
          (((int)(g1 * percent1 + g2 * percent2) << 8)) +
