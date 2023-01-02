@@ -37,7 +37,7 @@ void setup() {
   // taskOTA();
   // taskMDNS();  // incompatible with taskOTA
   taskWifi();
-  // taskWifiAP();
+  //  taskWifiAP();
   taskWebserver();
 #ifdef THR_FORECAST
   taskForecast();

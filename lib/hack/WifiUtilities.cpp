@@ -48,7 +48,7 @@ void processWifiCommand(char command,
       getParameter("wifi.ap.ssid", wifiTemp);
       output->println(wifiTemp);
       output->print("AP password: ");
-      getParameter("wifi.ap.password", wifiTemp);
+      getParameter("wifi.ap.pass", wifiTemp);
       output->println(wifiTemp);
       output->print("AP IP address: ");
       output->println(WiFi.softAPIP());
@@ -96,7 +96,8 @@ void processWifiCommand(char command,
       break;
     case 's':
       if (paramValue[0] == '\0') {
-        output->println("Please enter the WIFI SSID");
+        getParameter("wifi.ssid", paramValue);
+        output->println(paramValue);
       } else {
         setParameter("wifi.ssid", paramValue);
         output->println(paramValue);
@@ -111,12 +112,22 @@ void processWifiCommand(char command,
       output->println(paramValue);
       break;
     case 'a':
-      setParameter("wifi.ap.ssid", paramValue);
-      output->println(paramValue);
+      if (paramValue[0] == '\0') {
+        getParameter("wifi.ap.ssid", paramValue);
+        output->println(paramValue);
+      } else {
+        setParameter("wifi.ap.ssid", paramValue);
+        output->println(paramValue);
+      }
       break;
     case 'c':
-      setParameter("wifi.ap.password", paramValue);
-      output->println(paramValue);
+      if (paramValue[0] == '\0') {
+        getParameter("wifi.ap.pass", paramValue);
+        output->println(paramValue);
+      } else {
+        setParameter("wifi.ap.pass", paramValue);
+        output->println(paramValue);
+      }
       break;
     default:
       printWifiHelp(output);

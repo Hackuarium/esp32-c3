@@ -39,7 +39,6 @@ void TaskSPIFSLogger(void* pvParameters) {
       fflush(file);
       fclose(file);
     }
-
     if (getParameter(PARAM_LOGGING_NB_ENTRIES) > 0) {
       if (!fileOpen) {
         file = fopen("/spiffs/log.txt", "a");

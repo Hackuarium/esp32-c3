@@ -9,7 +9,7 @@ char passwordAP[30];
 void TaskWifiAP(void* pvParameters) {
   vTaskDelay(2500);
   getParameter("wifi.ap.ssid", ssidAP);
-  getParameter("wifi.ap.password", passwordAP);
+  getParameter("wifi.ap.pass", passwordAP);
 
   Serial.print("Trying to create wifi AP: ");
   Serial.println(ssidAP);

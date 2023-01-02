@@ -8,19 +8,14 @@
 
 #define LED_ON_BOARD 7
 
-#define THR_PIXELS 1
+// #define THR_PIXELS 1
 // #define THR_FORECAST 1
 // #define THR_ONEWIRE {6}
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
 
-#define PARAM_ACCELERATION_X 0  // A
-#define PARAM_ACCELERATION_Y 1  // B
-#define PARAM_ACCELERATION_Z 2  // C
-#define PARAM_ROTATION_X 3      // D
-#define PARAM_ROTATION_Y 4      // E
-#define PARAM_ROTATION_Z 5      // F
+#define ROCKET 1
 
 #define PARAM_TEMPERATURE 0  // A
 #define PARAM_HUMIDITY 1     // B
@@ -132,3 +127,19 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_ACTION_6 87  // CJ
 #define PARAM_ACTION_7 88  // CK
 #define PARAM_ACTION_8 89  // CL
+
+#ifdef ROCKET
+#define PARAM_ACCELERATION_X 0            // A
+#define PARAM_ACCELERATION_Y 1            // B
+#define PARAM_ACCELERATION_Z 2            // C
+#define PARAM_ROTATION_X 3                // D
+#define PARAM_ROTATION_Y 4                // E
+#define PARAM_ROTATION_Z 5                // F
+#define PARAM_WIFI_RSSI 13                // M
+#define PARAM_STATUS 14                   // N
+#define PARAM_ERROR 15                    // O
+#define PARAM_LOGGING_INTERVAL 17         // R - positive = s, negative = ms
+#define PARAM_LOGGING_NB_ENTRIES 18       // S
+#define PARAM_LOGGING_FIRST_PARAMETER 19  // T
+#define PARAM_LOGGING_NB_PARAMETERS 20    // U
+#endif

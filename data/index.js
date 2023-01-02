@@ -116,7 +116,6 @@ async function sendFunction() {
 async function reloadSettings() {
   let result = await sendCommand("uc");
   // TODO we could check the checkDigit ...
-
   if (prefix) {
     const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
     result = result.substring(shift, shift + 104);
@@ -131,11 +130,15 @@ async function reloadSettings() {
     let elements = document.querySelectorAll(
       `[data-label="${code}"]:not([type="radio"])`
     );
+    console.log({ elements });
     for (const element of elements) {
       if (element.getAttribute("type") === "color") {
         // color on 15 bits
         element.value = color12ToHex(value);
       } else {
+        if (value > 32767) {
+          value = value - 65536;
+        }
         element.value = value;
       }
     }
