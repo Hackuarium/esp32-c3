@@ -4,6 +4,7 @@
 void deepSleep(int seconds);
 void taskBlink();
 void taskSi7021();
+void taskGY521();
 void taskSerial();
 void taskNTPD();
 void taskDHT22();
@@ -11,9 +12,11 @@ void taskMQTT();
 void taskPixels();
 void taskBluetooth();
 void taskOneWire();
+void taskSPIFSLogger();
 void taskForecast();
 void taskUptime();
 void taskWifi();
+void taskWifiAP();
 void taskOTA();
 void taskMDNS();
 void taskBatteryLevel();
@@ -30,21 +33,24 @@ void setup() {
   taskPixels();
 #endif
   taskSerial();
-  //  taskSi7021();
-  //  taskOTA();
-  //  taskMDNS();  // incompatible with taskOTA
+  // taskSi7021();
+  // taskOTA();
+  // taskMDNS();  // incompatible with taskOTA
   taskWifi();
+  // taskWifiAP();
   taskWebserver();
 #ifdef THR_FORECAST
   taskForecast();
 #endif
   // taskMQTT();
   // taskOneWire();
-  taskNTPD();
-  // taskInternalTemperature();
-  // taskBatteryLevel();
-  // taskUptime();
-  // taskWire();
+  taskGY521();
+  // taskNTPD();
+  //  taskInternalTemperature();
+  //  taskBatteryLevel();
+  //  taskUptime();
+  taskWire();
+  taskSPIFSLogger();
   // taskBluetooth();
   taskBlink();
 

@@ -165,9 +165,11 @@ void printResult(char* data, Print* output) {
       processLoggerCommand(data[1], paramValue, output);
       break;
 #endif
+#ifdef THR_ONEWIRE
     case 'o':
       oneWireInfo(output);
       break;
+#endif
 #ifdef THR_PIXELS
     case 'p':
       processPixelsCommand(data[1], paramValue, output);

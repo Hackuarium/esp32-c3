@@ -89,7 +89,6 @@ To upload the data
 ## Alternative web server
 
 https://github.com/me-no-dev/ESPAsyncWebServer#using-platformio
-h
 
 ## OTA
 

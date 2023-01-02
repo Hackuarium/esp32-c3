@@ -1,8 +1,7 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
-const prefix = "B";
 
-const server = "http://192.168.1.161/";
-//const server = "";
+//const server = "http://192.168.1.128/";
+const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
@@ -128,7 +127,7 @@ async function reloadSettings() {
   for (let i = 0; i < result.length; i = i + 4) {
     let code = String.fromCharCode(65 + i / 4);
     let value = parseInt(result.substring(i, i + 4), 16);
-    console.log(code, value);
+    console.log({ code, value });
     let elements = document.querySelectorAll(
       `[data-label="${code}"]:not([type="radio"])`
     );
@@ -170,8 +169,13 @@ function color12ToHex(value) {
     ("00" + Number((value & 0xf00) >> 4).toString(16)).slice(-2) +
     ("00" + Number((value & 0x0f0) >> 0).toString(16)).slice(-2) +
     ("00" + Number((value & 0x00f) << 4).toString(16)).slice(-2);
-  console.log(value, result);
   return result;
+}
+
+async function delay(millis) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, millis);
+  });
 }
 
 function addColorModelsButtons(models) {

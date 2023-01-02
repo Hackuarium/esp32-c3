@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <style>
+    button {
+      border: 2px solid white;
+    }
+  </style>
+
+  <body style="zoom: 1.5">
+    <div class="flex flex-wrap" id="models">
+      <div
+        onclick="goto('line',136)"
+        class="w-1/2 h-24 bg-red-200 grid place-items-center"
+      >
+        Le mur peint
+      </div>
+      <div
+        onclick="goto('line',161)"
+        class="w-1/2 h-24 bg-blue-200 grid place-items-center"
+      >
+        Le meuble
+      </div>
+      <div
+        onclick="goto('tree',137)"
+        class="w-1/2 h-24 bg-purple-200 grid place-items-center"
+      >
+        Le devant
+      </div>
+      <div
+        onclick="goto('tree',134)"
+        class="w-1/2 h-24 bg-green-200 grid place-items-center"
+      >
+        Le sapin
+      </div>
+    </div>
+  </body>
+
+  <script>
+    function goto(kind, value) {
+      window.location.href = "http://192.168.1." + value + "/" + kind + ".html";
+    }
+  </script>
+</html>

@@ -8,8 +8,7 @@ void TaskSi7021(void* pvParameters) {
   vTaskDelay(100);
   (void)pvParameters;
 
-  Wire.begin(
-      3, 4);  // Define specific i2c pins for SDA/SCL (mandatory for ESP32-C3)
+  Wire.begin(WIRE_SDA, WIRE_SCL);
 
   while (!sensor.begin()) {
     vTaskDelay(300);

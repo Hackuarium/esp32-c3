@@ -89,7 +89,9 @@ void printHelp(Print* output) {
 #ifdef THR_PIXELS
   output->println(F("(p)ixels"));
 #endif
+#ifdef THR_ONEWIRE
   output->println(F("(o)neWire"));
+#endif
   output->println(F("(s)ettings"));
   output->println(F("(u)tilities"));
   output->println(F("(w)ifi"));

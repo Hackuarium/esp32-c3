@@ -4,6 +4,8 @@
     "functional": "cpp",
     "cmath": "cpp",
     "atomic": "cpp",
-    "cstdint": "cpp"
+    "cstdint": "cpp",
+    "common.h": "c",
+    "cstdio": "cpp"
   }
 }

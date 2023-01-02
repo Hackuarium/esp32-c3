@@ -34,7 +34,7 @@ void printCompactParameters(Print* output, byte number);
 void printCompactParameters(Print* output);
 
 void getFunction(char* string);
-void setFunction(char* string);
+void setFunction(const char* string);
 
 void setParameter(char* key, char* value);
 void getParameter(char* key, char* value);

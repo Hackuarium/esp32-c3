@@ -3,7 +3,9 @@
 
 #include <OneWire.h>
 
-byte oneWirePorts[] = {6, 8};
+#ifdef THR_ONEWIRE
+
+byte oneWirePorts[] = THR_ONEWIRE;
 byte oneWireParameters[] = {PARAM_TEMPERATURE, PARAM_INT_TEMPERATURE_A};
 
 OneWire* oneWires[sizeof(oneWirePorts)];
@@ -86,3 +88,5 @@ void taskOneWire() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+
+#endif

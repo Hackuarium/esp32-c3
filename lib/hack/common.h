@@ -1,16 +1,30 @@
 #include <Arduino.h>
 
+// #define WIRE_SDA 3
+// #define WIRE_SCL 4
+
+#define WIRE_SDA 6  // ESP32-C3 Seeed Studio XIAO ESP32C3
+#define WIRE_SCL 7
+
 #define LED_ON_BOARD 7
 
 #define THR_PIXELS 1
 // #define THR_FORECAST 1
+// #define THR_ONEWIRE {6}
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
 
-#define PARAM_TEMPERATURE 0
-#define PARAM_HUMIDITY 1
-#define PARAM_PRESSURE 2
+#define PARAM_ACCELERATION_X 0  // A
+#define PARAM_ACCELERATION_Y 1  // B
+#define PARAM_ACCELERATION_Z 2  // C
+#define PARAM_ROTATION_X 3      // D
+#define PARAM_ROTATION_Y 4      // E
+#define PARAM_ROTATION_Z 5      // F
+
+#define PARAM_TEMPERATURE 0  // A
+#define PARAM_HUMIDITY 1     // B
+#define PARAM_PRESSURE 2     // C
 #define PARAM_LUMINOSITY 3
 #define PARAM_RED 4
 #define PARAM_GREEN 5
@@ -38,11 +52,14 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_STATUS_FLAG_NO_MQTT 1
 #define PARAM_STATUS_FLAG_MQTT_PUBLISHED 8
 
-#define PARAM_LOGGING_INTERVAL 26    // AA
-#define PARAM_WEIGHT_OFFSET 27       // AB
-#define PARAM_WEIGHT_FACTOR 28       // AC
-#define PARAM_SLEEP_NORMAL_DELAY 29  // AD
-#define PARAM_SLEEP_ERROR_DELAY 30   // AE
+#define PARAM_LOGGING_INTERVAL 26         // AA - positive = s, negative = ms
+#define PARAM_LOGGING_NB_ENTRIES 27       // AB
+#define PARAM_LOGGING_FIRST_PARAMETER 28  // AC
+#define PARAM_LOGGING_NB_PARAMETERS 29    // AD
+#define PARAM_WEIGHT_OFFSET 30            // AE
+#define PARAM_WEIGHT_FACTOR 31            // AF
+#define PARAM_SLEEP_NORMAL_DELAY 32       // AG
+#define PARAM_SLEEP_ERROR_DELAY 33        // AH
 
 #define PARAM_GATE1_IN 36  // AK
 #define PARAM_GATE1_OUT 37
@@ -98,7 +115,7 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_COMMAND_8 76        // BY
 
 #define PARAM_LAYOUT_MODEL 77     // BZ
-#define PARAM_COLOR_LED_MODEL 78  // CA
+#define PARAM_COLOR_LED_MODEL 78  // CA  NEO_RGB: 6 - NEO_GRB: 82
 #define PARAM_SCHEDULE 79         // CB - 1 day, 2 night, 3 day+night
 // Allows to turn on before or after sunset (in minutes)
 #define PARAM_SUNSET_OFFSET 80   // CC

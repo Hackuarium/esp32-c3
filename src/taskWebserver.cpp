@@ -26,8 +26,22 @@ void notFound(AsyncWebServerRequest* request) {
 
 void handleFunction(AsyncWebServerRequest* request) {
   String action = request->arg("value");
-  //  setFunction(action.c_str());
+  setFunction(action.c_str());
   request->send(200, "text/plain", "Function changed");
+}
+
+void handleListLogs(AsyncWebServerRequest* request) {
+  AsyncResponseStream* response = request->beginResponseStream("text/plain");
+
+  File root = SPIFFS.open("/logs");
+
+  File file = root.openNextFile();
+  while (file) {
+    response->printf(file.name());
+    file = root.openNextFile();
+  }
+
+  request->send(response);
 }
 
 void handleCommand(AsyncWebServerRequest* request) {
@@ -43,18 +57,20 @@ void handleCommand(AsyncWebServerRequest* request) {
 }
 
 void TaskWebserver(void* pvParameters) {
+  //  vTaskDelay(1212);
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
-
-  while (WiFi.status() != WL_CONNECTED) {
+  while ((WiFi.status() != WL_CONNECTED || WiFi.localIP() == INADDR_NONE) &&
+         WiFi.softAPIP() == INADDR_NONE) {
     vTaskDelay(5000);
   }
 
   (void)pvParameters;
 
   server.on("/command", handleCommand);
+  server.on("/listLogs", handleListLogs);
   server.on("/function", handleFunction);
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");

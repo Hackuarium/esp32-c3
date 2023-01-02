@@ -1,14 +1,14 @@
 #include <Adafruit_NeoPixel.h>
+#include <freertos/task.h>
 #include "./common.h"
 #include "./params.h"
 #include "./pixels/comet.h"
 #include "./pixels/doAction.h"
 #include "./pixels/firework.h"
 #include "./pixels/flame.h"
-#include "./pixels/line.h"
-// #include "./pixels/function.h"
-#include <freertos/task.h>
+#include "./pixels/function.h"
 #include "./pixels/life.h"
+#include "./pixels/line.h"
 #include "./pixels/meteo.h"
 #include "./pixels/pixels.h"
 #include "./pixels/rain.h"
@@ -41,9 +41,11 @@ void TaskPixels(void* pvParameters) {
   pixels.show();
 
   // setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
+  setFunction("x + y + t");
 
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;
+  uint8_t previousBrigtness = 0;
 
   uint16_t counter = 0;
 
@@ -56,7 +58,11 @@ void TaskPixels(void* pvParameters) {
       programChanged = 0;
     }
 
-    doAction();
+    if (pixels.getBrightness() != 0) {
+      doAction();
+    } else {
+      vTaskDelay(500);
+    }
 
     // Turn off the device on sunset / sunrise schedule
 
@@ -65,6 +71,12 @@ void TaskPixels(void* pvParameters) {
       pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
     } else {
       pixels.setBrightness(0);
+    }
+
+    if (pixels.getBrightness() == 0 && previousBrigtness == 0) {
+      continue;
+    } else {
+      previousBrigtness = pixels.getBrightness();
     }
 
     /*
@@ -82,11 +94,9 @@ void TaskPixels(void* pvParameters) {
     pixels.show();  // Send the updated pixel colors to the hardware.
 
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {
-        /**
       case 0:
-        //  updateFunction(pixels);
+        updateFunction(pixels);
         break;
-        **/
       case 1:
         updateRain(pixels, state);
         break;
@@ -255,7 +265,8 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_NB_ROWS, 1);
       setAndSaveParameter(PARAM_NB_COLUMNS, 800);
       setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
-      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_RGB);
+      setAndSaveParameter(PARAM_COLOR_LED_MODEL,
+                          NEO_RGB);  // CA  NEO_RGB: 6 - NEO_GRB: 82
       setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
       setAndSaveParameter(PARAM_DIRECTION, 1);
       setAndSaveParameter(PARAM_LED_RED, 127);

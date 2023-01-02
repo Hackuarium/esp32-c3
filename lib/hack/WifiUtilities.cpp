@@ -6,6 +6,8 @@
 char wifiTemp[40];
 
 void printWifiHelp(Print* output) {
+  output->println(F("(wa) Wifi Access Point"));
+  output->println(F("(wc) Wifi AP password"));
   output->println(F("(wi) Wifi info"));
   output->println(F("(ws) Wifi SSID"));
   output->println(F("(wu) Wifi Username"));
@@ -42,6 +44,14 @@ void processWifiCommand(char command,
       output->print("Password: ");
       getParameter("wifi.password", wifiTemp);
       output->println(wifiTemp);
+      output->print("AP ssid: ");
+      getParameter("wifi.ap.ssid", wifiTemp);
+      output->println(wifiTemp);
+      output->print("AP password: ");
+      getParameter("wifi.ap.password", wifiTemp);
+      output->println(wifiTemp);
+      output->print("AP IP address: ");
+      output->println(WiFi.softAPIP());
       output->print("MDNS: ");
       getParameter("wifi.mdns", wifiTemp);
       output->println(wifiTemp);
@@ -59,7 +69,6 @@ void processWifiCommand(char command,
       output->println(wifiTemp);
 
       printTime(output);
-
       break;
     case 'm':
       setParameter("wifi.mdns", paramValue);
@@ -99,6 +108,14 @@ void processWifiCommand(char command,
       break;
     case 'd':
       setParameter("wifi.identity", paramValue);
+      output->println(paramValue);
+      break;
+    case 'a':
+      setParameter("wifi.ap.ssid", paramValue);
+      output->println(paramValue);
+      break;
+    case 'c':
+      setParameter("wifi.ap.password", paramValue);
       output->println(paramValue);
       break;
     default:
