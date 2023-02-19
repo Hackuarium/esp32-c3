@@ -9,7 +9,7 @@ void TaskBlink(void* pvParameters) {
     digitalWrite(LED_BUILTIN, HIGH);
     vTaskDelay(2);
     digitalWrite(LED_BUILTIN, LOW);
-    vTaskDelay(100);
+    vTaskDelay(1000);
   }
 }
 
