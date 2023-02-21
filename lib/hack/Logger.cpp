@@ -344,7 +344,7 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   }
 
   // params
-  sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) / 2, sizeof(sParams_t)); // (old data + new entry)
+  sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) / 2, sizeof(int16_t)); // (old data + new entry)
 
   if(schLenParams != 0) {
     size_t ckRdParams = prefs.getBytes("params", pLogsParams, schLenParams);
