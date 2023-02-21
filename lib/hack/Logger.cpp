@@ -31,6 +31,8 @@ server
 // SEMAPHORE_DECL(lockTimeCriticalZone, 1); // only one process in some specific
 // zones
 
+#define Max_Digits 10 // Max digits for ULong 0 to 4294967295
+
 #ifndef NB_PARAMETERS_LINEAR_LOGS
   #define NB_PARAMETERS_LINEAR_LOGS 26
 #endif
@@ -126,9 +128,9 @@ typedef struct {
 
 sLogger_t *pLogs = (sLogger_t  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(sLogger_t));
 
-sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(1, sizeof(sNextEntryID_t));
+// sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(1, sizeof(sNextEntryID_t));
 
-sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc(1, sizeof(sTimeNow_t));
+// sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc(1, sizeof(sTimeNow_t));
 
 sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc(1, sizeof(sEventNumber_t));
 
@@ -138,7 +140,7 @@ sParams_t *pLogsParams = (sParams_t *)calloc(1, sizeof(sParams_t));
 
 // Declare function to obtain last EntryID
 uint32_t getLastNextEntryID();
-uint32_t nextEntryID = 0;
+uint32_t nextEntryID = 1000;
 
 char* j;
 // Deactivate safeguard to store log into memory
@@ -156,6 +158,40 @@ uint32_t findAddressOfEntryN(uint32_t entryN) { // SINGLE_APP, maximum address 0
   return address;
 }
 
+char *struct2str_EntryID (sNextEntryID_t *ap, uint32_t sizeNextID)
+{
+  size_t len = Max_Digits * sizeNextID + sizeof(char);
+  char *buffer = (char *)calloc(1, len);
+  int cx = 0;
+  uint16_t run = 0;
+
+  while (run < (sizeNextID))
+  {
+    if (cx >= 0 && cx < len)      // check returned value
+    cx += snprintf( buffer + cx, len - cx, "%lu,", ap[run].nextEntryID );
+    ++run;
+  }
+
+  return buffer;
+}
+
+char *struct2str_TimeNow (sTimeNow_t *ap, uint32_t size)
+{
+  size_t len = Max_Digits * size + sizeof(char);
+  char *buffer = (char *)calloc(1, len);
+  int cx = 0;
+  uint16_t run = 0;
+
+  while (run < (size))
+  {
+    if (cx >= 0 && cx < len)      // check returned value
+    cx += snprintf( buffer + cx, len - cx, "%lu,", ap[run].timeNow );
+    ++run;
+  }
+
+  return buffer;
+}
+
 /***********************************************************************************
   Save logs in the Flash memory.
   event_number: If there is a command, then this parameter should be set with
@@ -168,8 +204,11 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   ********************************/
   if (!logActive)
     return;
+  
+  Serial.println(F("nextEntry"));
+  Serial.println(nextEntryID);
 
-  if(nextEntryID < 0) {
+  if(nextEntryID >= 1000) {
     nextEntryID = getLastNextEntryID();
   }
 
@@ -204,12 +243,9 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     Serial.println(F("Open non-volatile storage"));
   }
 
-  if(nextEntryID == 0) prefs.clear();
-
   /*****************************************************************************
-    Reading Old Sequence
+    Check Free Memory
   *****************************************************************************/
-  // Check free memorie
   size_t freeMemorie = prefs.freeEntries();
 
   /**
@@ -222,8 +258,14 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     prefs.clear();
     nextEntryID = 0;
   }
+
+  // if(nextEntryID == 0) prefs.clear();
+
+  /*****************************************************************************
+    Reading Old Sequence
+  *****************************************************************************/
   
-  // Obtain length and create buffer
+  // Obtain length and create buffer for nextEntryID & TimeNow
   size_t schLen32 = prefs.getBytesLength("nextEntryID");
 
   if(schLen32 == 0) {
@@ -231,16 +273,16 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   }
   
   // nextEntryID
-  // pLogsNextEntryID = (sNextEntryID_t *)realloc(pLogsNextEntryID, (nextEntryID + 1)*sizeof(sNextEntryID_t));
-  sNextEntryID_t *pLogsNextEntryIDA = (sNextEntryID_t *)calloc((schLen32 + 4) / 4, sizeof(sNextEntryID_t));
-  // pLogsNextEntryID_2 = (sNextEntryID_t *)realloc(pLogsNextEntryID_2, (schLen32 + 4));
+  sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc((schLen32 + 4) / 4, sizeof(sNextEntryID_t)); // (old data + new entry)
+
+  // timeNow
+  sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc((schLen32 + 4) / 4, sizeof(sTimeNow_t)); // (old data + new entry)
 
   if(schLen32 != 0) {
-    size_t checkRead = prefs.getBytes("nextEntryID", pLogsNextEntryIDA, schLen32);
+    size_t checkReadNextID = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
+    size_t checkReadTime = prefs.getBytes("TimeNow", pLogsTimeNow, schLen32);
   }
 
-
-  // char bufferTimeNow[schLen32];
 
   // size_t schLenParams = prefs.getBytesLength("params");
   // char bufferParams[schLenParams];
@@ -269,13 +311,14 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     Store new values
   *****************************************************************************/
   uint16_t param = 0;
-  // uint32_t timeNow = (uint32_t)now();
 
   // nextEntryID
-  pLogsNextEntryIDA[(schLen32) / 4].nextEntryID = nextEntryID;
+  pLogsNextEntryID[(schLen32) / 4].nextEntryID = nextEntryID;
 
 
   // timeNow
+  uint32_t timeNow = (uint32_t)now();
+  pLogsTimeNow[(schLen32) / 4].timeNow = timeNow;
   // pLogsTimeNow[nextEntryID].p0 = (timeNow >> 24) & 0xFF;
   // pLogsTimeNow[nextEntryID].p1 = (timeNow >> 16) & 0xFF;
   // pLogsTimeNow[nextEntryID].p2 = (timeNow >> 8) & 0xFF;
@@ -300,11 +343,11 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     Writing Sequence
   *****************************************************************************/
   // nextEntryID
-  size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryIDA, (schLen32 + sizeof(sNextEntryID_t)));
+  size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + sizeof(sNextEntryID_t)));
   // size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID_t));
 
   // timeNow
-  // size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + 1)*sizeof(sTimeNow_t));
+  size_t lenTimeNow = prefs.putBytes("TimeNow", pLogsTimeNow, (schLen32 + sizeof(sTimeNow_t)));
 
   // params (A-Z)
   // size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams_t));
@@ -340,8 +383,8 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID_t))
   if (lenNextEntryID != (schLen32 + sizeof(sNextEntryID_t)))
     isLogValid = false;
-  // if (lenTimeNow != (schLen32 + 1)*sizeof(sTimeNow_t))
-  //   isLogValid = false;
+  if (lenTimeNow != (schLen32 + sizeof(sTimeNow_t)))
+    isLogValid = false;
   // if (lenParams != (schLenParams + 1)*sizeof(sParams_t))
   //   isLogValid = false;
   // if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber_t))
@@ -363,6 +406,15 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   }
 
   Serial.println(F("Finish save data"));
+
+  char *charNextEntryID = struct2str_EntryID(pLogsNextEntryID, lenNextEntryID / 4);
+  char *charTimeNow = struct2str_TimeNow(pLogsTimeNow, lenTimeNow / 4);
+  
+  Serial.printf("\n nextEntryID as a string:\n\n  '%s'\n\n", charNextEntryID);
+  Serial.printf("\n TimeNow as a string:\n\n  '%s'\n\n", charTimeNow);
+  /* free dynamically allocated memory */
+  if(charNextEntryID) free(charNextEntryID);
+  if(charTimeNow) free(charTimeNow);
 
   /*****************************
          Out and Deselect
@@ -961,7 +1013,7 @@ uint32_t getLastNextEntryID() {
     // Serial.println(schLen32);
   }
 
-  pLogsNextEntryID = (sNextEntryID_t *)realloc(pLogsNextEntryID, schLen32);
+  sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(schLen32, sizeof(sNextEntryID_t));
 
   size_t checkRead = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
 
