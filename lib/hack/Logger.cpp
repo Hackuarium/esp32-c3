@@ -132,11 +132,11 @@ sLogger_t *pLogs = (sLogger_t  *)calloc(ENTRY_SIZE_LINEAR_LOGS, sizeof(sLogger_t
 
 // sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc(1, sizeof(sTimeNow_t));
 
-sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc(1, sizeof(sEventNumber_t));
+// sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc(1, sizeof(sEventNumber_t));
 
-sParameterValue_t *pLogsParameterValue = (sParameterValue_t *)calloc(1, sizeof(sParameterValue_t));
+// sParameterValue_t *pLogsParameterValue = (sParameterValue_t *)calloc(1, sizeof(sParameterValue_t));
 
-sParams_t *pLogsParams = (sParams_t *)calloc(1, sizeof(sParams_t));
+// sParams_t *pLogsParams = (sParams_t *)calloc(1, sizeof(sParams_t));
 
 // Declare function to obtain last EntryID
 uint32_t getLastNextEntryID();
@@ -192,6 +192,62 @@ char *struct2str_TimeNow (sTimeNow_t *ap, uint32_t size)
   return buffer;
 }
 
+char *struct2str_EventNb (sEventNumber_t *ap, uint16_t size)
+{
+  size_t len = Max_Digits * size + sizeof(char);
+  char *buffer = (char *)calloc(1, len);
+  int cx = 0;
+  uint16_t run = 0;
+
+  while (run < (size))
+  {
+    if (cx >= 0 && cx < len)      // check returned value
+    cx += snprintf( buffer + cx, len - cx, "%i,", ap[run].eventNumber );
+    ++run;
+  }
+
+  return buffer;
+}
+
+char *struct2str_ParamValue (sParameterValue_t *ap, uint16_t size)
+{
+  size_t len = Max_Digits * size + sizeof(char);
+  char *buffer = (char *)calloc(1, len);
+  int cx = 0;
+  uint16_t run = 0;
+
+  while (run < (size))
+  {
+    if (cx >= 0 && cx < len)      // check returned value
+    cx += snprintf( buffer + cx, len - cx, "%i,", ap[run].parameterValue );
+    ++run;
+  }
+
+  return buffer;
+}
+
+char *struct2str_Params (sParams_t *ap, size_t size)
+{
+  size_t len = Max_Digits * size + sizeof(char);
+  char *buffer = (char *)calloc(1, len);
+  int cx = 0;
+  uint16_t run = 0;
+  uint16_t paramsLogs = size / NB_PARAMETERS_LINEAR_LOGS;
+
+  while (run < paramsLogs)
+  {
+    for (uint16_t i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++)
+    {
+      if (cx >= 0 && cx < len) {  // check returned value
+        cx += snprintf( buffer + cx, len - cx, "%d,", ap[run].params[i] );
+      }
+    }
+    run++;
+  }
+
+  return buffer;
+}
+
 /***********************************************************************************
   Save logs in the Flash memory.
   event_number: If there is a command, then this parameter should be set with
@@ -205,28 +261,14 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   if (!logActive)
     return;
   
-  Serial.println(F("nextEntry"));
-  Serial.println(nextEntryID);
+  // Serial.println(F("nextEntry"));
+  // Serial.println(nextEntryID);
 
   if(nextEntryID >= 1000) {
     nextEntryID = getLastNextEntryID();
   }
 
-  /*****************************************************************************
-    Reallocating memory to store flash variables
-  *****************************************************************************/
-  // sNextEntryID_t *pLogsNextEntryID_2 = (sNextEntryID_t *)realloc(pLogsNextEntryID_2, (nextEntryID + 1)*sizeof(sNextEntryID_t));
-  // sNextEntryID_t *pLogsNextEntryID_2 = (sNextEntryID_t *)calloc((nextEntryID + 1), sizeof(sNextEntryID_t));
-
-  // pLogsTimeNow = (sTimeNow_t *)realloc(pLogsTimeNow, (nextEntryID + 1)*sizeof(sTimeNow_t));
-
-  // pLogsParams = (sParams_t *)realloc(pLogsParams, (nextEntryID + 1)*sizeof(sParams_t));
-
-  // pLogsEventNumber = (sEventNumber_t *)realloc(pLogsEventNumber, (nextEntryID + 1)*sizeof(sEventNumber_t));
-
-  // pLogsParameterValue = (sParameterValue_t *)realloc(pLogsParameterValue, (nextEntryID + 1)*sizeof(sParameterValue_t));
-
-  Serial.println(F("Previous Open non-volatile storage"));
+  // Serial.println(F("Previous Open non-volatile storage"));
   /*
    * Enter Critical Zone
    */
@@ -246,20 +288,20 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   /*****************************************************************************
     Check Free Memory
   *****************************************************************************/
-  size_t freeMemorie = prefs.freeEntries();
+  size_t freeMemory = prefs.freeEntries();
 
   /**
    * @brief Check memorie free space
    * Check free space for: params[A-Z, AA-AZ, BA-BP], epoch, qualifiers, ID, etc.
    */
-  if (freeMemorie < 16) 
+  if (freeMemory < 16) 
   {
     // Clear memory and avoid overflow in flash memory NVS space
     prefs.clear();
     nextEntryID = 0;
   }
 
-  // if(nextEntryID == 0) prefs.clear();
+  if(nextEntryID == 0) prefs.clear();
 
   /*****************************************************************************
     Reading Old Sequence
@@ -271,6 +313,24 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   if(schLen32 == 0) {
     Serial.println(F("No bytes stored in nextEntryID"));
   }
+
+  // Obtain length and create buffer for params
+  size_t schLenParams = prefs.getBytesLength("params");
+
+  if(schLenParams == 0) {
+    Serial.println(F("No bytes stored in params"));
+  }
+
+  // Obtain length and create buffer for eventNumber & parameterValue
+  size_t schLen16 = prefs.getBytesLength("eventNumber");
+
+  if(schLen16 == 0) {
+    Serial.println(F("No bytes stored in eventNumber"));
+  }
+  
+  /*****************************************************************************
+    Reallocating memory to store flash variables
+  *****************************************************************************/
   
   // nextEntryID
   sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc((schLen32 + 4) / 4, sizeof(sNextEntryID_t)); // (old data + new entry)
@@ -280,38 +340,30 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   if(schLen32 != 0) {
     size_t checkReadNextID = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
-    size_t checkReadTime = prefs.getBytes("TimeNow", pLogsTimeNow, schLen32);
+    size_t checkReadTime = prefs.getBytes("timeNow", pLogsTimeNow, schLen32);
   }
 
+  // params
+  sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) / 2, sizeof(sParams_t)); // (old data + new entry)
 
-  // size_t schLenParams = prefs.getBytesLength("params");
-  // char bufferParams[schLenParams];
+  if(schLenParams != 0) {
+    size_t ckRdParams = prefs.getBytes("params", pLogsParams, schLenParams);
+  }
 
-  // size_t schLen16 = prefs.getBytesLength("eventNumber");
-  // char bufferEventNumber[schLen16];
-  // char bufferParameterValue[schLen16];
+  // eventNumber
+  sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc((schLen16 + 2) / 2, sizeof(sParameterValue_t)); // (old data + new entry)
 
-  // // Read values
-  // prefs.getBytes("nextEntryID", bufferNextEntryID, schLen32);
-  // pLogsNextEntryID = (sNextEntryID_t *)bufferNextEntryID;
+  // parameterValue
+  sParameterValue_t *pLogsParameterValue = (sParameterValue_t *)calloc((schLen16 + 2) / 2, sizeof(sParameterValue_t)); // (old data + new entry)
 
-  // prefs.getBytes("timeNow", bufferTimeNow, schLen32);
-  // pLogsTimeNow = (sTimeNow_t *)bufferTimeNow;
-
-  // prefs.getBytes("params", bufferParams, schLenParams);
-  // pLogsParams = (sParams_t *)bufferParams;
-
-  // prefs.getBytes("eventNumber", bufferEventNumber, schLen16);
-  // pLogsEventNumber = (sEventNumber_t *)bufferEventNumber;
-
-  // prefs.getBytes("parameterValue", bufferParameterValue, schLen16);
-  // pLogsParameterValue = (sParameterValue_t *)bufferParameterValue;
+  if(schLen16 != 0) {
+    size_t ckRdEventN = prefs.getBytes("eventNumber", pLogsEventNumber, schLen16);
+    size_t ckRdParamValue = prefs.getBytes("parameterValue", pLogsParameterValue, schLen16);
+  }
 
   /*****************************************************************************
     Store new values
   *****************************************************************************/
-  uint16_t param = 0;
-
   // nextEntryID
   pLogsNextEntryID[(schLen32) / 4].nextEntryID = nextEntryID;
 
@@ -325,38 +377,40 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // pLogsTimeNow[nextEntryID].p3 = (timeNow >> 0) & 0xFF;
 
   // params (A-Z)
-  // for (byte i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-  //   param = getParameter(i);  // 2 bytes per parameter
-  //   pLogsParams[nextEntryID].p0[i] = ((param >> 8) & 0xFF);
-  //   pLogsParams[nextEntryID].p1[i] = (param >> 0) & 0xFF;
-  // }
+  size_t pos = schLenParams / 2;
+  for (size_t i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
+    // param = getParameter(i);  // 2 bytes per parameter
+    // pLogsParams[nextEntryID].p0[i] = ((param >> 8) & 0xFF);
+    // pLogsParams[nextEntryID].p1[i] = (param >> 0) & 0xFF;
+    pLogsParams[pos].params[i] = 25 - i;
+  }
   
   // eventNumber
+  pLogsEventNumber[(schLen16) / 2].eventNumber = eventNumber;
   // pLogsEventNumber[nextEntryID].p0 = (eventNumber >> 8) & 0xFF;
   // pLogsEventNumber[nextEntryID].p1 = (eventNumber >> 0) & 0xFF;
 
   // parameterValue
-  // pLogsParameterValue[nextEntryID].p0 = (parameterValue >> 8) & 0xFF;
-  // pLogsParameterValue[nextEntryID].p1 = (parameterValue >> 0) & 0xFF;
+  pLogsParameterValue[(schLen16) / 2].parameterValue = parameterValue;
 
   /*****************************************************************************
     Writing Sequence
   *****************************************************************************/
   // nextEntryID
   size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + sizeof(sNextEntryID_t)));
-  // size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + 1)*sizeof(sNextEntryID_t));
 
   // timeNow
-  size_t lenTimeNow = prefs.putBytes("TimeNow", pLogsTimeNow, (schLen32 + sizeof(sTimeNow_t)));
+  size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + sizeof(sTimeNow_t)));
 
   // params (A-Z)
   // size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams_t));
+  size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + sizeof(sParams_t)));
 
   // eventNumber
-  // size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + 1)*sizeof(sEventNumber_t));
+  size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + sizeof(sEventNumber_t)));
 
   // parameterValue
-  // size_t lenParameterValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + 1)*sizeof(sParameterValue_t));
+  size_t lenParamValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + sizeof(sParameterValue_t)));
 
   prefs.end();  // Finish the writing process
 
@@ -385,8 +439,12 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     isLogValid = false;
   if (lenTimeNow != (schLen32 + sizeof(sTimeNow_t)))
     isLogValid = false;
-  // if (lenParams != (schLenParams + 1)*sizeof(sParams_t))
-  //   isLogValid = false;
+  if (lenParams != (schLenParams + sizeof(sParams_t)))
+    isLogValid = false;
+  if (lenEventNumber != (schLen16 + sizeof(sEventNumber_t)))
+    isLogValid = false;
+  if (lenParamValue != (schLen16 + sizeof(sParameterValue_t)))
+    isLogValid = false;
   // if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber_t))
   //   isLogValid = false;
   // if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue_t))
@@ -397,7 +455,7 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     nextEntryID++;
     Serial.println(F("Log success!"));
   } else {
-    Serial.print(F("Log fail :("));
+    Serial.println(F("Log fail!"));
     Serial.println(nextEntryID);
     // if logger fails it is better to go back and erase the full sector
     // we can anyway not try to write if it was not erased !
@@ -407,14 +465,40 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
 
   Serial.println(F("Finish save data"));
 
+  /*****************************************************************************
+    Print saved information
+  *****************************************************************************/
+
   char *charNextEntryID = struct2str_EntryID(pLogsNextEntryID, lenNextEntryID / 4);
-  char *charTimeNow = struct2str_TimeNow(pLogsTimeNow, lenTimeNow / 4);
-  
   Serial.printf("\n nextEntryID as a string:\n\n  '%s'\n\n", charNextEntryID);
-  Serial.printf("\n TimeNow as a string:\n\n  '%s'\n\n", charTimeNow);
-  /* free dynamically allocated memory */
   if(charNextEntryID) free(charNextEntryID);
+  
+  char *charTimeNow = struct2str_TimeNow(pLogsTimeNow, lenTimeNow / 4);
+  Serial.printf("\n timeNow as a string:\n\n  '%s'\n\n", charTimeNow);
   if(charTimeNow) free(charTimeNow);
+
+  char *charParams = struct2str_Params(pLogsParams, lenParams / 2);
+  Serial.printf("\n params as a string:\n\n  '%s'\n\n", charParams);
+  if(charParams) free(charParams);
+
+  char *charEventNb = struct2str_EventNb(pLogsEventNumber, lenEventNumber / 2);
+  Serial.printf("\n eventNumber as a string:\n\n  '%s'\n\n", charEventNb);
+  if(charEventNb) free(charEventNb);
+
+  char *charParamValue = struct2str_ParamValue(pLogsParameterValue, lenParamValue / 2);
+  Serial.printf("\n parameterValue as a string:\n\n  '%s'\n\n", charParamValue);
+  /* free dynamically allocated memory */
+  if(charParamValue) free(charParamValue);
+
+  // Free pointers
+  free(pLogsNextEntryID);
+  free(pLogsTimeNow);
+  free(pLogsParams);
+  free(pLogsEventNumber);
+  free(pLogsParameterValue);
+
+  Serial.println(F("Free entries:"));
+  Serial.println(freeMemory);
 
   /*****************************
          Out and Deselect
