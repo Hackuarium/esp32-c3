@@ -8,9 +8,6 @@
 *******************************************************************************/
 #include <Arduino.h>
 
-//#include "SST.h"
-// #include "libraries/SST/SST.h"
-
 extern uint32_t nextEntryID;
 
 uint32_t findAddressOfEntryN(uint32_t);
@@ -75,3 +72,11 @@ void checkNextID(Print*);
 void processLoggerCommand(char, char*, Print*);
 void printLoggerHelp(Print*);
 void dumpLoggerFlash(Print*, uint32_t, uint32_t);
+
+
+// Move from params.h
+// char *numberToLabel(byte);
+// void checkParameters();
+// void setupParameters();
+
+uint32_t getLastNextEntryID();

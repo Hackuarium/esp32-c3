@@ -20,9 +20,10 @@ void TaskLogger(void* pvParameters) {
   writeLog(EVENT_ESP32_BOOT, 0);
   vTaskDelay((long)LOG_INTERVAL - (long)(millis() / 1000UL) + 5UL);
 
-  const TickType_t xDelay = LOG_INTERVAL * 1000 / portTICK_PERIOD_MS; // Delay in s
+  const TickType_t xDelay = LOG_INTERVAL /10 * 1000 / portTICK_PERIOD_MS; // Delay in s
 
   while (true) {
+    Serial.println(F("Save logger"));
     writeLog(0, 0);
     vTaskDelay( xDelay );
   }

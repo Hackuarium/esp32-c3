@@ -17,6 +17,7 @@
 #define ERROR_VALUE -32768
 
 RTC_DATA_ATTR int16_t parameters[MAX_PARAM];
+// uint16_t parameters[MAX_PARAM];
 
 // todo uint16_t getQualifier();
 void setQualifier(int16_t value);
@@ -50,6 +51,15 @@ boolean clearParameterBit(byte number, byte bitToClear) {
 void toggleParameterBit(byte number, byte bitToToggle) {
   parameters[number] ^= 1 << bitToToggle;
 }
+
+// Move to Logger.cpp
+// void setupParameters() {
+//   NVS.begin();
+//   for (byte i = 0; i < MAX_PARAM; i++) {
+//     parameters[i] = NVS.getInt(numberToLabel(i));
+//   }
+//   checkParameters();
+// }
 
 void setupParameters() {
   NVS.begin();

@@ -21,7 +21,7 @@ void taskSerial();
 
 void setup() {
   Serial.begin(115200);  // only for debug purpose
-  setupParameters();
+  // setupParameters();
   taskSerial();
   // taskSi7021();
   // taskOTA();
