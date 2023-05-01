@@ -8,7 +8,7 @@
 
 #define LED_ON_BOARD 7
 
-// #define THR_PIXELS 1
+#define THR_PIXELS 1
 // #define THR_FORECAST 1
 // #define THR_ONEWIRE {6}
 
@@ -135,6 +135,8 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_ROTATION_X 3                // D
 #define PARAM_ROTATION_Y 4                // E
 #define PARAM_ROTATION_Z 5                // F
+#define PARAM_TEMPERATURE 6               // G
+#define PARAM_ALTITUDE 7                  // H
 #define PARAM_WIFI_RSSI 13                // M
 #define PARAM_STATUS 14                   // N
 #define PARAM_ERROR 15                    // O

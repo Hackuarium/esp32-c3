@@ -25,12 +25,14 @@ void TaskGY521(void* pvParameters) {
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
+#ifdef ROCKET
     setParameter(PARAM_ACCELERATION_X, a.acceleration.x * 100);
     setParameter(PARAM_ACCELERATION_Y, a.acceleration.y * 100);
     setParameter(PARAM_ACCELERATION_Z, a.acceleration.z * 100);
     setParameter(PARAM_ROTATION_X, g.gyro.x * 100);
     setParameter(PARAM_ROTATION_Y, g.gyro.y * 100);
     setParameter(PARAM_ROTATION_Z, g.gyro.z * 100);
+#endif
   }
 }
 
