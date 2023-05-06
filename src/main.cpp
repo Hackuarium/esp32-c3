@@ -7,11 +7,12 @@ void taskSi7021();
 void taskGY521();
 void taskBMP280();
 void taskSerial();
+void taskRocket();
 void taskNTPD();
 void taskDHT22();
 void taskMQTT();
 void taskPixels();
-void taskBlinkAll();
+void taskOutput();
 void taskBluetooth();
 void taskOneWire();
 void taskServo();
@@ -35,10 +36,14 @@ void setup() {
 #ifdef THR_PIXELS
   // taskPixels();
 #endif
+  taskRocket();
+  taskBMP280();
+  taskGY521();
+
   taskSerial();
   taskServo();
   // taskSi7021();
-  taskBMP280();
+
   // taskOTA();
   // taskMDNS();  // incompatible with taskOTA
   // taskWifi();
@@ -48,14 +53,14 @@ void setup() {
   taskForecast();
 #endif
 
-  taskBlinkAll();  // blink 2 3 6
-                   // taskMQTT();
-                   // taskOneWire();
-                   // taskGY521();
-                   // taskNTPD();
-                   // taskInternalTemperature();
-                   // taskBatteryLevel();
-                   // taskUptime();
+  taskOutput();  // blink 2 3 6
+
+  // taskMQTT();
+  // taskOneWire();
+  // taskNTPD();
+  // taskInternalTemperature();
+  // taskBatteryLevel();
+  // taskUptime();
   taskWire();
   taskSPIFSLogger();
   // taskBluetooth();

@@ -8,10 +8,10 @@ void TaskServo(void* pvParameters) {
   Pwm pwm = Pwm();
 
   while (true) {
-    for (int i = 0; i < 180; i++) {
-      pwm.writeServo(8, i);
-      vTaskDelay(50);
-    }
+    pwm.writeServo(8, getParameter(PARAM_SERVO1));
+    pwm.writeServo(9, getParameter(PARAM_SERVO2));
+    pwm.writeServo(10, getParameter(PARAM_SERVO3));
+    vTaskDelay(50);
   }
 }
 

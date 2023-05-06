@@ -22,7 +22,7 @@ void TaskWire(void* pvParameters) {
 void taskWire() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskWire, "TaskWire",
-                          2048,  // This stack size can be checked & adjusted by
+                          4048,  // This stack size can be checked & adjusted by
                                  // reading the Stack Highwater
                           NULL,
                           2,  // Priority, with 3 (configMAX_PRIORITIES - 1)

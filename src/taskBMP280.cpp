@@ -30,13 +30,11 @@ void TaskBMP280(void* pvParameters) {
   while (true) {
     vTaskDelay(10);
     if (bmp.takeForcedMeasurement()) {
-#ifdef ROCKET
       setParameter(PARAM_TEMPERATURE, bmp.readTemperature() * 100);
       setParameter(
           PARAM_ALTITUDE,
           round(bmp.readAltitude(1013.25)));  // Adjusted to local forecast!
-#endif
-      vTaskDelay(10);
+      vTaskDelay(5);
     }
   }
 }
@@ -47,7 +45,7 @@ void taskBMP280() {
                           4096,  // This stack size can be checked & adjusted
                                  // by reading the Stack Highwater
                           NULL,
-                          2,  // Priority, with 3 (configMAX_PRIORITIES - 1)
+                          3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }

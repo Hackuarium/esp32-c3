@@ -18,21 +18,20 @@ void TaskGY521(void* pvParameters) {
   mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
 
   mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  mpu.setFilterBandwidth(MPU6050_BAND_94_HZ);
 
+  sensors_event_t a, g, temp;
   while (true) {
-    vTaskDelay(2);
-    sensors_event_t a, g, temp;
+    vTaskDelay(10);
+
     mpu.getEvent(&a, &g, &temp);
 
-#ifdef ROCKET
     setParameter(PARAM_ACCELERATION_X, a.acceleration.x * 100);
     setParameter(PARAM_ACCELERATION_Y, a.acceleration.y * 100);
     setParameter(PARAM_ACCELERATION_Z, a.acceleration.z * 100);
     setParameter(PARAM_ROTATION_X, g.gyro.x * 100);
     setParameter(PARAM_ROTATION_Y, g.gyro.y * 100);
     setParameter(PARAM_ROTATION_Z, g.gyro.z * 100);
-#endif
   }
 }
 
@@ -42,7 +41,7 @@ void taskGY521() {
                           4096,  // This stack size can be checked & adjusted
                                  // by reading the Stack Highwater
                           NULL,
-                          2,  // Priority, with 3 (configMAX_PRIORITIES - 1)
+                          3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }

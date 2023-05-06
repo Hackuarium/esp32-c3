@@ -1,6 +1,6 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
 
-//const server = "http://192.168.1.128/";
+//const server = "http://192.168.4.1/";
 const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
@@ -69,8 +69,9 @@ async function getCurrentLineColor() {
   return colors;
 }
 
-async function sendCommand(command, value) {
+async function sendCommand(command, value, options = {}) {
   console.log(command);
+  const { logResult = true } = options;
   if (command.match(/^[A-Z][0-9]+$/)) {
     let elements = document.querySelectorAll(
       `[data-label=${command.substring(0, 1)}]`
@@ -95,7 +96,7 @@ async function sendCommand(command, value) {
       console.log("Can not access: " + server);
     }
   }
-  document.getElementById("result").value = results.join("\n");
+  if (logResult) document.getElementById("result").value = results.join("\n");
   return results.join("\n");
 }
 async function demoFunction(functionStr) {
@@ -114,7 +115,7 @@ async function sendFunction() {
   document.getElementById("result").value = results.join("\n");
 }
 async function reloadSettings() {
-  let result = await sendCommand("uc");
+  let result = await sendCommand("uc", undefined, { logResult: false });
   // TODO we could check the checkDigit ...
   if (prefix) {
     const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
@@ -124,13 +125,12 @@ async function reloadSettings() {
   }
 
   for (let i = 0; i < result.length; i = i + 4) {
+    if (i / 4 > 25) continue;
     let code = String.fromCharCode(65 + i / 4);
     let value = parseInt(result.substring(i, i + 4), 16);
-    console.log({ code, value });
     let elements = document.querySelectorAll(
       `[data-label="${code}"]:not([type="radio"])`
     );
-    console.log({ elements });
     for (const element of elements) {
       if (element.getAttribute("type") === "color") {
         // color on 15 bits
