@@ -1,6 +1,8 @@
 #include "./common.h"
 #include "./params.h"
 
+SemaphoreHandle_t xSemaphoreWire = xSemaphoreCreateBinary();
+
 void deepSleep(int seconds);
 void taskBlink();
 void taskSi7021();
@@ -29,6 +31,7 @@ void taskWebserver();
 void taskWire();
 
 void setup() {
+  xSemaphoreGive(xSemaphoreWire);
   Serial.begin(115200);  // only for debug purpose
   setParameter(PARAM_STATUS, 0);
 

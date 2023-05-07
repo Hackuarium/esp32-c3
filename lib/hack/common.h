@@ -3,6 +3,8 @@
 // #define WIRE_SDA 3
 // #define WIRE_SCL 4
 
+extern SemaphoreHandle_t xSemaphoreWire;
+
 #define WIRE_SDA 6  // ESP32-C3 Seeed Studio XIAO ESP32C3
 #define WIRE_SCL 7
 

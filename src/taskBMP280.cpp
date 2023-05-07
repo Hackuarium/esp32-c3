@@ -2,8 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "./common.h"
-#include "./getMedianFloat11.h"
-#include "./getMedianInt11.h"
+
 #include "./params.h"
 
 void TaskBMP280(void* pvParameters) {
@@ -29,31 +28,23 @@ void TaskBMP280(void* pvParameters) {
                   Adafruit_BMP280::FILTER_X16,    /* Filtering. */
                   Adafruit_BMP280::STANDBY_MS_1); /* Standby time. */
 
-  float lastPressures[11] = {0};
-  int16_t lastTemperatures[11] = {0};
-  uint16_t last280Index = 0;
-
   while (true) {
     // we prefer to go relatively quickly and average the result
     vTaskDelay(10);
 
-    last280Index = (last280Index + 1) % 11;
+    if (xSemaphoreTake(xSemaphoreWire, 1) == pdTRUE) {
+      setParameter(PARAM_TEMPERATURE, bmp.readTemperature() * 100);
+      float pressure = bmp.readPressure() / 100;
+      xSemaphoreGive(xSemaphoreWire);
 
-    lastTemperatures[last280Index] = bmp.readTemperature() * 100;
-    setParameter(PARAM_TEMPERATURE, getMedianInt11(lastTemperatures));
-
-    float pressure = bmp.readPressure() / 100;
-    lastPressures[last280Index] = pressure;
-    float medianPressure = getMedianFloat11(lastPressures);
-    setParameter(PARAM_PRESSURE, medianPressure * 10);
-
-    float altitude = 44330 * (1.0 - pow(medianPressure / 1013.25, 0.1903));
-    if (getParameter(PARAM_ALTITUDE_GROUND) == ERROR_VALUE) {
-      setAndSaveParameter(PARAM_ALTITUDE_GROUND, round(altitude));
+      setParameter(PARAM_PRESSURE, pressure * 10);
+      float altitude = 44330 * (1.0 - pow(pressure / 1013.25, 0.1903));
+      if (getParameter(PARAM_ALTITUDE_GROUND) == ERROR_VALUE) {
+        setAndSaveParameter(PARAM_ALTITUDE_GROUND, round(altitude));
+      }
+      setParameter(PARAM_RELATIVE_ALTITUDE,
+                   round(altitude) - getParameter(PARAM_ALTITUDE_GROUND));
     }
-
-    setParameter(PARAM_RELATIVE_ALTITUDE,
-                 round(altitude) - getParameter(PARAM_ALTITUDE_GROUND));
   }
 }
 

@@ -171,7 +171,7 @@ void resetParameters() {
 }
 
 void checkParameters() {
-  if (getParameter(PARAM_HUMIDITY) < 0) {
+  if (getParameter(0) < ERROR_VALUE) {
     resetParameters();
   }
 }

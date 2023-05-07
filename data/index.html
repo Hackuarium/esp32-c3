@@ -68,7 +68,7 @@
       </button>
       <button
         class="text-xl w-1/2 h-16 text-white bg-red-600"
-        onmousedown="if (confirm('Are you sure you want to reset all parameters?')) sendCommand('I90,90,90,0,0,0,0').then( () => reloadSettings())"
+        onmousedown="if (confirm('Are you sure you want to reset all parameters?')) sendCommand('Y-1').then( () => reloadSettings())"
       >
         Reset parameters
       </button>
@@ -81,6 +81,7 @@
     <div class="text-xl p-3 m-1 bg-green-300">Altitude<input type="text" style="width: 100" data-label="P" /></div>
     <div class="text-xl p-3 m-1 bg-green-300">Output<input type="text" style="width: 100" data-label="L" /></div>
     <div class="text-xl p-3 m-1 bg-green-300">Servo position<input type="text" style="width: 100" data-label="I" /></div>
+    <div class="text-xl p-3 m-1 bg-green-300">Up down<input type="text" style="width: 100" data-label="O" /></div>
     </div>
 
 
@@ -210,15 +211,17 @@
 
       console.log(times, temperatures);
 
+      
+
       new Chartist.Line(
-        "#temperature",
+        "#altitude",
         {
           series: [
             {
-              name: "Temperature",
+              name: "Altitude",
               data: times.map((value, index) => ({
                 x: value,
-                y: temperatures[index],
+                y: altitudes[index],
               })),
             },
           ],
@@ -230,16 +233,15 @@
           },
         }
       );
-
       new Chartist.Line(
-        "#altitude",
+        "#temperature",
         {
           series: [
             {
-              name: "Altitude",
+              name: "Temperature",
               data: times.map((value, index) => ({
                 x: value,
-                y: altitudes[index],
+                y: temperatures[index],
               })),
             },
           ],

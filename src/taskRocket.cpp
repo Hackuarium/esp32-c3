@@ -18,14 +18,13 @@ void TaskRocket(void* pvParameters) {
 
   int maxIncreased = 0;
   while (true) {
+    vTaskDelay(50);
     if (getParameter(PARAM_STATUS) == -1) {
       initParameters();
       maxIncreased = 0;
       canSatReleased = false;
       numberConfirmationParachuteRelease = 0;
     }
-
-    vTaskDelay(50);
 
     int16_t upDownCounter = getParameter(PARAM_UP_DOWN_COUNTER);
     // we need to be 100% sure that the rocket has reached the apogee

@@ -7,6 +7,8 @@
 byte numberI2CDevices = 0;
 byte wireDeviceID[WIRE_MAX_DEVICES];
 
+void wireUpdateList(int8_t sleepTime);
+
 void TaskWire(void* pvParameters) {
   vTaskDelay(100);
   (void)pvParameters;
@@ -74,7 +76,7 @@ void wireWriteIntRegister(uint8_t address, uint8_t registerAddress, int value) {
 }
 
 void printWireInfo(Print* output) {
-  wireUpdateList();
+  wireUpdateList(1);
   output->println("I2C");
 
   for (byte i = 0; i < numberI2CDevices; i++) {
@@ -125,40 +127,48 @@ boolean wireDeviceExists(byte id) {
   return false;
 }
 
-void wireUpdateList() {
+void wireUpdateList(int8_t sleepTime) {
   // 16ms
   byte _data;
   byte currentPosition = 0;
   // I2C Module Scan, from_id ... to_id
   for (byte i = 0; i <= 127; i++) {
-    Wire.beginTransmission(i);
-    Wire.write(&_data, 0);
-    // I2C Module found out!
-    if (Wire.endTransmission() == 0) {
-      // there is a device, we need to check if we should add or remove a
-      // previous device
-      if (currentPosition < numberI2CDevices &&
-          wireDeviceID[currentPosition] ==
-              i) {  // it is still the same device that is at the same
-                    // position, nothing to do
-        currentPosition++;
-      } else if (currentPosition < numberI2CDevices &&
-                 wireDeviceID[currentPosition] <
-                     i) {  // some device(s) disappear, we need to delete them
-        wireRemoveDevice(currentPosition);
-        i--;
-      } else if (currentPosition >= numberI2CDevices ||
-                 wireDeviceID[currentPosition] >
-                     i) {  // we need to add a device
-        wireInsertDevice(currentPosition, i);
-        currentPosition++;
+    if (xSemaphoreTake(xSemaphoreWire, 1) == pdTRUE) {
+      Wire.beginTransmission(i);
+      Wire.write(&_data, 0);
+      // I2C Module found out!
+      if (Wire.endTransmission() == 0) {
+        // there is a device, we need to check if we should add or remove a
+        // previous device
+        if (currentPosition < numberI2CDevices &&
+            wireDeviceID[currentPosition] ==
+                i) {  // it is still the same device that is at the same
+                      // position, nothing to do
+          currentPosition++;
+        } else if (currentPosition < numberI2CDevices &&
+                   wireDeviceID[currentPosition] <
+                       i) {  // some device(s) disappear, we need to delete them
+          wireRemoveDevice(currentPosition);
+          i--;
+        } else if (currentPosition >= numberI2CDevices ||
+                   wireDeviceID[currentPosition] >
+                       i) {  // we need to add a device
+          wireInsertDevice(currentPosition, i);
+          currentPosition++;
+        }
       }
+      xSemaphoreGive(xSemaphoreWire);
     }
-    vTaskDelay(1);
+    vTaskDelay(
+        sleepTime);  // not too fast because we need time for other processes
   }
   while (currentPosition < numberI2CDevices) {
     wireRemoveDevice(currentPosition);
   }
+}
+
+void wireUpdateList() {
+  wireUpdateList(50);
 }
 
 void printWireHelp(Print* output) {
