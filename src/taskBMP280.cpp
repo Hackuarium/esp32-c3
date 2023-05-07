@@ -2,6 +2,8 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "./common.h"
+#include "./getMedianFloat11.h"
+#include "./getMedianInt11.h"
 #include "./params.h"
 
 void TaskBMP280(void* pvParameters) {
@@ -21,21 +23,37 @@ void TaskBMP280(void* pvParameters) {
   }
 
   /* Default settings from datasheet. */
-  bmp.setSampling(Adafruit_BMP280::MODE_FORCED,     /* Operating Mode. */
-                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,   /* Operating Mode. */
+                  Adafruit_BMP280::SAMPLING_X2,   /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X16,  /* Pressure oversampling */
+                  Adafruit_BMP280::FILTER_X16,    /* Filtering. */
+                  Adafruit_BMP280::STANDBY_MS_1); /* Standby time. */
+
+  float lastPressures[11] = {0};
+  int16_t lastTemperatures[11] = {0};
+  uint16_t last280Index = 0;
 
   while (true) {
+    // we prefer to go relatively quickly and average the result
     vTaskDelay(10);
-    if (bmp.takeForcedMeasurement()) {
-      setParameter(PARAM_TEMPERATURE, bmp.readTemperature() * 100);
-      setParameter(
-          PARAM_ALTITUDE,
-          round(bmp.readAltitude(1013.25)));  // Adjusted to local forecast!
-      vTaskDelay(5);
+
+    last280Index = (last280Index + 1) % 11;
+
+    lastTemperatures[last280Index] = bmp.readTemperature() * 100;
+    setParameter(PARAM_TEMPERATURE, getMedianInt11(lastTemperatures));
+
+    float pressure = bmp.readPressure() / 100;
+    lastPressures[last280Index] = pressure;
+    float medianPressure = getMedianFloat11(lastPressures);
+    setParameter(PARAM_PRESSURE, medianPressure * 10);
+
+    float altitude = 44330 * (1.0 - pow(medianPressure / 1013.25, 0.1903));
+    if (getParameter(PARAM_ALTITUDE_GROUND) == ERROR_VALUE) {
+      setAndSaveParameter(PARAM_ALTITUDE_GROUND, round(altitude));
     }
+
+    setParameter(PARAM_RELATIVE_ALTITUDE,
+                 round(altitude) - getParameter(PARAM_ALTITUDE_GROUND));
   }
 }
 

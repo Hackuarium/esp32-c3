@@ -2,6 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "./common.h"
+#include "./getMedianFloat11.h"
 #include "./params.h"
 
 void TaskGY521(void* pvParameters) {
@@ -15,6 +16,14 @@ void TaskGY521(void* pvParameters) {
     vTaskDelay(1000);
   }
 
+  float lastAccelerationsX[11] = {0};
+  float lastAccelerationsY[11] = {0};
+  float lastAccelerationsZ[11] = {0};
+  float lastRotationsX[11] = {0};
+  float lastRotationsY[11] = {0};
+  float lastRotationsZ[11] = {0};
+  uint16_t last521Index = 0;
+
   mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
 
   mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
@@ -22,16 +31,26 @@ void TaskGY521(void* pvParameters) {
 
   sensors_event_t a, g, temp;
   while (true) {
-    vTaskDelay(10);
-
+    vTaskDelay(5);
     mpu.getEvent(&a, &g, &temp);
+    last521Index = (last521Index + 1) % 11;
 
-    setParameter(PARAM_ACCELERATION_X, a.acceleration.x * 100);
-    setParameter(PARAM_ACCELERATION_Y, a.acceleration.y * 100);
-    setParameter(PARAM_ACCELERATION_Z, a.acceleration.z * 100);
-    setParameter(PARAM_ROTATION_X, g.gyro.x * 100);
-    setParameter(PARAM_ROTATION_Y, g.gyro.y * 100);
-    setParameter(PARAM_ROTATION_Z, g.gyro.z * 100);
+    lastAccelerationsX[last521Index] = a.acceleration.x;
+    lastAccelerationsY[last521Index] = a.acceleration.y;
+    lastAccelerationsZ[last521Index] = a.acceleration.z;
+    lastRotationsX[last521Index] = g.gyro.x;
+    lastRotationsY[last521Index] = g.gyro.y;
+    lastRotationsZ[last521Index] = g.gyro.z;
+
+    setParameter(PARAM_ACCELERATION_X,
+                 getMedianFloat11(lastAccelerationsX) * 100);
+    setParameter(PARAM_ACCELERATION_Y,
+                 getMedianFloat11(lastAccelerationsY) * 100);
+    setParameter(PARAM_ACCELERATION_Z,
+                 getMedianFloat11(lastAccelerationsZ) * 100);
+    setParameter(PARAM_ROTATION_X, getMedianFloat11(lastRotationsX) * 100);
+    setParameter(PARAM_ROTATION_Y, getMedianFloat11(lastRotationsY) * 100);
+    setParameter(PARAM_ROTATION_Z, getMedianFloat11(lastRotationsZ) * 100);
   }
 }
 

@@ -6,6 +6,11 @@
 #include "esp_spiffs.h"
 
 void TaskSPIFSLogger(void* pvParameters) {
+  vTaskDelay(1151);
+
+  setParameter(PARAM_LOGGING_INTERVAL, 1);
+  setParameter(PARAM_LOGGING_NB_ENTRIES, 0);
+
   esp_vfs_spiffs_conf_t config = {
       .base_path = "/spiffs",
       .partition_label = NULL,
@@ -18,7 +23,7 @@ void TaskSPIFSLogger(void* pvParameters) {
   uint16_t loggerCounter = 0;
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  TickType_t xFrequency;
+  TickType_t xFrequency = 0;
   // Initialise the xLastWakeTime variable with the current time.
 
   FILE* file;
@@ -34,8 +39,14 @@ void TaskSPIFSLogger(void* pvParameters) {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     if (getParameter(PARAM_LOGGING_NB_ENTRIES) == -32768) {
+      if (fileOpen) {
+        fflush(file);
+        fclose(file);
+        fileOpen = false;
+      }
       setParameter(PARAM_LOGGING_NB_ENTRIES, 0);
       file = fopen("/spiffs/log.txt", "w");
+      fprintf(file, "\n");
       fflush(file);
       fclose(file);
     }

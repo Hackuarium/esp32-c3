@@ -1,4 +1,5 @@
 /* https://unpkg.com/tailwindcss@^2/dist/tailwind.css */
+/* https://v1.tailwindcss.com/docs/background-color */
 
 *,
 ::before,
@@ -32,7 +33,12 @@ textarea {
   line-height: 1.15; /* 1 */
   margin: 0; /* 2 */
 }
-
+.p-3 {
+  padding: 0.75rem; /* 12px */
+}
+.m-1 {
+  margin: 0.25rem; /* 4px */
+}
 .flex {
   display: flex;
 }
@@ -47,21 +53,21 @@ textarea {
   width: 100%;
 }
 .text-white {
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
+  color: #fff;
 }
 .bg-blue-600 {
-  --tw-bg-opacity: 1;
-  background-color: rgba(37, 99, 235, var(--tw-bg-opacity));
+  background-color: #3182ce;
 }
 .bg-green-600 {
-  --tw-bg-opacity: 1;
-  background-color: rgba(5, 150, 105, var(--tw-bg-opacity));
+  background-color: #38a169;
 }
 .bg-red-600 {
-  --tw-bg-opacity: 1;
-  background-color: rgba(220, 38, 38, var(--tw-bg-opacity));
+  background-color: #e53e3e;
 }
+.bg-green-300 {
+  background-color: #9ae6b4;
+}
+
 .text-center {
   text-align: center;
 }
