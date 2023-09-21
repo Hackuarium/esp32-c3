@@ -8,6 +8,7 @@ SST25VF064 chip The time synchronization works through the NTP protocol and our
 server
 ******************************************************************************************/
 #include "common.h"
+#include "params.h"
 
 
 /*
@@ -268,7 +269,6 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     nextEntryID = getLastNextEntryID();
   }
 
-  // Serial.println(F("Previous Open non-volatile storage"));
   /*
    * Enter Critical Zone
    */
@@ -289,12 +289,18 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
     Check Free Memory
   *****************************************************************************/
   size_t freeMemory = prefs.freeEntries();
+  // 629 is the maximum space
+  // 64 bytes each time  are store
+
+  Serial.print("Free entries: ");
+  Serial.println(freeMemory);
 
   /**
    * @brief Check memorie free space
    * Check free space for: params[A-Z, AA-AZ, BA-BP], epoch, qualifiers, ID, etc.
    */
-  if (freeMemory < 16) 
+  // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/preferences.html#freeentries 
+  if (freeMemory < 16)
   {
     // Clear memory and avoid overflow in flash memory NVS space
     prefs.clear();
@@ -344,7 +350,7 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   }
 
   // params
-  sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) / 2, sizeof(int16_t)); // (old data + new entry)
+  sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) >> 1, sizeof(int16_t)); // (old data + new entry)
 
   if(schLenParams != 0) {
     size_t ckRdParams = prefs.getBytes("params", pLogsParams, schLenParams);
@@ -371,24 +377,16 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // timeNow
   uint32_t timeNow = (uint32_t)now();
   pLogsTimeNow[(schLen32) / 4].timeNow = timeNow;
-  // pLogsTimeNow[nextEntryID].p0 = (timeNow >> 24) & 0xFF;
-  // pLogsTimeNow[nextEntryID].p1 = (timeNow >> 16) & 0xFF;
-  // pLogsTimeNow[nextEntryID].p2 = (timeNow >> 8) & 0xFF;
-  // pLogsTimeNow[nextEntryID].p3 = (timeNow >> 0) & 0xFF;
 
   // params (A-Z)
-  size_t pos = schLenParams / 2;
-  for (size_t i = 0; i < NB_PARAMETERS_LINEAR_LOGS; i++) {
-    // param = getParameter(i);  // 2 bytes per parameter
-    // pLogsParams[nextEntryID].p0[i] = ((param >> 8) & 0xFF);
-    // pLogsParams[nextEntryID].p1[i] = (param >> 0) & 0xFF;
-    pLogsParams[pos].params[i] = 25 - i;
+  size_t pos = schLenParams / sizeof(sParams_t);
+  for (size_t i = 0; i < NB_PARAMETERS_LINEAR_LOGS; ++i) {
+    int16_t param = getParameter(i);  // 2 bytes per parameter
+    pLogsParams[pos].params[i] = param;
   }
   
   // eventNumber
   pLogsEventNumber[(schLen16) / 2].eventNumber = eventNumber;
-  // pLogsEventNumber[nextEntryID].p0 = (eventNumber >> 8) & 0xFF;
-  // pLogsEventNumber[nextEntryID].p1 = (eventNumber >> 0) & 0xFF;
 
   // parameterValue
   pLogsParameterValue[(schLen16) / 2].parameterValue = parameterValue;
@@ -419,13 +417,6 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
    */
   taskEXIT_CRITICAL(&myMutex);
   Serial.println(F("Finish storage"));
-
-  // Free memory
-  // free(pLogsNextEntryID_2);
-  // free(pLogsTimeNow);
-  // free(pLogsParams);
-  // free(pLogsEventNumber);
-  // free(pLogsParameterValue);
 
   /*****************************************************************************
     Check saved information
