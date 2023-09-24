@@ -18,6 +18,7 @@ void TaskLogger(void* pvParameters) {
 
   Serial.println(F("Go in Logger thread"));
   writeLog(EVENT_ESP32_BOOT, 0);
+  // Serial.println(F("Outside first Logger"));
   vTaskDelay((long)LOG_INTERVAL - (long)(millis() / 1000UL) + 5UL);
 
   const TickType_t xDelay = LOG_INTERVAL * 1000 / portTICK_PERIOD_MS; // Delay in s
@@ -32,7 +33,7 @@ void TaskLogger(void* pvParameters) {
 void taskLogger() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskLogger, "TaskLogger",
-                          4096,
+                          8096,
                                  // This stack size can be checked & adjusted by
                                  // reading the Stack Highwater
                           NULL,

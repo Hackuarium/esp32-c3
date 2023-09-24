@@ -23,6 +23,9 @@ server
 
 #include <Preferences.h>
 
+#define RW_MODE false
+#define RO_MODE true
+
 #include <toHex.h>
 #include <TimeLib.h>
 
@@ -262,12 +265,15 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   if (!logActive)
     return;
   
-  // Serial.println(F("nextEntry"));
+  // Serial.println(F("Default nextEntry"));
   // Serial.println(nextEntryID);
 
-  if(nextEntryID >= 1000) {
+  if(nextEntryID >= 1000) { // 1000 is the default value in start (no stored)
     nextEntryID = getLastNextEntryID();
   }
+
+  Serial.print(F("Actual nextEntry: "));
+  Serial.println(nextEntryID);
 
   /*
    * Enter Critical Zone
@@ -279,15 +285,19 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // etc has to use a namespace name to prevent key name collisions. We will 
   // open storage in RW-mode (second parameter has to be false).
   // Note: Namespace name is limited to 15 chars.
-  bool openNVS = prefs.begin("logger");
+  bool openNVS = prefs.begin("logger", RW_MODE);
 
-  if(openNVS) {
+  if(openNVS == true) {
     Serial.println(F("Open non-volatile storage"));
   }
+
+  // To avoid some panic error in the code uncomment this, load, and comment again.
+  // prefs.clear();
 
   /*****************************************************************************
     Check Free Memory
   *****************************************************************************/
+  Serial.println(F("check free entries"));
   size_t freeMemory = prefs.freeEntries();
   // 629 is the maximum space
   // 64 bytes each time  are store
@@ -300,40 +310,60 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
    * Check free space for: params[A-Z, AA-AZ, BA-BP], epoch, qualifiers, ID, etc.
    */
   // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/preferences.html#freeentries 
-  if (freeMemory < 16)
+  if (freeMemory < 16)  //436
   {
     // Clear memory and avoid overflow in flash memory NVS space
     prefs.clear();
     nextEntryID = 0;
   }
 
-  if(nextEntryID == 0) prefs.clear();
+  if(nextEntryID == 0 || nextEntryID >= 120) {
+    prefs.clear();
+    nextEntryID = 0;
+  }
 
+  /*****************************************************************************
+    Checking if the keys exist
+  *****************************************************************************/
+  // Declare lengths name for store values
+  // nextEntryID & TimeNow
+  size_t schLen32;
+  // params
+  size_t schLenParams;
+  // eventNumber & parameterValue
+  size_t schLen16;
+
+  bool doesExist = prefs.isKey("nextEntryID");
+  if (doesExist == false)
+  {
+    Serial.println(F("No bytes stored in logger namespace"));
+    // Serial.println(F("No bytes stored in nextEntryID"));
+    Serial.println(F("Setting dafault length for store values..."));
+
+    // Set length for nextEntryID & TimeNow
+    schLen32 = 0;
+
+    // Set length for params
+    schLenParams = 0;
+
+    // Set length for eventNumber & parameterValue
+    schLen16 = 0;
+  }
+  else
+  {
   /*****************************************************************************
     Reading Old Sequence
   *****************************************************************************/
-  
-  // Obtain length and create buffer for nextEntryID & TimeNow
-  size_t schLen32 = prefs.getBytesLength("nextEntryID");
+    // Obtain length and create buffer for nextEntryID & TimeNow
+    schLen32 = prefs.getBytesLength("nextEntryID");
 
-  if(schLen32 == 0) {
-    Serial.println(F("No bytes stored in nextEntryID"));
+    // Obtain length and create buffer for params
+    schLenParams = prefs.getBytesLength("params");
+
+    // Obtain length and create buffer for eventNumber & parameterValue
+    schLen16 = prefs.getBytesLength("eventNumber");
   }
 
-  // Obtain length and create buffer for params
-  size_t schLenParams = prefs.getBytesLength("params");
-
-  if(schLenParams == 0) {
-    Serial.println(F("No bytes stored in params"));
-  }
-
-  // Obtain length and create buffer for eventNumber & parameterValue
-  size_t schLen16 = prefs.getBytesLength("eventNumber");
-
-  if(schLen16 == 0) {
-    Serial.println(F("No bytes stored in eventNumber"));
-  }
-  
   /*****************************************************************************
     Reallocating memory to store flash variables
   *****************************************************************************/
@@ -344,17 +374,17 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // timeNow
   sTimeNow_t *pLogsTimeNow = (sTimeNow_t *)calloc((schLen32 + 4) / 4, sizeof(sTimeNow_t)); // (old data + new entry)
 
-  if(schLen32 != 0) {
-    size_t checkReadNextID = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
-    size_t checkReadTime = prefs.getBytes("timeNow", pLogsTimeNow, schLen32);
-  }
+  // if(schLen32 != 0) {
+  //   size_t checkReadNextID = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
+  //   size_t checkReadTime = prefs.getBytes("timeNow", pLogsTimeNow, schLen32);
+  // }
 
   // params
   sParams_t *pLogsParams = (sParams_t *)calloc((schLenParams + sizeof(sParams_t)) >> 1, sizeof(int16_t)); // (old data + new entry)
 
-  if(schLenParams != 0) {
-    size_t ckRdParams = prefs.getBytes("params", pLogsParams, schLenParams);
-  }
+  // if(schLenParams != 0) {
+  //   size_t ckRdParams = prefs.getBytes("params", pLogsParams, schLenParams);
+  // }
 
   // eventNumber
   sEventNumber_t *pLogsEventNumber = (sEventNumber_t *)calloc((schLen16 + 2) / 2, sizeof(sParameterValue_t)); // (old data + new entry)
@@ -362,17 +392,16 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // parameterValue
   sParameterValue_t *pLogsParameterValue = (sParameterValue_t *)calloc((schLen16 + 2) / 2, sizeof(sParameterValue_t)); // (old data + new entry)
 
-  if(schLen16 != 0) {
-    size_t ckRdEventN = prefs.getBytes("eventNumber", pLogsEventNumber, schLen16);
-    size_t ckRdParamValue = prefs.getBytes("parameterValue", pLogsParameterValue, schLen16);
-  }
+  // if(schLen16 != 0) {
+  //   size_t ckRdEventN = prefs.getBytes("eventNumber", pLogsEventNumber, schLen16);
+  //   size_t ckRdParamValue = prefs.getBytes("parameterValue", pLogsParameterValue, schLen16);
+  // }
 
   /*****************************************************************************
     Store new values
   *****************************************************************************/
   // nextEntryID
   pLogsNextEntryID[(schLen32) / 4].nextEntryID = nextEntryID;
-
 
   // timeNow
   uint32_t timeNow = (uint32_t)now();
@@ -397,89 +426,107 @@ void writeLog(uint16_t eventNumber, int parameterValue) {
   // nextEntryID
   size_t lenNextEntryID = prefs.putBytes("nextEntryID", pLogsNextEntryID, (schLen32 + sizeof(sNextEntryID_t)));
 
-  // timeNow
-  size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + sizeof(sTimeNow_t)));
+  if (lenNextEntryID == 0)
+  {
+    perror("Error storing data nextEntryID");
+    perror("Free used memory and format logger");
+    prefs.clear();
+    prefs.end();  // Finish the writing process
 
-  // params (A-Z)
-  // size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams_t));
-  size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + sizeof(sParams_t)));
-
-  // eventNumber
-  size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + sizeof(sEventNumber_t)));
-
-  // parameterValue
-  size_t lenParamValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + sizeof(sParameterValue_t)));
-
-  prefs.end();  // Finish the writing process
-
-  /*
-   * Exit Critical Zone
-   */
-  taskEXIT_CRITICAL(&myMutex);
-  Serial.println(F("Finish storage"));
-
-  /*****************************************************************************
-    Check saved information
-    We assume that the logger is high priority
-    And no other thread will change any of the values !!!!!!
-  *****************************************************************************/
-  bool isLogValid = true;
-
-  // if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID_t))
-  if (lenNextEntryID != (schLen32 + sizeof(sNextEntryID_t)))
-    isLogValid = false;
-  if (lenTimeNow != (schLen32 + sizeof(sTimeNow_t)))
-    isLogValid = false;
-  if (lenParams != (schLenParams + sizeof(sParams_t)))
-    isLogValid = false;
-  if (lenEventNumber != (schLen16 + sizeof(sEventNumber_t)))
-    isLogValid = false;
-  if (lenParamValue != (schLen16 + sizeof(sParameterValue_t)))
-    isLogValid = false;
-  // if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber_t))
-  //   isLogValid = false;
-  // if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue_t))
-    // isLogValid = false;
-
-  if (isLogValid) {
-    // Update the value of the next event log position in the memory
-    nextEntryID++;
-    Serial.println(F("Log success!"));
-  } else {
-    Serial.println(F("Log fail!"));
-    Serial.println(nextEntryID);
-    // if logger fails it is better to go back and erase the full sector
-    // we can anyway not try to write if it was not erased !
-    // and if we don't do this ... we will destroy the memory !
-    // nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
+    /*
+    * Exit Critical Zone
+    */
+    taskEXIT_CRITICAL(&myMutex);
   }
+  else
+  {
+    // timeNow
+    size_t lenTimeNow = prefs.putBytes("timeNow", pLogsTimeNow, (schLen32 + sizeof(sTimeNow_t)));
 
-  Serial.println(F("Finish save data"));
+    // params (A-Z)
+    // size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + 1)*sizeof(sParams_t));
+    size_t lenParams = prefs.putBytes("params", pLogsParams, (schLenParams + sizeof(sParams_t)));
+
+    // eventNumber
+    size_t lenEventNumber = prefs.putBytes("eventNumber", pLogsEventNumber, (schLen16 + sizeof(sEventNumber_t)));
+
+    // parameterValue
+    size_t lenParamValue = prefs.putBytes("parameterValue", pLogsParameterValue, (schLen16 + sizeof(sParameterValue_t)));
+
+    prefs.end();  // Finish the writing process
+
+    /*
+    * Exit Critical Zone
+    */
+    taskEXIT_CRITICAL(&myMutex);
+    Serial.println(F("Finish storage"));
+
+    /*****************************************************************************
+      Check saved information
+      We assume that the logger is high priority
+      And no other thread will change any of the values !!!!!!
+    *****************************************************************************/
+    bool isLogValid = true;
+
+    // if (lenNextEntryID != (schLen32 + 1)*sizeof(sNextEntryID_t))
+    if (lenNextEntryID != (schLen32 + sizeof(sNextEntryID_t)))
+      isLogValid = false;
+    if (lenTimeNow != (schLen32 + sizeof(sTimeNow_t)))
+      isLogValid = false;
+    if (lenParams != (schLenParams + sizeof(sParams_t)))
+      isLogValid = false;
+    if (lenEventNumber != (schLen16 + sizeof(sEventNumber_t)))
+      isLogValid = false;
+    if (lenParamValue != (schLen16 + sizeof(sParameterValue_t)))
+      isLogValid = false;
+
+
+    // if (lenEventNumber != (schLen16 + 1)*sizeof(sEventNumber_t))
+    //   isLogValid = false;
+    // if (lenParameterValue != (schLen16 + 1)*sizeof(sParameterValue_t))
+      // isLogValid = false;
+
+    if (isLogValid) {
+      // Update the value of the next event log position in the memory
+      nextEntryID++;
+      Serial.println(F("Log success!"));
+    } else {
+      Serial.println(F("Log fail!"));
+      Serial.println(nextEntryID);
+      // if logger fails it is better to go back and erase the full sector
+      // we can anyway not try to write if it was not erased !
+      // and if we don't do this ... we will destroy the memory !
+      // nextEntryID -= nextEntryID % NB_ENTRIES_PER_SECTOR;
+    }
+
+    Serial.println(F("Finish save data"));
+
+  }
 
   /*****************************************************************************
     Print saved information
   *****************************************************************************/
 
-  char *charNextEntryID = struct2str_EntryID(pLogsNextEntryID, lenNextEntryID / 4);
-  Serial.printf("\n nextEntryID as a string:\n\n  '%s'\n\n", charNextEntryID);
-  if(charNextEntryID) free(charNextEntryID);
+  // char *charNextEntryID = struct2str_EntryID(pLogsNextEntryID, lenNextEntryID / 4);
+  // Serial.printf("\n nextEntryID as a string:\n\n  '%s'\n\n", charNextEntryID);
+  // if(charNextEntryID) free(charNextEntryID);
   
-  char *charTimeNow = struct2str_TimeNow(pLogsTimeNow, lenTimeNow / 4);
-  Serial.printf("\n timeNow as a string:\n\n  '%s'\n\n", charTimeNow);
-  if(charTimeNow) free(charTimeNow);
+  // char *charTimeNow = struct2str_TimeNow(pLogsTimeNow, lenTimeNow / 4);
+  // Serial.printf("\n timeNow as a string:\n\n  '%s'\n\n", charTimeNow);
+  // if(charTimeNow) free(charTimeNow);
 
-  char *charParams = struct2str_Params(pLogsParams, lenParams / 2);
-  Serial.printf("\n params as a string:\n\n  '%s'\n\n", charParams);
-  if(charParams) free(charParams);
+  // char *charParams = struct2str_Params(pLogsParams, lenParams / 2);
+  // Serial.printf("\n params as a string:\n\n  '%s'\n\n", charParams);
+  // if(charParams) free(charParams);
 
-  char *charEventNb = struct2str_EventNb(pLogsEventNumber, lenEventNumber / 2);
-  Serial.printf("\n eventNumber as a string:\n\n  '%s'\n\n", charEventNb);
-  if(charEventNb) free(charEventNb);
+  // char *charEventNb = struct2str_EventNb(pLogsEventNumber, lenEventNumber / 2);
+  // Serial.printf("\n eventNumber as a string:\n\n  '%s'\n\n", charEventNb);
+  // if(charEventNb) free(charEventNb);
 
-  char *charParamValue = struct2str_ParamValue(pLogsParameterValue, lenParamValue / 2);
-  Serial.printf("\n parameterValue as a string:\n\n  '%s'\n\n", charParamValue);
-  /* free dynamically allocated memory */
-  if(charParamValue) free(charParamValue);
+  // char *charParamValue = struct2str_ParamValue(pLogsParameterValue, lenParamValue / 2);
+  // Serial.printf("\n parameterValue as a string:\n\n  '%s'\n\n", charParamValue);
+  // /* free dynamically allocated memory */
+  // if(charParamValue) free(charParamValue);
 
   // Free pointers
   free(pLogsNextEntryID);
@@ -1061,37 +1108,52 @@ void processLoggerCommand(char command, char* data, Print* output) {
 // }
 
 uint32_t getLastNextEntryID() {
+
+  uint32_t entryID;
+
   /*
    * Enter Critical Zone
    */
   portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
   taskENTER_CRITICAL(&myMutex);
 
-  bool openNVS = prefs.begin("logger");
+  bool openNVS = prefs.begin("logger", RO_MODE); // readOnly mode
 
-  if(openNVS) {
-    // Serial.println(F("Open non-volatile storage"));
+  if(openNVS == false) {
+    Serial.println(F("getLastNextEntryID fail!"));
   } else
   {
-    Serial.println(F("getLastNextEntryID fail!"));
+    // Serial.println(F("Open non-volatile storage"));
   }
+  
 
+  /*****************************************************************************
+    Checking if the key exist
+  *****************************************************************************/
+  bool doesExist = prefs.isKey("nextEntryID");
+  if (doesExist == false)
+  {
+    Serial.println(F("No bytes stored in nextEntryID"));
+    entryID = 0;
+  }
+  else
+  {
   /*****************************************************************************
     Reading Old Sequence
   *****************************************************************************/
-  // Obtain length and create buffer
-  size_t schLen32 = prefs.getBytesLength("nextEntryID");
-  if(schLen32 == 0) {
-    Serial.println(F("No bytes stored in nextEntryID"));
-  } else {
+    // Obtain length and create buffer
+    size_t schLen32 = prefs.getBytesLength("nextEntryID");
     // Serial.println(F("bytes stored in nextEntryID:"));
     // Serial.println(schLen32);
+    sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(schLen32, sizeof(sNextEntryID_t));
+
+    size_t checkRead = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
+
+    entryID = pLogsNextEntryID[schLen32/4 - 1].nextEntryID;
+
+    free(pLogsNextEntryID);
   }
-
-  sNextEntryID_t *pLogsNextEntryID = (sNextEntryID_t *)calloc(schLen32, sizeof(sNextEntryID_t));
-
-  size_t checkRead = prefs.getBytes("nextEntryID", pLogsNextEntryID, schLen32);
-
+  
   /*
    * Exit Critical Zone
    */
@@ -1099,7 +1161,6 @@ uint32_t getLastNextEntryID() {
 
   prefs.end();
 
-  uint32_t entryID = pLogsNextEntryID[schLen32/4 - 1].nextEntryID;
   return entryID;
 }
 
