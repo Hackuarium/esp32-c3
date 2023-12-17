@@ -1,7 +1,9 @@
+#include "config.h"
+#if defined(WIRE_SDA) && defined(PARAM_ACCELERATION_X)
+
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-#include "config.h"
 
 #include "params.h"
 
@@ -48,3 +50,4 @@ void taskGY521() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif

@@ -1,6 +1,8 @@
 #include "config.h"
-#include "params.h"
 
+#ifdef PARAM_BATTERY1
+
+#include "params.h"
 void TaskBatteryLevel(void* pvParameters) {
   (void)pvParameters;
 
@@ -49,3 +51,4 @@ void taskBatteryLevel() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif

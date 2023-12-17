@@ -1,7 +1,7 @@
 #include "config.h"
 #ifdef MAX_LED
 
-#include < Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>
 #include "pixels.h"
 
 const uint16_t font53[96] = {

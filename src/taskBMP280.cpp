@@ -1,7 +1,8 @@
+#include "config.h"
+#ifdef WIRE_SDA
 #include <Adafruit_BMP280.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-#include "config.h"
 
 #include "params.h"
 
@@ -58,3 +59,4 @@ void taskBMP280() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif

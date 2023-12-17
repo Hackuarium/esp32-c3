@@ -1,7 +1,7 @@
 #include "config.h"
 #ifdef MAX_LED
 
-#include < Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>
 #include "font53.h"
 #include "params.h"
 #include "pixels.h"

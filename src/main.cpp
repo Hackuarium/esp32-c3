@@ -5,6 +5,8 @@ SemaphoreHandle_t xSemaphoreWire = xSemaphoreCreateBinary();
 
 void setupRocket();
 void loopRocket();
+void setupPixels();
+void loopPixels();
 
 void setup() {
   xSemaphoreGive(xSemaphoreWire);
@@ -12,6 +14,8 @@ void setup() {
 
 #if BOARD_TYPE == KIND_ROCKET
   setupRocket();
+#elif BOARD_TYPE == KIND_PIXELS
+  setupPixels();
 #else
   setupExample();
 #endif
@@ -22,6 +26,8 @@ void setup() {
 void loop() {
 #if BOARD_TYPE == KIND_ROCKET
   loopRocket();
+#elif BOARD_TYPE == KIND_PIXELS
+  loopPixels();
 #else
   loopExample();
 #endif

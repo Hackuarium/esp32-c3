@@ -1,5 +1,5 @@
 #include "config.h"
-#ifdef PARAM_INT_TEMPERATURE
+#if defined(WIRE_SDA) && defined(PARAM_INT_TEMPERATURE)
 
 #include <SPI.h>
 #include "Adafruit_Si7021.h"

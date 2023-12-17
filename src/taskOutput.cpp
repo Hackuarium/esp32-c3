@@ -1,7 +1,8 @@
+#include "config.h"
+#ifdef PARAM_OUTPUT1
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-#include "config.h"
 #include "params.h"
 
 void TaskOutput(void* pvParameters) {
@@ -29,3 +30,4 @@ void taskOutput() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif

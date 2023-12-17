@@ -1,7 +1,7 @@
 #include "config.h"
 #ifdef MAX_LED
 
-#include < Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>
 #include "params.h"
 
 uint8_t COLORS[8] = {PARAM_COMMAND_1, PARAM_COMMAND_2, PARAM_COMMAND_3,

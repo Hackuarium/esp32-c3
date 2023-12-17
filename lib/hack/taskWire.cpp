@@ -1,6 +1,7 @@
-#include "./taskWire.h"
-#include <Wire.h>
 #include "config.h"
+#ifdef WIRE_SCL
+#include <Wire.h>
+#include "./taskWire.h"
 #include "params.h"
 
 #define WIRE_MAX_DEVICES 8
@@ -194,3 +195,4 @@ void processWireCommand(char command,
       printWireHelp(output);
   }
 }
+#endif

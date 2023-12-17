@@ -1,5 +1,6 @@
-#include <pwmWrite.h>
 #include "config.h"
+#ifdef PARAM_SERVO1
+#include <pwmWrite.h>
 #include "params.h"
 
 void TaskServo(void* pvParameters) {
@@ -25,3 +26,4 @@ void taskServo() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif

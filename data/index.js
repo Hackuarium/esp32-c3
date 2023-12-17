@@ -1,6 +1,7 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
 
 //const server = "http://192.168.4.1/";
+//const server = "http://192.168.1.230/";
 const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);

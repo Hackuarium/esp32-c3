@@ -1,6 +1,7 @@
+#include "config.h"
+#if BOARD_TYPE == KIND_ROCKET
 #include <Wire.h>
 #include <stdio.h>
-#include "config.h"
 #include "params.h"
 
 void initParameters();
@@ -86,3 +87,4 @@ void taskRocket() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif
