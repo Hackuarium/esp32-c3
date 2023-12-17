@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 unsigned int spiralCounter = 0;
 
@@ -107,3 +109,5 @@ int16_t getSpiralNextLedIndex(uint8_t row, uint8_t column, uint8_t direction) {
   }
   return -1;
 }
+
+#endif

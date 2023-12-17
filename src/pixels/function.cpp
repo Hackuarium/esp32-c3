@@ -1,4 +1,7 @@
-#include <Adafruit_NeoPixel.h>
+#include "config.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "../tinyexpr/tinyexpr.h"
 #include "./pixels.h"
 #include "params.h"
@@ -58,3 +61,5 @@ void updateFunction(Adafruit_NeoPixel& pixels) {
   }
   epoch++;
 }
+
+#endif

@@ -1,7 +1,9 @@
-#include <SPI.h>
 #include "config.h"
-#include "params.h"
+#ifdef PARAM_INT_TEMPERATURE
+
+#include <SPI.h>
 #include "Adafruit_Si7021.h"
+#include "params.h"
 
 void TaskSi7021(void* pvParameters) {
   Adafruit_Si7021 sensor = Adafruit_Si7021();
@@ -32,3 +34,5 @@ void taskSi7021() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+
+#endif

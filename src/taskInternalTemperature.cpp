@@ -1,7 +1,9 @@
-#include <SPI.h>
 #include "config.h"
-#include "params.h"
+#ifdef PARAM_INT_TEMPERATURE_B
+
+#include <SPI.h>
 #include "driver/temp_sensor.h"
+#include "params.h"
 
 temp_sensor_config_t temp_sensor = {
     .dac_offset = TSENS_DAC_L0,
@@ -32,3 +34,5 @@ void taskInternalTemperature() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+
+#endif

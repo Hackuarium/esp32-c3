@@ -1,4 +1,6 @@
 #include "config.h"
+#ifdef PARAM_SUNRISE_OFFSET
+
 #include "params.h"
 #include "taskForecast.h"
 #include "taskNTPD.h"
@@ -10,3 +12,5 @@ bool isNight() {
           ((getSunsetInMin() + getParameter(PARAM_SUNSET_OFFSET)) <
            currentHourMinute));
 }
+
+#endif

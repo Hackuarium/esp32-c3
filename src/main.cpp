@@ -10,7 +10,7 @@ void setup() {
   xSemaphoreGive(xSemaphoreWire);
   Serial.begin(115200);  // only for debug purpose
 
-#ifdef ROCKET
+#if BOARD_TYPE == KIND_ROCKET
   setupRocket();
 #else
   setupExample();
@@ -20,7 +20,7 @@ void setup() {
 }
 
 void loop() {
-#ifdef ROCKET
+#if BOARD_TYPE == KIND_ROCKET
   loopRocket();
 #else
   loopExample();

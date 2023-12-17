@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include <Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 unsigned int fireworkCounter = 0;
 
@@ -93,3 +95,5 @@ void updateFirework(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   state[led] = direction;
   setColor(pixels, led);
 }
+
+#endif

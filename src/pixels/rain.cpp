@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 void updateRain(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   for (int led = 0; led < MAX_LED; led++) {
@@ -30,3 +32,5 @@ void updateRain(Adafruit_NeoPixel& pixels, uint16_t state[]) {
     setColor(pixels, led);
   }
 }
+
+#endif

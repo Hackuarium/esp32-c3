@@ -1,5 +1,7 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "params.h"
 
 void updateRGB(Adafruit_NeoPixel& pixels) {
@@ -9,3 +11,5 @@ void updateRGB(Adafruit_NeoPixel& pixels) {
                          getParameter(PARAM_LED_BLUE));
   }
 }
+
+#endif

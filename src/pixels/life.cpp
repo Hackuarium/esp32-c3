@@ -1,8 +1,10 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
 #include "font53.h"
+#include "params.h"
 
 struct cellState_t {
   unsigned int state : 4;
@@ -155,3 +157,5 @@ void resetLife(Adafruit_NeoPixel& pixels) {
   generation = 0;
   paintLife(pixels);
 }
+
+#endif

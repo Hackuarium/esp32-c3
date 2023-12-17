@@ -1,4 +1,5 @@
 #include "config.h"
+#if BOARD_TYPE == KIND_EXAMPLE
 #include "params.h"
 
 void deepSleep(int seconds);
@@ -87,3 +88,13 @@ void loopExample() {
     deepSleep(getParameter(PARAM_SLEEP_NORMAL_DELAY));
   }
 }
+
+void resetParameters() {
+  for (byte i = 0; i < MAX_PARAM; i++) {
+    setAndSaveParameter(i, ERROR_VALUE);
+  }
+
+  setQualifier(16961);
+}
+
+#endif

@@ -1,5 +1,7 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "pixels.h"
 
 const uint16_t font53[96] = {
@@ -93,3 +95,5 @@ void paintSymbol(Adafruit_NeoPixel& pixels,
                  uint8_t y) {
   paintSymbol(pixels, ascii, x, y, Adafruit_NeoPixel::Color(255, 0, 255));
 }
+
+#endif

@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 unsigned int waveCounter = 0;
 
@@ -71,3 +73,5 @@ void updateWave(Adafruit_NeoPixel& pixels) {
   }
   return;
 }
+
+#endif

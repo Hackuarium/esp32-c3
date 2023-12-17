@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include <Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 unsigned int cometCounter = 0;
 
@@ -85,3 +87,5 @@ void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
 
   setColor(pixels, led);
 }
+
+#endif

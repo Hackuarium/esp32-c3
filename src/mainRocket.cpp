@@ -1,4 +1,6 @@
 #include "config.h"
+
+#if BOARD_TYPE == KIND_ROCKET
 #include "params.h"
 
 void deepSleep(int seconds);
@@ -71,19 +73,14 @@ void setupRocket() {
 
 void loopRocket() {
   vTaskDelay(100);
-
-  if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI)) {
-    // wifi not recheable
-    deepSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
-  }
-
-  if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_MQTT)) {
-    // mqtt not recheable
-    deepSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
-  }
-
-  if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_PUBLISHED)) {
-    // we succeeded to send MQTT info
-    deepSleep(getParameter(PARAM_SLEEP_NORMAL_DELAY));
-  }
 }
+
+void resetParameters() {
+  for (byte i = 0; i < MAX_PARAM; i++) {
+    setAndSaveParameter(i, ERROR_VALUE);
+  }
+
+  setQualifier(16961);
+}
+
+#endif

@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 uint16_t testRow = 0;
 uint16_t testColumn = 0;
@@ -20,3 +22,5 @@ void updateTest(Adafruit_NeoPixel& pixels) {
 
   setColor(pixels, led);
 }
+
+#endif

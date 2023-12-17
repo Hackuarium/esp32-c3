@@ -1,8 +1,10 @@
-#include "params.h"
 #include "config.h"
-#include <DHT.h>
+#ifdef PARAM_INT_TEMPERATURE
+
 #include <Adafruit_Sensor.h>
+#include <DHT.h>
 #include <DHT_U.h>
+#include "params.h"
 
 void TaskDHT22(void* pvParameters) {
   // DHT sensor is connected to GPIO10
@@ -23,7 +25,6 @@ void TaskDHT22(void* pvParameters) {
   }
 }
 
-
 void taskDHT22() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskDHT22, "TaskDHT22",
@@ -35,3 +36,4 @@ void taskDHT22() {
                           NULL, 1);
 }
 
+#endif

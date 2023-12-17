@@ -1,4 +1,6 @@
 #include "config.h"
+#ifdef PARAM_UPTIME_H
+
 #include "params.h"
 
 void TaskUptime(void* pvParameters) {
@@ -21,3 +23,5 @@ void taskUptime() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+
+#endif

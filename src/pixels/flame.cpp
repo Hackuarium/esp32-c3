@@ -1,8 +1,10 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
 #include "math.h"
+#include "params.h"
 
 uint32_t flameColor;
 
@@ -74,3 +76,5 @@ void updateFlame(Adafruit_NeoPixel& pixels) {
     pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 0, 0));
   }
 }
+
+#endif

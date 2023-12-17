@@ -160,16 +160,6 @@ void printCompactParameters(Print* output) {
   printCompactParameters(output, MAX_PARAM);
 }
 
-void resetParameters() {
-  setAndSaveParameter(PARAM_HUMIDITY, 3600);
-
-  for (byte i = 0; i < MAX_PARAM; i++) {
-    setAndSaveParameter(i, ERROR_VALUE);
-  }
-
-  setQualifier(16961);
-}
-
 void checkParameters() {
   if (getParameter(0) < ERROR_VALUE) {
     resetParameters();

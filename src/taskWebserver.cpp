@@ -3,8 +3,8 @@
 #include <StringStream.h>
 #include <WiFi.h>
 #include "./SerialUtilities.h"
-#include "config.h"
 #include "./taskSerial.h"
+#include "config.h"
 // #include "./utilities/function.h"
 
 AsyncWebServer server(80);
@@ -24,11 +24,13 @@ void notFound(AsyncWebServerRequest* request) {
   request->send(404, "text/plain", message);
 }
 
+#ifdef MAX_LED
 void handleFunction(AsyncWebServerRequest* request) {
   String action = request->arg("value");
   setFunction(action.c_str());
   request->send(200, "text/plain", "Function changed");
 }
+#endif
 
 void handleListLogs(AsyncWebServerRequest* request) {
   AsyncResponseStream* response = request->beginResponseStream("text/plain");
@@ -71,7 +73,9 @@ void TaskWebserver(void* pvParameters) {
 
   server.on("/command", handleCommand);
   server.on("/listLogs", handleListLogs);
+#ifdef MAX_LED
   server.on("/function", handleFunction);
+#endif
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 

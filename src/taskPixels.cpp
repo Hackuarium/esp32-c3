@@ -1,7 +1,8 @@
+#include "config.h"
+#ifdef MAX_LED
+
 #include <Adafruit_NeoPixel.h>
 #include <freertos/task.h>
-#include "config.h"
-#include "params.h"
 #include "./pixels/comet.h"
 #include "./pixels/doAction.h"
 #include "./pixels/firework.h"
@@ -18,6 +19,7 @@
 #include "./pixels/test.h"
 #include "./pixels/wave.h"
 #include "isNight.h"
+#include "params.h"
 
 #define PIXELS_PIN 8
 
@@ -289,3 +291,5 @@ void processPixelsCommand(char command,
       printPixelsHelp(output);
   }
 }
+
+#endif

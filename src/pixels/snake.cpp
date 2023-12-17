@@ -1,7 +1,9 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "./pixels.h"
+#include "params.h"
 
 #define HAS_WON 1
 #define HAS_LOST 2
@@ -285,3 +287,5 @@ void displayResults(Adafruit_NeoPixel& pixels, player_t players[]) {
     }
   }
 }
+
+#endif

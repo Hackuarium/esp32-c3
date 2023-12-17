@@ -1,5 +1,7 @@
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
+#ifdef MAX_LED
+
+#include < Adafruit_NeoPixel.h>
 #include "params.h"
 
 uint8_t COLORS[8] = {PARAM_COMMAND_1, PARAM_COMMAND_2, PARAM_COMMAND_3,
@@ -50,3 +52,5 @@ uint32_t getPixelColor(uint16_t led) {
 
   // we need to blend those 2 colors
 }
+
+#endif

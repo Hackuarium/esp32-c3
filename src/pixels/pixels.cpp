@@ -1,9 +1,11 @@
-#include "pixels.h"
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "params.h"
+#ifdef MAX_LED
+
+#include <Adafruit_NeoPixel.h>
 #include "Arduino.h"
 #include "inttypes.h"
+#include "params.h"
+#include "pixels.h"
 
 #define HSV_RANDOM 60
 
@@ -288,3 +290,5 @@ void updateMapping() {
     }
   }
 }
+
+#endif
