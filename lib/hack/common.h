@@ -8,7 +8,7 @@ extern SemaphoreHandle_t xSemaphoreWire;
 #define WIRE_SDA 6  // ESP32-C3 Seeed Studio XIAO ESP32C3
 #define WIRE_SCL 7
 
-#define LED_ON_BOARD 7
+#define LED_ON_BOARD 21
 
 #define THR_PIXELS 1
 // #define THR_FORECAST 1
@@ -156,5 +156,7 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_WIFI_RSSI 23           // X
 #define PARAM_STATUS 24              // Y
 #define PARAM_ERROR 25               // Z
+#define PARAM_BATTERY1 26            // AA
+#define PARAM_BATTERY2 27            // AB
 
 #endif

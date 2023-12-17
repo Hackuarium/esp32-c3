@@ -5,16 +5,16 @@
 #include "./params.h"
 
 void TaskOutput(void* pvParameters) {
-  vTaskDelay(1000);
+  vTaskDelay(0);
 
   pinMode(4, OUTPUT);
   pinMode(5, OUTPUT);
-  pinMode(21, OUTPUT);
+  pinMode(20, OUTPUT);
 
   while (true) {
     digitalWrite(4, getParameter(PARAM_OUTPUT1));
     digitalWrite(5, getParameter(PARAM_OUTPUT2));
-    digitalWrite(21, getParameter(PARAM_OUTPUT3));
+    digitalWrite(20, getParameter(PARAM_OUTPUT3));
     vTaskDelay(10);
   }
 }

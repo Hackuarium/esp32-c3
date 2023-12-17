@@ -12,7 +12,8 @@ void TaskGY521(void* pvParameters) {
 
   Adafruit_MPU6050 mpu;
 
-  if (!mpu.begin(104, &Wire)) {
+  if (!mpu.begin(105, &Wire)) {
+    Serial.println("Failed to find MPU6050 chip");
     vTaskDelay(1000);
   }
 
@@ -22,7 +23,7 @@ void TaskGY521(void* pvParameters) {
 
   sensors_event_t a, g, temp;
   while (true) {
-    vTaskDelay(10);
+    vTaskDelay(1000);
     if (xSemaphoreTake(xSemaphoreWire, 1) == pdTRUE) {
       mpu.getEvent(&a, &g, &temp);
       xSemaphoreGive(xSemaphoreWire);
@@ -33,6 +34,7 @@ void TaskGY521(void* pvParameters) {
       setParameter(PARAM_ROTATION_Y, g.gyro.y * 100);
       setParameter(PARAM_ROTATION_Z, g.gyro.z * 100);
     }
+    Serial.println(a.acceleration.x * 100);
   }
 }
 

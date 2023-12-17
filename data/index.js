@@ -27,6 +27,24 @@ async function sendSlowlyCommand(command, value) {
   }
 }
 
+function download(data) {
+  const blob = new Blob([data], { type: 'text/csv' });
+  const elem = window.document.createElement('a');
+  elem.href = window.URL.createObjectURL(blob);
+  elem.download = Date.now() + '.csv';
+  document.body.appendChild(elem);
+  elem.click();
+  document.body.removeChild(elem);
+}
+
+
+async function setServo1(status) {
+  const settings = await getSettings();
+  const off = settings[19]
+  const on = settings[20]
+  sendCommand('I' + (status ? on : off))
+}
+
 async function getSettings() {
   const response = await fetch(servers[0] + "command" + "?value=uc");
   let result = await response.text();
@@ -40,12 +58,10 @@ async function getSettings() {
   for (let i = 0; i < Math.min(result.length, 104); i = i + 4) {
     parameters.push(parseInt(result.substr(i, 4), 16));
   }
-  console.log(parameters);
   return parameters;
 }
 
 async function getCurrentSettings() {
-  console.log("CURRENT");
   let parameters = await getSettings();
   parameters = parameters.slice(0, 15);
   document.getElementById("result").value = "A" + parameters.join(",");
@@ -54,7 +70,6 @@ async function getCurrentSettings() {
 
 async function getCurrentLineColor() {
   let parameters = await getSettings();
-  console.log(parameters);
   const colors =
     "[" +
     parameters
@@ -70,7 +85,6 @@ async function getCurrentLineColor() {
 }
 
 async function sendCommand(command, value, options = {}) {
-  console.log(command);
   const { logResult = true } = options;
   if (command.match(/^[A-Z][0-9]+$/)) {
     let elements = document.querySelectorAll(

@@ -40,8 +40,8 @@ void setup() {
   // taskPixels();
 #endif
   taskRocket();
-  taskBMP280();
-  taskGY521();
+  //  taskBMP280();
+  // taskGY521();  // = MPU-6050
 
   taskSerial();
   taskServo();
@@ -62,12 +62,12 @@ void setup() {
   // taskOneWire();
   // taskNTPD();
   // taskInternalTemperature();
-  // taskBatteryLevel();
+  taskBatteryLevel();
   // taskUptime();
   taskWire();
   taskSPIFSLogger();
   // taskBluetooth();
-  // taskBlink();
+  taskBlink();
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
 }

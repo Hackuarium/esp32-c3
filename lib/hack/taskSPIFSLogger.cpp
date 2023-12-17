@@ -36,20 +36,27 @@ void TaskSPIFSLogger(void* pvParameters) {
         xFrequency = 10;
       }
     }
+
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    if (getParameter(PARAM_LOGGING_NB_ENTRIES) == -32768) {
+    if (getParameter(PARAM_LOGGING_NB_ENTRIES) < 0) {
       if (fileOpen) {
         fflush(file);
         fclose(file);
         fileOpen = false;
       }
-      setParameter(PARAM_LOGGING_NB_ENTRIES, 0);
       file = fopen("/spiffs/log.txt", "w");
       fprintf(file, "\n");
       fflush(file);
       fclose(file);
+      if (getParameter(PARAM_LOGGING_NB_ENTRIES) != -32768) {
+        setParameter(PARAM_LOGGING_NB_ENTRIES,
+                     -getParameter(PARAM_LOGGING_NB_ENTRIES));
+      } else {
+        setParameter(PARAM_LOGGING_NB_ENTRIES, 0);
+      }
     }
+
     if (getParameter(PARAM_LOGGING_NB_ENTRIES) > 0) {
       if (!fileOpen) {
         file = fopen("/spiffs/log.txt", "a");

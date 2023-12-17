@@ -1,45 +1,30 @@
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="style.css" rel="stylesheet" />
-    <link rel="stylesheet" href="chartist.min.css" />
-    <script src="chartist.min.js"></script>
-    <script>
-      const prefix = "";
-    </script>
-    <script src="index.js"></script>
-  </head>
 
-  <style>
-    button {
-      border: 2px solid white;
-    }
-  </style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="style.css" rel="stylesheet" />
+  <link rel="stylesheet" href="chartist.min.css" />
+  <script src="chartist.min.js"></script>
+  <script>
+    const prefix = "";
+  </script>
+  <script src="index.js"></script>
+</head>
 
-  <body style="zoom: 1.5">
-    <div class="flex flex-wrap">
-      <button
-      class="text-xl w-1/2 h-16 text-white bg-red-600"
-      onmousedown="if (confirm('Are you sure you want to delete all existing logs?')) sendCommand('S-32768')"
-    >
-      Delete logs
+<style>
+  button {
+    border: 2px solid white;
+  }
+</style>
+
+<body style="zoom: 1.5">
+  <div class="flex flex-wrap">
+    <button class="text-xl w-1/2 h-16 text-white bg-green-600"
+      onmousedown="if (confirm('Are you sure you want to delete all existing logs?')) sendCommand('R-20,-6000').then( () => reloadSettings())">
+      Start logging (120s, 50/s)
     </button>
-      <!--
-      <button
-        class="text-xl w-1/2 h-16 text-white bg-green-600"
-        onmousedown="sendCommand('R-10,1000').then( () => reloadSettings())"
-      >
-        Start logging (10s, 100/s)
-      </button>
-    -->
-      <button
-        class="text-xl w-1/2 h-16 text-white bg-green-600"
-        onmousedown="sendCommand('R-20,12000').then( () => reloadSettings())"
-      >
-        Start logging (120s, 50/s)
-      </button>
-      <!--
+    <!--
       <button
         class="text-xl w-1/2 h-16 text-white bg-green-600"
         onmousedown="sendCommand('R1,300').then( () => reloadSettings())"
@@ -53,267 +38,264 @@
         Start logging (3600s, 1/s)
       </button>
     -->
-      <button
-        class="text-xl w-1/2 h-16 text-white bg-blue-600"
-        onmousedown="sendCommand('S1').then( () => reloadSettings())"
-      >
-        Stop logging
-      </button>
-
-      <button
-        class="text-xl w-1/2 h-16 text-white bg-blue-600"
-        onmousedown="fetchLogs();"
-      >
-        Retrieve logs
-      </button>
-      <button
-        class="text-xl w-1/2 h-16 text-white bg-red-600"
-        onmousedown="if (confirm('Are you sure you want to reset all parameters?')) sendCommand('Y-1').then( () => reloadSettings())"
-      >
-        Reset parameters
-      </button>
-      <button
-      class="text-xl w-1/2 h-16 text-white bg-red-600"
-      onmousedown="if (confirm('Are you sure you want to reset ground altitude?')) sendCommand('W-32768')"
-    >
-    Set altitude to 0
+    <button class="text-xl w-1/2 h-16 text-white bg-blue-600"
+      onmousedown="sendCommand('S1').then( () => reloadSettings())">
+      Stop logging
     </button>
+
+    <button class="text-xl w-1/2 h-16 text-white bg-blue-600" onmousedown="fetchLogs();">
+      Retrieve logs
+    </button>
+    <button class="text-xl w-1/2 h-16 text-white bg-red-600"
+      onmousedown="if (confirm('Are you sure you want to reset all parameters?')) sendCommand('Y-1').then( () => reloadSettings())">
+      Reset parameters
+    </button>
+    <button class="text-xl w-1/2 h-16 text-white bg-red-600"
+      onmousedown="if (confirm('Are you sure you want to reset ground altitude?')) sendCommand('W-32768')">
+      Set altitude to 0
+    </button>
+  </div>
+  <div class="flex flex-wrap">
     <div class="text-xl p-3 m-1 bg-green-300">Altitude<input type="text" style="width: 100" data-label="P" /></div>
     <div class="text-xl p-3 m-1 bg-green-300">Output<input type="text" style="width: 100" data-label="L" /></div>
-    <div class="text-xl p-3 m-1 bg-green-300">Servo position<input type="text" style="width: 100" data-label="I" /></div>
+    <div class="text-xl p-3 m-1 bg-green-300">Servo position<input type="text" style="width: 100" data-label="I" />
+    </div>
     <div class="text-xl p-3 m-1 bg-green-300">Up down<input type="text" style="width: 100" data-label="O" /></div>
+  </div>
+
+
+
+  <div class="flex flex-wrap">
+    <span class="w-1/2">Inter log delay (negative in ms) - R</span>
+    <span><input type="text" data-label="R" /></span>
+  </div>
+  <div class="flex flex-wrap">
+    <span class="w-1/2">Number of remaining logs to acquire - S</span>
+    <span><input type="text" data-label="S" /></span>
+  </div>
+
+  <div class="flex flex-wrap">
+    <div class="w-1/3">
+      Acceleration X<input type="text" style="width: 100" data-label="A" />
+    </div>
+    <div class="w-1/3">
+      Acceleration Y<input type="text" style="width: 100" data-label="B" />
+    </div>
+    <div class="w-1/3">
+      Acceleration Z<input type="text" style="width: 100" data-label="C" />
+    </div>
+    <div class="w-1/3">
+      Rotation X<input type="text" style="width: 100" data-label="D" />
+    </div>
+    <div class="w-1/3">
+      Rotation Y<input type="text" style="width: 100" data-label="E" />
+    </div>
+    <div class="w-1/3">
+      Rotation Z<input type="text" style="width: 100" data-label="F" />
+    </div>
+    <div class="w-1/3">Servo 1 - I<input type="text" class="w-1/3" style="width: 100" data-label="I" /></div>
+    <div class="w-1/3">Servo 2 - J<input type="text" class="w-1/3" style="width: 100" data-label="J" /></div>
+    <div class="w-1/3">Servo 3 - K<input type="text" class="w-1/3" style="width: 100" data-label="K" /></div>
+    <div class="w-1/3">Output 1 - L<input type="text" style="width: 100" data-label="L" /></div>
+    <div class="w-1/3">Output 2 - M<input type="text" style="width: 100" data-label="M" /></div>
+    <div class="w-1/3">Output 3 - N<input type="text" style="width: 100" data-label="N" /></div>
+    <div class="w-1/3">N<input type="text" style="width: 100" data-label="N" /></div>
+    <div class="w-1/3">Up down<input type="text" style="width: 100" data-label="O" /></div>
+    <div class="w-1/3">
+      Temperature<input type="text" style="width: 100" data-label="G" />
+    </div>
+    <div class="w-1/3">Pressure<input type="text" style="width: 100" data-label="H" /></div>
+    <div class="w-1/3">Relative altitude - P<input type="text" style="width: 100" data-label="P" /></div>
+  </div>
+  <div class="flex flex-wrap">
+    <div class="w-1/3">Altitude ground - W<input type="text" style="width: 100" data-label="W" /></div>
+    <div class="w-1/3">Altitude parachute - V<input type="text" style="width: 100" data-label="V" /></div>
+  </div>
+  <div class="flex flex-wrap">
+    <div class="w-1/3">Servo 1 lock angle - T<input type="text" style="width: 100" data-label="T" /></div>
+    <button onclick="setServo1(0);">Set servo 1 to lock</button>
+  </div>
+  <div class="flex flex-wrap">
+    <div class="w-1/3">Servo 1 unlock angle - U<input type="text" style="width: 100" data-label="U" /></div>
+    <button onclick="setServo1(1);">Set servo 1 to unlock</button>
+  </div>
+  </div>
+  </div>
+
+  <div>
+    <div class="text-2xl bg-blue-600 w-full text-white text-center">
+      Advanced
     </div>
 
-
-
-    <div class="flex flex-wrap">
-      <span class="w-1/2">Inter log delay (negative in ms) - R</span>
-      <span><input type="text" data-label="R"/></span>
-    </div>
-    <div class="flex flex-wrap">
-      <span class="w-1/2">Number of remaining logs to acquire - S</span>
-      <span><input type="text" data-label="S" /></span>
-    </div>
-
-    <div class="flex flex-wrap">
-      <div class="w-1/3">
-        Acceleration X<input type="text" style="width: 100" data-label="A" />
-      </div>
-      <div class="w-1/3">
-        Acceleration Y<input type="text" style="width: 100" data-label="B" />
-      </div>
-      <div class="w-1/3">
-        Acceleration Z<input type="text" style="width: 100" data-label="C" />
-      </div>
-      <div class="w-1/3">
-        Rotation X<input type="text" style="width: 100" data-label="D" />
-      </div>
-      <div class="w-1/3">
-        Rotation Y<input type="text" style="width: 100" data-label="E" />
-      </div>
-      <div class="w-1/3">
-        Rotation Z<input type="text" style="width: 100" data-label="F" />
-      </div>
-        <div class="w-1/3">Servo 1 - I<input type="text" class="w-1/3" style="width: 100" data-label="I" /></div>
-        <div class="w-1/3">Servo 2 - J<input type="text" class="w-1/3" style="width: 100" data-label="J" /></div>
-        <div class="w-1/3">Servo 3 - K<input type="text" class="w-1/3" style="width: 100" data-label="K" /></div>
-        <div class="w-1/3">Output 1 - L<input type="text" style="width: 100" data-label="L" /></div>
-        <div class="w-1/3">Output 2 - M<input type="text" style="width: 100" data-label="M" /></div>
-        <div class="w-1/3">Output 3 - N<input type="text" style="width: 100" data-label="N" /></div>
-        <div class="w-1/3">N<input type="text" style="width: 100" data-label="N" /></div>
-        <div class="w-1/3">Up down<input type="text" style="width: 100" data-label="O" /></div>
-      <div class="w-1/3">
-        Temperature<input type="text" style="width: 100" data-label="G" />
-      </div>
-      <div class="w-1/3">Pressure<input type="text" style="width: 100" data-label="H" /></div>
-      <div class="w-1/3">Relative altitude - P<input type="text" style="width: 100" data-label="P" /></div>
-    </div>
-    <div class="flex flex-wrap">
-      <div class="w-1/3">Altitude ground - W<input type="text" style="width: 100" data-label="W" /></div>
-      <div class="w-1/3">Altitude parachute - V<input type="text" style="width: 100" data-label="V" /></div>
-      </div>
-    <div class="flex flex-wrap">
-      <div class="w-1/3">Servo 1 off angle - T<input type="text" style="width: 100" data-label="T" /></div>
-      <div class="w-1/3">Servo 1 on angle - U<input type="text" style="width: 100" data-label="U" /></div>
-      </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="text-2xl bg-blue-600 w-full text-white text-center">
-        Advanced
-      </div>
-
-      <button class="border-2 border-black" onmousedown="sendCommand('h')">
-        Help
-      </button>
-      <button class="border-2 border-black" onmousedown="sendCommand('s')">
-        Settings
-      </button>
-      <button class="border-2 border-black" onmousedown="getCurrentSettings()">
-        Current settings
-      </button>
-      <h1>Advanced</h1>
-      <form>
-        <input type="text" class="border-2 border-black" name="command" />
-        <input
-          type="submit"
-          onclick="event.preventDefault(); sendCommand(this.form.command.value);"
-        />
-      </form>
-      <textarea class="border-2 border-black" id="result" rows="8" cols="100">
+    <button class="border-2 border-black" onmousedown="sendCommand('h')">
+      Help
+    </button>
+    <button class="border-2 border-black" onmousedown="sendCommand('s')">
+      Settings
+    </button>
+    <button class="border-2 border-black" onmousedown="getCurrentSettings()">
+      Current settings
+    </button>
+    <h1>Advanced</h1>
+    <form>
+      <input type="text" class="border-2 border-black" name="command" />
+      <input type="submit" onclick="event.preventDefault(); sendCommand(this.form.command.value);" />
+    </form>
+    <textarea class="border-2 border-black" id="result" rows="8" cols="100">
       </textarea>
+    <button onclick="debugger;download(document.getElementById('result').value)">Download</button>
 
-      <div class="flex flex-wrap">
-        <div class="w-full" id="altitude"></div>
-        <div class="w-full" id="pressure"></div>
-        <div class="w-full" id="acceleration"></div>
-        <div class="w-full" id="rotation"></div>
-        <div class="w-full" id="temperature"></div>
-      </div>
+    <div class="flex flex-wrap">
+      <div class="w-full" id="altitude"></div>
+      <div class="w-full" id="pressure"></div>
+      <div class="w-full" id="acceleration"></div>
+      <div class="w-full" id="rotation"></div>
+      <div class="w-full" id="temperature"></div>
     </div>
-  </body>
+  </div>
+</body>
 
-  <script>
-    async function fetchLogs() {
-      const response = await fetch(server+"./log.txt");
-      const text = await response.text();
-      const matrix = text
-        .split(/[\r\n]+/)
-        .filter((line) => line.split("\t").length === 18)
-        .map((line) => line.split("\t"));
-      createPlots(matrix);
-      document.getElementById("result").value = text;
-    }
+<script>
+  async function fetchLogs() {
+    const response = await fetch(server + "./log.txt");
+    const text = await response.text();
+    const matrix = text
+      .split(/[\r\n]+/)
+      .filter((line) => line.split("\t").length === 18)
+      .map((line) => line.split("\t"));
+    createPlots(matrix);
+    document.getElementById("result").value = text;
+  }
 
-    function createPlots(matrix) {
-      const times = matrix.map((row) => (row[0] - matrix[0][0]) / 1000);
-      const accelerations = {
-        x: matrix.map((row) => row[1] / 1000),
-        y: matrix.map((row) => row[2] / 1000),
-        z: matrix.map((row) => row[3] / 1000),
-      };
-      const rotations = {
-        x: matrix.map((row) => row[4] / 1000),
-        y: matrix.map((row) => row[5] / 1000),
-        z: matrix.map((row) => row[6] / 1000),
-      };
-      const temperatures = matrix.map((row) => row[7] / 100);
-      const pressures = matrix.map((row) => row[8]/10);
-      const altitudes = matrix.map((row) => row[16]);
+  function createPlots(matrix) {
+    const times = matrix.map((row) => (row[0] - matrix[0][0]) / 1000);
+    const accelerations = {
+      x: matrix.map((row) => row[1] / 1000),
+      y: matrix.map((row) => row[2] / 1000),
+      z: matrix.map((row) => row[3] / 1000),
+    };
+    const rotations = {
+      x: matrix.map((row) => row[4] / 1000),
+      y: matrix.map((row) => row[5] / 1000),
+      z: matrix.map((row) => row[6] / 1000),
+    };
+    const temperatures = matrix.map((row) => row[7] / 100);
+    const pressures = matrix.map((row) => row[8] / 10);
+    const altitudes = matrix.map((row) => row[16]);
 
-      console.log(
-        times.map((value, index) => ({
-          x: value,
-          y: temperatures[index],
-        }))
-      );
+    console.log(
+      times.map((value, index) => ({
+        x: value,
+        y: temperatures[index],
+      }))
+    );
 
-      console.log(times, temperatures);
+    console.log(times, temperatures);
 
-      
 
-      new Chartist.Line(
-        "#altitude",
-        {
-          series: [
-            {
-              name: "Altitude",
-              data: times.map((value, index) => ({
-                x: value,
-                y: altitudes[index],
-              })),
-            },
-          ],
-        },
-        {
-          showPoint: false,
-          axisX: {
-            type: Chartist.AutoScaleAxis,
-          },
-        }
-      );
-      new Chartist.Line(
-        "#temperature",
-        {
-          series: [
-            {
-              name: "Temperature",
-              data: times.map((value, index) => ({
-                x: value,
-                y: temperatures[index],
-              })),
-            },
-          ],
-        },
-        {
-          showPoint: false,
-          axisX: {
-            type: Chartist.AutoScaleAxis,
-          },
-        }
-      );
-      new Chartist.Line(
-        "#pressure",
-        {
-          series: [
-            {
-              name: "Pressure",
-              data: times.map((value, index) => ({
-                x: value,
-                y: pressures[index],
-              })),
-            },
-          ],
-        },
-        {
-          showPoint: false,
-          axisX: {
-            type: Chartist.AutoScaleAxis,
-          },
-        }
-      );
-      new Chartist.Line(
-        "#acceleration",
-        {
-          series: ["x", "y", "z"].map((axis) => ({
-            name: "Acceleration " + axis.toUpperCase(),
+
+    new Chartist.Line(
+      "#altitude",
+      {
+        series: [
+          {
+            name: "Altitude",
             data: times.map((value, index) => ({
               x: value,
-              y: accelerations[axis][index],
+              y: altitudes[index],
             })),
-          })),
-        },
-        {
-          showPoint: false,
-          axisX: {
-            type: Chartist.AutoScaleAxis,
           },
-        }
-      );
-
-      new Chartist.Line(
-        "#rotation",
-        {
-          series: ["x", "y", "z"].map((axis) => ({
-            name: "Rotation " + axis.toUpperCase(),
+        ],
+      },
+      {
+        showPoint: false,
+        axisX: {
+          type: Chartist.AutoScaleAxis,
+        },
+      }
+    );
+    new Chartist.Line(
+      "#temperature",
+      {
+        series: [
+          {
+            name: "Temperature",
             data: times.map((value, index) => ({
               x: value,
-              y: rotations[axis][index],
+              y: temperatures[index],
             })),
-          })),
-        },
-        {
-          showPoint: false,
-          axisX: {
-            type: Chartist.AutoScaleAxis,
           },
-        }
-      );
-    }
+        ],
+      },
+      {
+        showPoint: false,
+        axisX: {
+          type: Chartist.AutoScaleAxis,
+        },
+      }
+    );
+    new Chartist.Line(
+      "#pressure",
+      {
+        series: [
+          {
+            name: "Pressure",
+            data: times.map((value, index) => ({
+              x: value,
+              y: pressures[index],
+            })),
+          },
+        ],
+      },
+      {
+        showPoint: false,
+        axisX: {
+          type: Chartist.AutoScaleAxis,
+        },
+      }
+    );
+    new Chartist.Line(
+      "#acceleration",
+      {
+        series: ["x", "y", "z"].map((axis) => ({
+          name: "Acceleration " + axis.toUpperCase(),
+          data: times.map((value, index) => ({
+            x: value,
+            y: accelerations[axis][index],
+          })),
+        })),
+      },
+      {
+        showPoint: false,
+        axisX: {
+          type: Chartist.AutoScaleAxis,
+        },
+      }
+    );
 
-    setInterval(() => {
-      reloadSettings();
-    }, 2500);
-  </script>
+    new Chartist.Line(
+      "#rotation",
+      {
+        series: ["x", "y", "z"].map((axis) => ({
+          name: "Rotation " + axis.toUpperCase(),
+          data: times.map((value, index) => ({
+            x: value,
+            y: rotations[axis][index],
+          })),
+        })),
+      },
+      {
+        showPoint: false,
+        axisX: {
+          type: Chartist.AutoScaleAxis,
+        },
+      }
+    );
+  }
+
+  setInterval(() => {
+    reloadSettings();
+  }, 2500);
+</script>
+
 </html>
