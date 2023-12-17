@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./pixels.h"
 
 uint16_t testRow = 0;

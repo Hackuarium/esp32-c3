@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./pixels.h"
 #include "font53.h"
 

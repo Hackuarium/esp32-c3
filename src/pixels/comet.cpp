@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./pixels.h"
 
 unsigned int cometCounter = 0;

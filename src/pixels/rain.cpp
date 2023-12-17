@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./pixels.h"
 
 void updateRain(Adafruit_NeoPixel& pixels, uint16_t state[]) {

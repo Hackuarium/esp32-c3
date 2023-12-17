@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "driver/temp_sensor.h"
 
 temp_sensor_config_t temp_sensor = {

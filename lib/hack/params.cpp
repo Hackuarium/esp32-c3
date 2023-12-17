@@ -1,9 +1,9 @@
-#include "./params.h"
+#include "params.h"
 #include <ArduinoNvs.h>
 #include "./SerialUtilities.h"
-#include "config.h"
 #include "./taskNTPD.h"
 #include "./toHex.h"
+#include "config.h"
 
 #define INT_MAX_VALUE 32767
 #define INT_MIN_VALUE -32768

@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include "./params.h"
+#include "params.h"
 
 #include "esp_wpa2.h"
 

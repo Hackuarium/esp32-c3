@@ -1,6 +1,6 @@
 #include <WiFi.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "taskNTPD.h"
 
 char wifiTemp[40];

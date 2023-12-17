@@ -1,6 +1,6 @@
 #include <ESPmDNS.h>
 #include <WiFi.h>
-#include "./params.h"
+#include "params.h"
 
 char mdns[20];
 

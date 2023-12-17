@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./taskWire.h"
 
 void printResult(char* data, Print* output);

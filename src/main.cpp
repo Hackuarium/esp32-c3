@@ -1,4 +1,4 @@
-#include "./params.h"
+#include "params.h"
 #include "config.h"
 
 SemaphoreHandle_t xSemaphoreWire = xSemaphoreCreateBinary();

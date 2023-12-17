@@ -1,7 +1,7 @@
 #include <SPIFFS.h>
 #include <stdio.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "esp_log.h"
 #include "esp_spiffs.h"
 

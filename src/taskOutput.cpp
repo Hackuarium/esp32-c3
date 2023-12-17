@@ -2,7 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 void TaskOutput(void* pvParameters) {
   vTaskDelay(0);

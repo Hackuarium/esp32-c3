@@ -1,7 +1,7 @@
 #include "./SerialUtilities.h"
 #include "./WifiUtilities.h"
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./taskOneWire.h"
 #include "./taskPixels.h"
 #include "./taskWire.h"

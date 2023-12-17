@@ -1,5 +1,5 @@
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 void TaskBatteryLevel(void* pvParameters) {
   (void)pvParameters;

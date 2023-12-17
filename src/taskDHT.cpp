@@ -1,4 +1,4 @@
-#include "./params.h"
+#include "params.h"
 #include "config.h"
 #include <DHT.h>
 #include <Adafruit_Sensor.h>

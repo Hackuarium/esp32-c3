@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 void updateRGB(Adafruit_NeoPixel& pixels) {
   for (int led = 0; led < MAX_LED; led++) {

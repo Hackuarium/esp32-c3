@@ -3,7 +3,7 @@
 #include <Wire.h>
 #include "config.h"
 
-#include "./params.h"
+#include "params.h"
 
 void TaskGY521(void* pvParameters) {
   vTaskDelay(1000);

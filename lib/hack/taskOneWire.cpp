@@ -1,5 +1,5 @@
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 #include <OneWire.h>
 

@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 uint8_t COLORS[8] = {PARAM_COMMAND_1, PARAM_COMMAND_2, PARAM_COMMAND_3,
                      PARAM_COMMAND_4, PARAM_COMMAND_5, PARAM_COMMAND_6,

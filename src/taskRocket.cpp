@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <stdio.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 void initParameters();
 

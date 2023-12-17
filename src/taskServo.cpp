@@ -1,6 +1,6 @@
 #include <pwmWrite.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 
 void TaskServo(void* pvParameters) {
   vTaskDelay(1000);

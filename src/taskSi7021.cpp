@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "Adafruit_Si7021.h"
 
 void TaskSi7021(void* pvParameters) {

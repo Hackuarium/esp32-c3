@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include "config.h"
-#include "./params.h"
+#include "params.h"
 #include "./taskSerial.cpp"
 
 AsyncMqttClient mqttClient;
