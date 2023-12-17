@@ -1,4 +1,4 @@
-#include "./common.h"
+#include "config.h"
 
 void TaskBlink(void* pvParameters) {
   (void)pvParameters;

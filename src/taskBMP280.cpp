@@ -1,7 +1,7 @@
 #include <Adafruit_BMP280.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-#include "./common.h"
+#include "config.h"
 
 #include "./params.h"
 

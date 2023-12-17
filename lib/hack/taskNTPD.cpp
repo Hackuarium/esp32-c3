@@ -1,7 +1,7 @@
 #include "./taskNTPD.h"
 #include <WiFi.h>
 // #include <sys/time.h>
-#include "./common.h"
+#include "config.h"
 #include "./taskNTPD.h"
 #include "esp_sntp.h"
 

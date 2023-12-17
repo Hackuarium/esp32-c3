@@ -1,4 +1,4 @@
-#include "./common.h"
+#include "config.h"
 /* Functions to convert a number to hexadecimal */
 
 const char hex[] = "0123456789ABCDEF";

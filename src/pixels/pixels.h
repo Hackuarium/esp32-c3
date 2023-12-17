@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include "common.h"
+#include "config.h"
 #include "inttypes.h"
 typedef struct position_t {
   uint8_t row;

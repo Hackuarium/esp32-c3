@@ -1,6 +1,6 @@
 #include "./taskWire.h"
 #include <Wire.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 
 #define WIRE_MAX_DEVICES 8

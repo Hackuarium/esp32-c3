@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 #include "taskNTPD.h"
 

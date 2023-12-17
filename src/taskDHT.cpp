@@ -1,5 +1,5 @@
 #include "./params.h"
-#include "./common.h"
+#include "config.h"
 #include <DHT.h>
 #include <Adafruit_Sensor.h>
 #include <DHT_U.h>

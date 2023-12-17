@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <stdio.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 
 void initParameters();

@@ -1,7 +1,7 @@
 #include "./params.h"
 #include <ArduinoNvs.h>
 #include "./SerialUtilities.h"
-#include "./common.h"
+#include "config.h"
 #include "./taskNTPD.h"
 #include "./toHex.h"
 

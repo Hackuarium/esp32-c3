@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <freertos/task.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 #include "./pixels/comet.h"
 #include "./pixels/doAction.h"

@@ -1,5 +1,5 @@
 #include <pwmWrite.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 
 void TaskServo(void* pvParameters) {

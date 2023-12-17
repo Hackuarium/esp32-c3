@@ -1,4 +1,4 @@
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 #include "taskNTPD.h"
 uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,

@@ -2,7 +2,7 @@
 #include <StringStream.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 #include "./taskSerial.cpp"
 

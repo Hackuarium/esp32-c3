@@ -1,5 +1,5 @@
 #include <NimBLEDevice.h>
-#include "./common.h"
+#include "config.h"
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/

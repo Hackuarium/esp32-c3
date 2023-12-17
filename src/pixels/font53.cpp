@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include "common.h"
+#include "config.h"
 #include "pixels.h"
 
 const uint16_t font53[96] = {

@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include "./common.h"
+#include "config.h"
 
 void paintSymbol(Adafruit_NeoPixel& pixels,
                  uint8_t ascii,

@@ -5,7 +5,7 @@
     "cmath": "cpp",
     "atomic": "cpp",
     "cstdint": "cpp",
-    "common.h": "c",
+    "config.h": "c",
     "cstdio": "cpp",
     "*.tcc": "cpp",
     "optional": "cpp",

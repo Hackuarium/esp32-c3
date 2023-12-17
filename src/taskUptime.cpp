@@ -1,4 +1,4 @@
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 
 void TaskUptime(void* pvParameters) {

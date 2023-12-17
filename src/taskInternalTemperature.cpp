@@ -1,5 +1,5 @@
 #include <SPI.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 #include "driver/temp_sensor.h"
 

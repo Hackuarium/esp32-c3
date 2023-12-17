@@ -1,4 +1,4 @@
-#include "./common.h"
+#include "config.h"
 
 boolean setParameterBit(byte number, byte bitToSet);
 boolean clearParameterBit(byte number, byte bitToClear);

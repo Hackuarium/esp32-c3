@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include "./common.h"
+#include "config.h"
 #include "./params.h"
 
 void updateRGB(Adafruit_NeoPixel& pixels) {
