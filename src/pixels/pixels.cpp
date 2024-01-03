@@ -104,9 +104,10 @@ uint32_t getColor(uint8_t colorModel,
     hsvStatus = (hsvStatus + hsbChangeSpeed) % 360;
     return getHSV360(hsvStatus, 255, brightness);
   }
-  if (colorModel == COLOR_FULL_RANDOM) {
-    return getHSV360(random(0, 360), 255, brightness);
-  }
+  // default:
+  // if (colorModel == COLOR_FULL_RANDOM) {
+  return getHSV360(random(0, 360), 255, brightness);
+  //}
 }
 
 uint32_t getHSV360(uint16_t h, uint8_t s, uint8_t v) {
@@ -182,6 +183,10 @@ uint16_t getLedIndex(uint8_t row, uint8_t column) {
   return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
 }
 
+uint16_t getNbLeds() {
+  return getParameter(PARAM_NB_COLUMNS) * getParameter(PARAM_NB_ROWS);
+}
+
 uint16_t getLedIndex(position_t& position) {
   return mapping[position.row * getParameter(PARAM_NB_COLUMNS) +
                  position.column];
@@ -252,7 +257,7 @@ void updateMapping() {
   uint8_t nbColumn = getParameter(PARAM_NB_COLUMNS);
 
   if (getParameter(PARAM_LAYOUT_MODEL) ==
-      0) {  // normal square horizontal lines
+      0) {  // normal square horizontal lines starting from top right
     for (uint8_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
@@ -276,6 +281,19 @@ void updateMapping() {
         }
       }
     }
+    // normal square horizontal lines starting from top left
+  } else if (getParameter(PARAM_LAYOUT_MODEL) == 2) {
+    for (uint8_t row = 0; row < nbRow; row++) {
+      for (uint16_t column = 0; column < nbColumn; column++) {
+        uint16_t led = row * nbColumn + column;
+        if (row % 2 == 0) {
+          mapping[led] = row * nbColumn + nbColumn - column - 1;
+        } else {
+          mapping[led] = led;
+        }
+      }
+    }
+
   } else {
     for (uint8_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {

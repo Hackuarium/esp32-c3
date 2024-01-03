@@ -1,7 +1,8 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
 
 //const server = "http://192.168.4.1/";
-//const server = "http://192.168.1.230/";
+//const server = "http://192.168.1.222/";
+//const server = "http://192.168.1.136/";
 const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
@@ -210,6 +211,7 @@ function addColorModelsButtons(models) {
     button.onmousedown = async () => {
       await sendCommand(prefix + "P" + model.slice(0, 4).join(","));
       await sendCommand(prefix + "V" + model.slice(4, 8).join(","));
+      await sendCommand(prefix + "D11"); // select line mode
       await reloadSettings();
     };
     modelsElement.append(button);

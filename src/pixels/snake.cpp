@@ -130,7 +130,7 @@ void updateFood(Adafruit_NeoPixel& pixels) {
     }
   }
   for (uint16_t i = 0; i < 40; i++) {
-    uint16_t led = random(0, MAX_LED);
+    uint16_t led = random(0, getNbLeds());
     if (stateSnake[led] == 0) {
       pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 0));
       stateSnake[led] = 99;

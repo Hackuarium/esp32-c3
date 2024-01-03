@@ -25,6 +25,8 @@
 
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
+void resetLine();
+
 void TaskPixels(void* pvParameters) {
   vTaskDelay(3192);
 
@@ -43,11 +45,11 @@ void TaskPixels(void* pvParameters) {
   pixels.show();
 
   // setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
-  // setFunction("x + y + t");
+  setFunction("x + y + t");
 
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;
-  uint8_t previousBrigtness = 0;
+  uint8_t previousBrightness = 0;
 
   uint16_t counter = 0;
 
@@ -75,10 +77,10 @@ void TaskPixels(void* pvParameters) {
       pixels.setBrightness(0);
     }
 
-    if (pixels.getBrightness() == 0 && previousBrigtness == 0) {
+    if (pixels.getBrightness() == 0 && previousBrightness == 0) {
       continue;
     } else {
-      previousBrigtness = pixels.getBrightness();
+      previousBrightness = pixels.getBrightness();
     }
 
     /*
@@ -160,9 +162,11 @@ void taskPixels() {
 
 void printPixelsHelp(Print* output) {
   output->println(F("(pc) Reset parameters for cube"));
-  output->println(F("(ps) Reset parameters for square"));
+  output->println(F("(pr) Reset parameters for square 8x8"));
+  output->println(F("(ps) Reset parameters for square 16x16"));
   output->println(F("(pb) Reset parameters for big christmas tree"));
   output->println(F("(pl) Reset parameters for line"));
+  output->println(F("(pn) Reset parameters for line christmas"));
 }
 
 void processPixelsCommand(char command,
@@ -198,7 +202,28 @@ void processPixelsCommand(char command,
 
       updateMapping();
       break;
-    case 's':
+    case 'r':  // square 8x8
+      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
+      setAndSaveParameter(PARAM_INTENSITY, 2);
+      setAndSaveParameter(PARAM_SPEED, 17);
+      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
+      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
+      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
+      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
+      setAndSaveParameter(PARAM_NB_ROWS, 8);
+      setAndSaveParameter(PARAM_NB_COLUMNS, 8);
+      setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);
+      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
+      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
+      setAndSaveParameter(PARAM_DIRECTION, 1);
+      setAndSaveParameter(PARAM_LED_RED, 127);
+      setAndSaveParameter(PARAM_LED_GREEN, 63);
+      setAndSaveParameter(PARAM_LED_BLUE, 0);
+      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+
+      updateMapping();
+      break;
+    case 's':  // square 16x16
       setAndSaveParameter(PARAM_BRIGHTNESS, 63);
       setAndSaveParameter(PARAM_INTENSITY, 2);
       setAndSaveParameter(PARAM_SPEED, 17);
@@ -257,39 +282,58 @@ void processPixelsCommand(char command,
       updateMapping();
       break;
     case 'l':
-      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
-      setAndSaveParameter(PARAM_INTENSITY, 2);
-      setAndSaveParameter(PARAM_SPEED, 17);
-      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 11);
-      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-      setAndSaveParameter(PARAM_NB_ROWS, 1);
-      setAndSaveParameter(PARAM_NB_COLUMNS, 800);
-      setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
+      resetLine();
+      setAndSaveParameter(PARAM_COLOR_LED_MODEL,
+                          NEO_GRB);  // CA  NEO_RGB: 6 - NEO_GRB: 82
+      updateMapping();
+      break;
+    case 'n':
+      resetLine();
       setAndSaveParameter(PARAM_COLOR_LED_MODEL,
                           NEO_RGB);  // CA  NEO_RGB: 6 - NEO_GRB: 82
-      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-      setAndSaveParameter(PARAM_DIRECTION, 1);
-      setAndSaveParameter(PARAM_LED_RED, 127);
-      setAndSaveParameter(PARAM_LED_GREEN, 63);
-      setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
-      setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
-      setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
-      setAndSaveParameter(PARAM_ACTION_1, -1);
-      setAndSaveParameter(PARAM_ACTION_2, -1);
-      setAndSaveParameter(PARAM_ACTION_3, -1);
-      setAndSaveParameter(PARAM_ACTION_4, -1);
-      setAndSaveParameter(PARAM_ACTION_5, -1);
-      setAndSaveParameter(PARAM_ACTION_6, -1);
-      setAndSaveParameter(PARAM_ACTION_7, -1);
-      setAndSaveParameter(PARAM_ACTION_8, -1);
       updateMapping();
       break;
     default:
       printPixelsHelp(output);
   }
+}
+
+void resetLine() {
+  setAndSaveParameter(PARAM_BRIGHTNESS, 63);
+  setAndSaveParameter(PARAM_INTENSITY, 2);
+  setAndSaveParameter(PARAM_SPEED, 17);
+  setAndSaveParameter(PARAM_CURRENT_PROGRAM, 11);
+  setAndSaveParameter(PARAM_COLOR_MODEL, 7);
+  setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
+  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
+  setAndSaveParameter(PARAM_NB_ROWS, 1);
+  setAndSaveParameter(PARAM_NB_COLUMNS, 800);
+  setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
+
+  setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
+  setAndSaveParameter(PARAM_DIRECTION, 1);
+  setAndSaveParameter(PARAM_LED_RED, 127);
+  setAndSaveParameter(PARAM_LED_GREEN, 63);
+  setAndSaveParameter(PARAM_LED_BLUE, 0);
+  setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+  setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
+  setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
+  setAndSaveParameter(PARAM_COMMAND_1, 0xf00);
+  setAndSaveParameter(PARAM_COMMAND_2, 0xf0f);
+  setAndSaveParameter(PARAM_COMMAND_3, 0x20f);
+  setAndSaveParameter(PARAM_COMMAND_4, 0x0af);
+  setAndSaveParameter(PARAM_COMMAND_5, 0x0fb);
+  setAndSaveParameter(PARAM_COMMAND_6, 0x6f0);
+  setAndSaveParameter(PARAM_COMMAND_7, 0xfd0);
+  setAndSaveParameter(PARAM_COMMAND_8, 0xf70);
+  setAndSaveParameter(PARAM_ACTION_1, -1);
+  setAndSaveParameter(PARAM_ACTION_2, -1);
+  setAndSaveParameter(PARAM_ACTION_3, -1);
+  setAndSaveParameter(PARAM_ACTION_4, -1);
+  setAndSaveParameter(PARAM_ACTION_5, -1);
+  setAndSaveParameter(PARAM_ACTION_6, -1);
+  setAndSaveParameter(PARAM_ACTION_7, -1);
+  setAndSaveParameter(PARAM_ACTION_8, -1);
 }
 
 #endif

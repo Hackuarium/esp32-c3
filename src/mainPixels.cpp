@@ -30,7 +30,7 @@ void setupPixels() {
 
   taskOTA();
   // taskMDNS();  // incompatible with taskOTA
-  taskWifi();
+  // taskWifi();
   // taskWifiAP();
   taskWebserver();
   taskForecast();

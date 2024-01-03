@@ -12,87 +12,149 @@
 </head>
 
 <style>
-	button {
-		border: 2px solid white;
-	}
+  button {
+    border: 2px solid white;
+  }
 </style>
 
 
 
 <body style="zoom: 1.5">
   <div class="flex flex-wrap" id="models">
- </div>
- <div>
-  <span style="width: 50px">&nbsp;Change all colors at once:</span> 
-  <input type="color" data-label="Y" style="width: 25px"
-  oninput="changeAllColors(value)"></input> 
- </div>
+  </div>
   <div>
-  <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D11')">Line mode</button>
-  Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
+    <span style="width: 50px">&nbsp;Change all colors at once:</span>
+    <input type="color" data-label="Y" style="width: 25px" oninput="changeAllColors(value)"></input>
+  </div>
+  <div>
+    <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D11')">Line mode</button>
+    Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
     Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('C'+this.value)" min="0" max="20"></input><br>
     <input type="color" data-label="P" style="width: 25px"
-    oninput="sendSlowlyCommand('P'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="Q" style="width: 25px"
-    oninput="sendSlowlyCommand('Q'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="R" style="width: 25px"
-    oninput="sendSlowlyCommand('R'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="S" style="width: 25px"
-    oninput="sendSlowlyCommand('S'+colorHexTo12(value), value)"></input>
+      oninput="sendSlowlyCommand('P'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="Q" style="width: 25px"
+      oninput="sendSlowlyCommand('Q'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="R" style="width: 25px"
+      oninput="sendSlowlyCommand('R'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="S" style="width: 25px"
+      oninput="sendSlowlyCommand('S'+colorHexTo12(value), value)"></input>
     <input type="color" data-label="V" style="width: 25px"
-    oninput="sendSlowlyCommand('V'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="W" style="width: 25px"
-    oninput="sendSlowlyCommand('W'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="X" style="width: 25px"
-    oninput="sendSlowlyCommand('X'+colorHexTo12(value), value)"></input>
-  <input type="color" data-label="Y" style="width: 25px"
-    oninput="sendSlowlyCommand('Y'+colorHexTo12(value), value)"></input> 
-    
+      oninput="sendSlowlyCommand('V'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="W" style="width: 25px"
+      oninput="sendSlowlyCommand('W'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="X" style="width: 25px"
+      oninput="sendSlowlyCommand('X'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="Y" style="width: 25px"
+      oninput="sendSlowlyCommand('Y'+colorHexTo12(value), value)"></input>
+
 
     <br>
 
-  Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
-    max="7"></input><br>
-</div>
+    Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
+      max="7"></input><br>
+  </div>
 
-<div>
-  <div class="text-2xl bg-blue-600 w-full text-white text-center">Advanced</div>
+  <div>
+    <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D1')">Rain mode</button>
 
-  
-  Nb rows: <input data-label="I" type="number" oninput="sendCommand('I'+value)" min="0" max="255"></input><br>
-  Nb led per rows: <input data-label="J" type="number" oninput="sendCommand('J'+value)" min="0" max="255"></input><br>
-  <button class="border-2 border-black" onmousedown="sendCommand('h')">Help</button>
-  <button class="border-2 border-black" onmousedown="sendCommand('s')">Settings</button>
-  <button class="border-2 border-black" onmousedown="getCurrentSettings()">Current settings</button>
-  <button class="border-2 border-black" onmousedown="getCurrentLineColor()">Current color settings</button>
-  <h1>Advanced</h1>
-  <form>
-    <input type="text" class="border-2 border-black" name="command"> <input type="submit"
-      onclick="event.preventDefault(); sendCommand(this.form.command.value);">
-  </form>
 
-  <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
-</div> 
+    Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
+    Color: <select data-label="E" onchange="sendCommand('E'+this.value)">
+      <option value="0">Fixed</option>
+      <option value="1">Orangish</option>
+      <option value="2">Random orangish</option>
+      <option value="3">Geenish</option>
+      <option value="4">Random greenish</option>
+      <option value="5">Violetish</option>
+      <option value="6">Random violetish</option>
+      <option value="7">Rainbow</option>
+      <option value="8">Random rainbow</option>
+      <option value="9">Random</option>
+    </select><br>
+    If color is fixed:<br>
+    <input type="color" data-label="KLM"
+      oninput="sendSlowlyCommand('K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+    If not fixed:<br>
+    Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('F'+this.value)" min="0"
+      max="10"></input><br>
+    Fading speed: <input data-label="G" type="range" oninput="sendSlowlyCommand('G'+this.value)" min="0"
+      max="9"></input><br>
+    Other options:<br>
+    Number of events: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
+      max="7"></input><br>
+    Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('C'+this.value)" min="0" max="20"></input><br>
+  </div>
+
+  <div>
+    <div class="text-2xl bg-blue-600 w-full text-white text-center">Disco</div>
+
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A255,7,19,1,7,10,8,0,1,800,127,63,0,0,1')">Rain
+      fast</button>
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A255,7,19,1,7,10,7,0,1,800,127,63,0,0,1')">Rain
+      medium</button>
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A255,7,0,1,7,10,3,0,1,800,127,63,0,0,1')">Rain
+      slow</button>
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A255,4,20,11,7,10,7,0,1,800,127,63,0,0,1')">Color
+      line slow</button>
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A255,4,20,11,7,10,7,0,1,800,127,63,0,0,1')">Line
+      up down</button>
+    <button class="text-xl w-1/4 h-8 text-black"
+      onclick="sendCommand('A255,2,20,11,0,10,6,0,1,800,255,255,255,0,1')">Color
+      line fast</button>
+    <button class="text-xl w-1/4 h-8 text-black"
+      onclick="sendCommand('A255,7,20,1,0,10,9,0,1,800,255,255,255,0,1')">Strobe fast
+    </button>
+    <button class="text-xl w-1/4 h-8 text-black"
+      onclick="sendCommand('A255,7,19,1,0,10,8,0,1,800,255,255,255,0,1')">Strobe medium
+    </button>
+    <button class="text-xl w-1/4 h-8 text-black"
+      onclick="sendCommand('A255,7,16,1,0,10,6,0,1,800,255,255,255,0,1')">Strobe slow
+    </button>
+
+    <br>
+
+  </div>
+  <div>
+    <div class="text-2xl bg-blue-600 w-full text-white text-center">Advanced</div>
+
+
+    Nb rows: <input data-label="I" type="number" oninput="sendCommand('I'+value)" min="0" max="255"></input><br>
+    Nb led per rows: <input data-label="J" type="number" oninput="sendCommand('J'+value)" min="0" max="255"></input><br>
+    <button class="border-2 border-black" onmousedown="sendCommand('h')">Help</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('s')">Settings</button>
+    <button class="border-2 border-black" onmousedown="getCurrentSettings()">Current settings</button>
+    <button class="border-2 border-black" onmousedown="getCurrentLineColor()">Current color settings</button>
+    <h1>Advanced</h1>
+    <form>
+      <input type="text" class="border-2 border-black" name="command"> <input type="submit"
+        onclick="event.preventDefault(); sendCommand(this.form.command.value);">
+    </form>
+
+    <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
+  </div>
+
+
+
 </body>
 
 <script>
 
-async function changeAllColors(value) {
-  sendSlowlyCommand('P'+colorHexTo12(value)+','+colorHexTo12(value)+','+colorHexTo12(value)+','+colorHexTo12(value), value);
-  sendSlowlyCommand('V'+colorHexTo12(value)+','+colorHexTo12(value)+','+colorHexTo12(value)+','+colorHexTo12(value), value);
-  await delay(250);
-  reloadSettings();
-}
+  async function changeAllColors(value) {
+    sendSlowlyCommand('P' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value), value);
+    sendSlowlyCommand('V' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value), value);
+    await delay(250);
+    reloadSettings();
+  }
 
   const models = [
-    [0x000, 0x000, 0x000, 0x000 ,0x000, 0x000, 0x000, 0x000],
-    [0xFFF, 0xFFF, 0xFFF, 0xFFF ,0xFFF, 0xFFF, 0xFFF, 0xFFF],
-    [0xf00, 0xf00, 0xf00, 0xf00 ,0xf00, 0xf00, 0xf00, 0xf00],
-    [0x0f0, 0x0f0, 0x0f0, 0x0f0 ,0x0f0, 0x0f0, 0x0f0, 0x0f0],
-    [0x00f, 0x00f, 0x00f, 0x00f ,0x00f, 0x00f, 0x00f, 0x00f],
-    [0xf0f, 0xf0f, 0xf0f, 0xf0f ,0xf0f, 0xf0f, 0xf0f, 0xf0f],
-    [0x0ff, 0x0ff, 0x0ff, 0x0ff ,0x0ff, 0x0ff, 0x0ff, 0x0ff],
-    [0xff0, 0xff0, 0xff0, 0xff0 ,0xff0, 0xff0, 0xff0, 0xff0],
+    [0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000],
+    [0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF],
+    [0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00],
+    [0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0],
+    [0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f],
+    [0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f],
+    [0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff],
+    [0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0],
     [0x00f, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0xf00],
     [0x0f0, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0x0f0],
     [0xf70, 0xf00, 0xf00, 0xfff, 0xf10, 0xf00, 0xf40, 0xf60],

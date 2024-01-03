@@ -3,9 +3,9 @@
 #include <StringStream.h>
 #include <WiFi.h>
 #include "./SerialUtilities.h"
+#include "./pixels/function.h"
 #include "./taskSerial.h"
 #include "config.h"
-// #include "./utilities/function.h"
 
 AsyncWebServer server(80);
 
@@ -93,10 +93,11 @@ void TaskWebserver(void* pvParameters) {
 }
 
 void taskWebserver() {
+  vTaskDelay(4351);
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskWebserver, "TaskWebserver",
-                          20000,  // This stack size can be checked & adjusted
-                                  // by reading the Stack Highwater
+                          20000,  // This stack size can be checked &
+                                  // adjusted by reading the Stack Highwater
                           NULL,
                           0,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.

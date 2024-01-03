@@ -25,6 +25,7 @@ uint8_t getDirection();
 uint16_t getLedIndex(uint16_t led);
 
 uint16_t getLedIndex(uint8_t row, uint8_t column);
+uint16_t getNbLeds();
 uint16_t getLedIndex(position_t& position);
 
 void updateMapping();

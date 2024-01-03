@@ -15,7 +15,8 @@ unsigned int lineCounter = 0;
 uint32_t getPixelColor(uint16_t led);
 
 void updateLine(Adafruit_NeoPixel& pixels) {
-  lineCounter += getParameter(PARAM_SPEED);
+  int16_t speed = getParameter(PARAM_SPEED);
+  lineCounter += speed > 10 ? speed * 2 : speed;
 
   for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
     for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
