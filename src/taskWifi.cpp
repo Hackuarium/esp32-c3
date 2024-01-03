@@ -24,7 +24,7 @@ void TaskWifi(void* pvParameters) {
   if (strlen(ssid) < 2 || strlen(password) < 2) {
     Serial.println("No wifi ssid or password defined");
     while (strlen(ssid) < 2 || strlen(password) < 2) {
-      vTaskDelay(100000);
+      vTaskDelay(1000);
       retrieveWifiParameters();
     }
   }
