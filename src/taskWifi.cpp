@@ -9,12 +9,25 @@ char password[30];
 char username[30];
 char identity[30];
 
-void TaskWifi(void* pvParameters) {
-  vTaskDelay(2500);
+void retrieveWifiParameters() {
   getParameter("wifi.ssid", ssid);
   getParameter("wifi.password", password);
   getParameter("wifi.username", username);
   getParameter("wifi.identity", identity);
+}
+
+void TaskWifi(void* pvParameters) {
+  vTaskDelay(2500);
+
+  retrieveWifiParameters();
+
+  if (strlen(ssid) < 2 || strlen(password) < 2) {
+    Serial.println("No wifi ssid or password defined");
+    while (strlen(ssid) < 2 || strlen(password) < 2) {
+      vTaskDelay(100000);
+      retrieveWifiParameters();
+    }
+  }
 
   Serial.print("Trying to connect to ");
   Serial.println(ssid);
@@ -23,10 +36,13 @@ void TaskWifi(void* pvParameters) {
 
   WiFi.mode(WIFI_STA);
   // WiFi.begin(ssid, password);
+  // The following line is required because of a bug in the LOLIN esp32-c3 board
+  // https://github.com/espressif/arduino-esp32/issues/6767
+  // It could be removed in the other cases and yield to better connection range
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   // WiFi.disconnect(true);
   //
-  // if identity not defined use ursername as identity
+  // if identity not defined use username as identity
   if (strlen(identity) == 0) {
     strcpy(identity, username);
   }
@@ -36,7 +52,6 @@ void TaskWifi(void* pvParameters) {
   if (strlen(identity) == 0 && strlen(username) == 0) {
     Serial.println("Using domestic WPA2");
     wifi_Enterprise_type = false;
-
   }
   // if identity and username defined use WPA2 Enterprise to connect to wifi
   else {
