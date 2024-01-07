@@ -44,8 +44,8 @@ void TaskPixels(void* pvParameters) {
   pixels.clear();
   pixels.show();
 
-  // setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
-  setFunction("x + y + t");
+  setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
+  // setFunction("x + y + t");
 
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;

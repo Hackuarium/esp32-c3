@@ -38,7 +38,7 @@ void setupPixels() {
   taskNTPD();
   taskInternalTemperature();
   // taskUptime();
-  taskBlink();
+  //  taskBlink(); // can crash tinyexpr if not correctly assigned
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
 }

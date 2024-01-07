@@ -16,7 +16,11 @@
     "regex": "cpp",
     "tuple": "cpp",
     "type_traits": "cpp",
-    "utility": "cpp"
+    "utility": "cpp",
+    "cstdlib": "cpp",
+    "algorithm": "cpp",
+    "tinyexpr.h": "c",
+    "stdlib.h": "c"
   },
   "liveServer.settings.port": 5501,
   "cmake.sourceDirectory": "/Users/lpatiny/git/hackuarium/esp32-c3/.pio/libdeps/lolin_c3_mini/Adafruit BusIO"

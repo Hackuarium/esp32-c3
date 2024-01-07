@@ -23,9 +23,6 @@ void updateFunction(Adafruit_NeoPixel& pixels) {
   te_variable vars[] = {{"x", &x}, {"y", &y}, {"i", &i}, {"t", &t}};
   int err;
 
-  // TODO fix this code
-  return;
-
   te_expr* n = te_compile(expression, vars, 4, &err);
 
   if (n) {
