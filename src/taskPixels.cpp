@@ -8,6 +8,7 @@
 #include "./pixels/firework.h"
 #include "./pixels/flame.h"
 #include "./pixels/function.h"
+#include "./pixels/gif.h"
 #include "./pixels/life.h"
 #include "./pixels/line.h"
 #include "./pixels/meteo.h"
@@ -26,9 +27,10 @@
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
 void resetLine();
+void clearActions();
 
 void TaskPixels(void* pvParameters) {
-  vTaskDelay(3192);
+  vTaskDelay(7192);
 
   updateMapping();
 
@@ -46,6 +48,8 @@ void TaskPixels(void* pvParameters) {
 
   setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
   // setFunction("x + y + t");
+  //  setGIF("/gifs/campfire.gif");
+  setGIF("/gifs/dog.gif");
 
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;
@@ -143,6 +147,9 @@ void TaskPixels(void* pvParameters) {
         updateLine(pixels);
         break;
       case 12:
+        updateGif(pixels);
+        break;
+      case 13:
         updateTest(pixels);
         break;
     }
@@ -195,6 +202,7 @@ void processPixelsCommand(char command,
       // turn off at 12PM Turn on in the morning at 5AM but not too strong
       setAndSaveParameter(PARAM_SUNSET_OFFSET, -30);
       setAndSaveParameter(PARAM_SUNRISE_OFFSET, 30);
+      clearActions();
       setAndSaveParameter(PARAM_ACTION_1, 30960);
       setAndSaveParameter(PARAM_ACTION_2, 9320);
       setAndSaveParameter(PARAM_ACTION_3, 0);
@@ -203,7 +211,7 @@ void processPixelsCommand(char command,
       updateMapping();
       break;
     case 'r':  // square 8x8
-      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
+      setAndSaveParameter(PARAM_BRIGHTNESS, 5);
       setAndSaveParameter(PARAM_INTENSITY, 2);
       setAndSaveParameter(PARAM_SPEED, 17);
       setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
@@ -220,11 +228,12 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_LED_GREEN, 63);
       setAndSaveParameter(PARAM_LED_BLUE, 0);
       setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+      clearActions();
 
       updateMapping();
       break;
     case 's':  // square 16x16
-      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
+      setAndSaveParameter(PARAM_BRIGHTNESS, 5);
       setAndSaveParameter(PARAM_INTENSITY, 2);
       setAndSaveParameter(PARAM_SPEED, 17);
       setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
@@ -241,6 +250,7 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_LED_GREEN, 63);
       setAndSaveParameter(PARAM_LED_BLUE, 0);
       setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+      clearActions();
 
       updateMapping();
       break;
@@ -326,6 +336,10 @@ void resetLine() {
   setAndSaveParameter(PARAM_COMMAND_6, 0x6f0);
   setAndSaveParameter(PARAM_COMMAND_7, 0xfd0);
   setAndSaveParameter(PARAM_COMMAND_8, 0xf70);
+  clearActions();
+}
+
+void clearActions() {
   setAndSaveParameter(PARAM_ACTION_1, -1);
   setAndSaveParameter(PARAM_ACTION_2, -1);
   setAndSaveParameter(PARAM_ACTION_3, -1);

@@ -1,10 +1,12 @@
 #include "./SerialUtilities.h"
 #include "./WifiUtilities.h"
-#include "config.h"
-#include "params.h"
 #include "./taskOneWire.h"
 #include "./taskPixels.h"
 #include "./taskWire.h"
+#include "FS.h"
+#include "config.h"
+#include "fileUtilities.h"
+#include "params.h"
 
 #define SERIAL_BUFFER_LENGTH 256
 #define SERIAL_MAX_PARAM_VALUE_LENGTH 256
@@ -153,6 +155,10 @@ void printResult(char* data, Print* output) {
   switch (data[0]) {
     case 'h':
       printHelp(output);
+      break;
+
+    case 'f':
+      processFSCommand(data[1], paramValue, output);
       break;
 
 #ifdef THR_WIRE_MASTER

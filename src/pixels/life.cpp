@@ -151,7 +151,7 @@ void resetLife(Adafruit_NeoPixel& pixels) {
     lifeState[i] = {0, 0};
   }
   for (uint16_t i = 0; i < 40; i++) {
-    uint16_t led = rand() % MAX_LED;
+    uint16_t led = rand() % getNbLeds();
     lifeState[led].state = 1;
   }
   generation = 0;

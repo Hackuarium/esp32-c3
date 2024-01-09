@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include "./SerialUtilities.h"
 #include "./pixels/function.h"
+#include "./pixels/gif.h"
 #include "./taskSerial.h"
 #include "config.h"
 
@@ -29,6 +30,11 @@ void handleFunction(AsyncWebServerRequest* request) {
   String action = request->arg("value");
   setFunction(action.c_str());
   request->send(200, "text/plain", "Function changed");
+}
+void handleGIF(AsyncWebServerRequest* request) {
+  String action = request->arg("value");
+  setGIF(action.c_str());
+  request->send(200, "text/plain", "GIF changed");
 }
 #endif
 
@@ -75,6 +81,7 @@ void TaskWebserver(void* pvParameters) {
   server.on("/listLogs", handleListLogs);
 #ifdef MAX_LED
   server.on("/function", handleFunction);
+  server.on("/gif", handleGIF);
 #endif
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");

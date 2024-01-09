@@ -1,7 +1,8 @@
-#include "config.h"
-#include "params.h"
 #include "./taskNTPD.h"
 #include "./taskOneWire.h"
+#include "FS.h"
+#include "config.h"
+#include "params.h"
 
 void resetParameters();
 
@@ -79,6 +80,7 @@ void printUtilitiesHelp(Print* output) {
 }
 
 void printHelp(Print* output) {
+  output->println(F("(f)s"));
   output->println(F("(h)elp"));
 #ifdef THR_WIRE_MASTER
   output->println(F("(i)2c"));
