@@ -180,6 +180,14 @@ uint16_t getLedIndex(uint16_t led) {
 }
 
 uint16_t getLedIndex(uint8_t row, uint8_t column) {
+  row = row % getParameter(PARAM_NB_ROWS);
+  column = column % getParameter(PARAM_NB_COLUMNS);
+  return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
+}
+
+uint16_t getStateIndex(int16_t row, int16_t column) {
+  row = row % getParameter(PARAM_NB_ROWS);
+  column = column % getParameter(PARAM_NB_COLUMNS);
   return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
 }
 

@@ -3,6 +3,7 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <freertos/task.h>
+#include "./pixels/cellular.h"
 #include "./pixels/comet.h"
 #include "./pixels/doAction.h"
 #include "./pixels/firework.h"
@@ -150,6 +151,9 @@ void TaskPixels(void* pvParameters) {
         updateGif(pixels);
         break;
       case 13:
+        updateCellular(pixels, state);
+        break;
+      case 14:
         updateTest(pixels);
         break;
     }

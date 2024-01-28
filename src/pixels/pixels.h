@@ -24,6 +24,7 @@ int16_t getNextLedIndex(uint8_t row, uint8_t column, uint8_t direction);
 uint8_t getDirection();
 uint16_t getLedIndex(uint16_t led);
 
+uint16_t getStateIndex(int16_t row, int16_t column);
 uint16_t getLedIndex(uint8_t row, uint8_t column);
 uint16_t getNbLeds();
 uint16_t getLedIndex(position_t& position);
