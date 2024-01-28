@@ -21,7 +21,13 @@ void updateLife(Adafruit_NeoPixel& pixels);
 void resetLife(Adafruit_NeoPixel& pixels);
 void paintLife(Adafruit_NeoPixel& pixels);
 
-void updateLife(Adafruit_NeoPixel& pixels) {
+void updateLife(Adafruit_NeoPixel& pixels, uint8_t programChanged) {
+  if (programChanged) {
+    setParameter(PARAM_COMMAND_1, -1);
+    setParameter(PARAM_COMMAND_5, 0);
+    setParameter(PARAM_COMMAND_6, 0);
+  }
+
   if (getParameter(PARAM_COMMAND_1) == -1) {
     resetLife(pixels);
     setParameter(PARAM_COMMAND_1, 0);

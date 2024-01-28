@@ -7,56 +7,59 @@
 #include "params.h"
 
 uint16_t cellularCounter = 0;
-uint8_t currentCellularRule = 30;
+uint8_t currentCellularUpdateRow = 0;
 
-void resetCellular(uint16_t state[]);
+void updateCellular(Adafruit_NeoPixel& pixels,
+                    uint16_t state[],
+                    uint32_t rowColors[],
+                    uint8_t programChanged) {
+  if (programChanged) {
+    rowColors[getParameter(PARAM_NB_ROWS)] = {0};
+    state[getLedIndex(0, getParameter(PARAM_NB_COLUMNS) / 2)] = 1;
+    setParameter(PARAM_COMMAND_1, getParameter(PARAM_COMMAND_1) % 256);
+  }
 
-void updateCellular(Adafruit_NeoPixel& pixels, uint16_t state[]) {
-  cellularCounter++;
-  if (cellularCounter % ((21 - getParameter(PARAM_SPEED)) * 3) != 0) {
-    return;
+  // move down all the colors
+  for (uint8_t row = getParameter(PARAM_NB_ROWS) - 1; row > 0; row--) {
+    rowColors[row] = rowColors[row - 1];
   }
-  resetCellular(state);
-  if (cellularCounter % 40 == 0) {
-    currentCellularRule++;
-  }
+  rowColors[0] = getColor();
+
   uint8_t nbRows = getParameter(PARAM_NB_ROWS);
   uint8_t nbColumns = getParameter(PARAM_NB_COLUMNS);
 
-  for (uint8_t row = 0; row < nbRows - 1; row++) {
+  if (currentCellularUpdateRow < (nbRows - 1)) {
     for (uint16_t column = 0; column < nbColumns; column++) {
-      uint8_t cellKey = (state[getStateIndex(row, column - 1)] << 2) +
-                        (state[getStateIndex(row, column)] << 1) +
-                        state[getStateIndex(row, column + 1)];
-      uint8_t cellState = (currentCellularRule & (1 << cellKey)) >> cellKey;
-      state[getLedIndex(row + 1, column)] = cellState;
+      uint8_t cellKey =
+          (state[getStateIndex(currentCellularUpdateRow, column - 1)] << 2) +
+          (state[getStateIndex(currentCellularUpdateRow, column)] << 1) +
+          state[getStateIndex(currentCellularUpdateRow, column + 1)];
+      uint8_t cellState =
+          (getParameter(PARAM_COMMAND_1) & (1 << cellKey)) >> cellKey;
+      state[getLedIndex(currentCellularUpdateRow + 1, column)] = cellState;
     }
+    currentCellularUpdateRow++;
   }
 
   // we copy the state to the pixels
   for (uint8_t row = 0; row < nbRows; row++) {
     for (uint16_t column = 0; column < nbColumns; column++) {
       uint16_t led = getLedIndex(row, column);
-      if (state[led] == 0) {
+      if (state[led] == 0 || rowColors[row] == 0) {
         pixels.setPixelColor(led, getBackgroundColor());
       } else {
-        pixels.setPixelColor(led, getColor());
+        pixels.setPixelColor(led, rowColors[row]);
       }
     }
   }
-}
 
-void resetCellular(uint16_t state[]) {
-  uint8_t nbRows = getParameter(PARAM_NB_ROWS);
-  uint8_t nbColumns = getParameter(PARAM_NB_COLUMNS);
+  cellularCounter++;
 
-  for (uint8_t row = 0; row < nbRows; row++) {
-    for (uint16_t column = 0; column < nbColumns; column++) {
-      uint16_t led = getLedIndex(row, column);
-      state[led] = 0;
-    }
+  if (cellularCounter % (25 * (21 - getParameter(PARAM_SPEED))) == 0) {
+    state[getLedIndex(0, getParameter(PARAM_NB_COLUMNS) / 2)] = 1;
+    setParameter(PARAM_COMMAND_1, (getParameter(PARAM_COMMAND_1) + 1) % 256);
+    currentCellularUpdateRow = 0;
   }
-  state[getLedIndex(0, getParameter(PARAM_NB_COLUMNS) / 2)] = 1;
 }
 
 #endif

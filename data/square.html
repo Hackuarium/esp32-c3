@@ -117,6 +117,39 @@
   </div>
 
   <div>
+    <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D13')">Elementary Cellular
+      Automaton</button>
+    Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
+    Color: <select data-label="E" onchange="sendCommand('E'+this.value)">
+      <option value="0">Fixed</option>
+      <option value="1">Orangish</option>
+      <option value="2">Random orangish</option>
+      <option value="3">Geenish</option>
+      <option value="4">Random greenish</option>
+      <option value="5">Violetish</option>
+      <option value="6">Random violetish</option>
+      <option value="7">Rainbow</option>
+      <option value="8">Random rainbow</option>
+      <option value="9">Random</option>
+    </select><br>
+    Background / fixed color:<br>
+    <input type="color" data-label="KLM"
+      oninput="sendSlowlyCommand('K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+    If not fixed:<br>
+    Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('F'+this.value)" min="0"
+      max="10"></input><br>
+    Change speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('C'+this.value)" min="0"
+      max="20"></input><br>
+    Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('H'+value)" min="0"
+      max="255"></input><br>
+    <form>
+      Cellular rule<input data-label="P" type="number" class="border-2 border-black" name="cellularRule" min="0"
+        max="255" value="30">
+      <input type="submit" onclick="event.preventDefault(); sendCommand('P'+(this.form.cellularRule.value-1));">
+    </form>
+  </div>
+
+  <div>
     <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D8')">Flame mode</button>
     Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
     Color: <select data-label="E" onchange="sendCommand('E'+this.value)">

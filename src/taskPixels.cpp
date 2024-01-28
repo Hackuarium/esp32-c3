@@ -31,7 +31,7 @@ void resetLine();
 void clearActions();
 
 void TaskPixels(void* pvParameters) {
-  vTaskDelay(7192);
+  vTaskDelay(1192);
 
   updateMapping();
 
@@ -43,6 +43,7 @@ void TaskPixels(void* pvParameters) {
   pixels.begin();
 
   uint16_t state[MAX_LED] = {0};
+  uint32_t rowColors[getParameter(PARAM_NB_ROWS)] = {0};
 
   pixels.clear();
   pixels.show();
@@ -63,6 +64,7 @@ void TaskPixels(void* pvParameters) {
       previousProgram = getParameter(PARAM_CURRENT_PROGRAM);
       programChanged = 1;
       state[MAX_LED] = {0};
+
     } else {
       programChanged = 0;
     }
@@ -122,18 +124,12 @@ void TaskPixels(void* pvParameters) {
         updateMeteo(pixels);
         break;
       case 6:
-        if (programChanged) {
-          resetSnake(pixels);
-        }
-        updateSnake(pixels);
+
+        updateSnake(pixels, programChanged);
         break;
       case 7:
-        if (programChanged) {
-          setParameter(PARAM_COMMAND_1, -1);
-          setParameter(PARAM_COMMAND_5, 0);
-          setParameter(PARAM_COMMAND_6, 0);
-        }
-        updateLife(pixels);
+
+        updateLife(pixels, programChanged);
         break;
       case 8:
         updateFlame(pixels);
@@ -151,7 +147,7 @@ void TaskPixels(void* pvParameters) {
         updateGif(pixels);
         break;
       case 13:
-        updateCellular(pixels, state);
+        updateCellular(pixels, state, rowColors, programChanged);
         break;
       case 14:
         updateTest(pixels);
@@ -246,7 +242,7 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
       setAndSaveParameter(PARAM_NB_ROWS, 16);
       setAndSaveParameter(PARAM_NB_COLUMNS, 16);
-      setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);
+      setAndSaveParameter(PARAM_LAYOUT_MODEL, 2);
       setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
       setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
       setAndSaveParameter(PARAM_DIRECTION, 1);

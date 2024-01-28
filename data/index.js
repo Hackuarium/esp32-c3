@@ -2,9 +2,9 @@
 
 //const server = "http://192.168.4.1/";
 //const server = "http://192.168.1.222/";
-//const server = "http://192.168.1.136/";
+//const server = "http://192.168.1.205/";
 const server = "";
-let servers = [server];
+//let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
   servers = urlParams
@@ -88,7 +88,7 @@ async function getCurrentLineColor() {
 
 async function sendCommand(command, value, options = {}) {
   const { logResult = true } = options;
-  if (command.match(/^[A-Z][0-9]+$/)) {
+  if (command.match(/^[A-Z][0-9-]+$/)) {
     let elements = document.querySelectorAll(
       `[data-label=${command.substring(0, 1)}]`
     );
@@ -96,7 +96,7 @@ async function sendCommand(command, value, options = {}) {
       element.value = value || command.substring(1);
     }
   }
-  if (command.match(/^[A-Z][0-9,]+$/)) {
+  if (command.match(/^[A-Z][0-9,-]+$/)) {
     command = prefix + command;
   }
 

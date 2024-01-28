@@ -40,7 +40,11 @@ void resetSnake(Adafruit_NeoPixel& pixels);
 void displayResults(Adafruit_NeoPixel& pixels, player_t players[]);
 void convertToFood(Adafruit_NeoPixel& pixels, uint8_t id);
 
-void updateSnake(Adafruit_NeoPixel& pixels) {
+void updateSnake(Adafruit_NeoPixel& pixels, uint8_t programChanged) {
+  if (programChanged) {
+    resetSnake(pixels);
+  }
+
   snakeCounter++;
 
   if (getParameter(PARAM_NB_PLAYERS) != previousNumberPlayers) {
