@@ -95,6 +95,9 @@ void updateGif(Adafruit_NeoPixel& pixels) {
     gif.playFrame(false,
                   &gifInterframeMs);  // play a frame and pause for
   }
+  if (gifInterframeMs < 100) {
+    gifInterframeMs = 100;
+  }
 }
 
 #endif
