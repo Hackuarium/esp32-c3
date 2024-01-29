@@ -4,7 +4,7 @@
 //const server = "http://192.168.1.222/";
 //const server = "http://192.168.1.205/";
 const server = "";
-//let servers = [server];
+let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
   servers = urlParams

@@ -31,7 +31,7 @@ void resetLine();
 void clearActions();
 
 void TaskPixels(void* pvParameters) {
-  vTaskDelay(1192);
+  vTaskDelay(7192);
 
   updateMapping();
 
