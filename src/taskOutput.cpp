@@ -1,8 +1,5 @@
 #include "config.h"
 #ifdef PARAM_OUTPUT1
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
 #include "params.h"
 
 void TaskOutput(void* pvParameters) {

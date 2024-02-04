@@ -1,0 +1,120 @@
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="style.css" rel="stylesheet">
+  <script>
+    const prefix = "A";
+  </script>
+
+  <script src="index.js"></script>
+</head>
+
+<style>
+  button {
+    border: 2px solid white;
+  }
+</style>
+
+<body style="zoom: 1.5">
+
+  <div>
+    <button class="text-2xl bg-blue-600 w-full text-white">RGB output</button>
+
+    <div class="flex flex-wrap" id="models">
+    </div>
+    Brightness: <input data-label="Z" type="range" oninput="sendSlowlyCommand('Z'+value)" min="0" max="100"></input><br>
+    Speed: <input data-label="Y" type="range" oninput="sendSlowlyCommand('Y'+this.value)" min="0" max="100"></input><br>
+
+    <div>
+      <span style="width: 50px">&nbsp;Change all colors at once:</span>
+      <input type="color" data-label="Y" style="width: 25px" oninput="changeAllColors(value, 'A')"></input>
+    </div>
+    <input type="color" data-label="A" style="width: 25px"
+      oninput="sendSlowlyCommand('A'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="B" style="width: 25px"
+      oninput="sendSlowlyCommand('B'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="C" style="width: 25px"
+      oninput="sendSlowlyCommand('C'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="D" style="width: 25px"
+      oninput="sendSlowlyCommand('D'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="E" style="width: 25px"
+      oninput="sendSlowlyCommand('E'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="F" style="width: 25px"
+      oninput="sendSlowlyCommand('F'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="G" style="width: 25px"
+      oninput="sendSlowlyCommand('G'+colorHexTo12(value), value)"></input>
+    <input type="color" data-label="H" style="width: 25px"
+      oninput="sendSlowlyCommand('H'+colorHexTo12(value), value)"></input>
+  </div>
+
+  <div>
+    <button class="text-2xl bg-blue-600 w-full text-white">White / Warm white</button>
+
+    Brightness: <input data-label="Z" type="range" oninput="sendSlowlyCommand('Z'+value)" min="0" max="100"></input><br>
+
+    <button class="border-2 border-black" onmousedown="changeAllColors('#000000','I');">Off</button>
+
+    <button class="border-2 border-black"
+      onmousedown="changeAllColors('#000000','A');changeAllColors('#FF0000','I');">Warm white</button>
+
+    <button class="border-2 border-black"
+      onmousedown="changeAllColors('#000000','A');changeAllColors('#00FF00','I');">White</button>
+
+    <button class="border-2 border-black"
+      onmousedown="changeAllColors('#000000','A');changeAllColors('#FFFF00','I');">Both white</button>
+
+
+
+
+    <div>
+      <div class="text-2xl bg-blue-600 w-full text-white text-center">Advanced</div>
+
+      <button class="border-2 border-black" onmousedown="sendCommand('h')">Help</button>
+      <button class="border-2 border-black" onmousedown="sendCommand('s')">Settings</button>
+      <button class="border-2 border-black" onmousedown="getCurrentSettings()">Current settings</button>
+      <h1>Advanced</h1>
+      <form>
+        <input type="text" class="border-2 border-black" name="command"> <input type="submit"
+          onclick="event.preventDefault(); sendCommand(this.form.command.value);">
+      </form>
+
+      <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
+    </div>
+</body>
+
+<script>
+
+
+
+  async function changeAllColors(value, letter) {
+    console.log(value)
+    sendSlowlyCommand(letter + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value) + ',' + colorHexTo12(value));
+    await delay(250);
+    reloadSettings();
+  }
+
+
+  const models = [
+    [0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000],
+    [0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF],
+    [0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00],
+    [0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0],
+    [0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f],
+    [0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f],
+    [0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff],
+    [0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0],
+    [0x00f, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0xf00],
+    [0x0f0, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0x0f0],
+    [0xf70, 0xf00, 0xf00, 0xfff, 0xf10, 0xf00, 0xf40, 0xf60],
+    [0xf70, 0xf00, 0xf00, 0x000, 0xf10, 0xf00, 0xfd0, 0xf60],
+    [0x01f, 0x08f, 0x04f, 0xfff, 0x0ef, 0xfff, 0x09f, 0x00f],
+    [0x0f1, 0x0f0, 0xf00, 0x0f5, 0x0f0, 0xf00, 0xfff, 0xf00],
+    [0xf00, 0xf0f, 0x20f, 0x0af, 0x0fb, 0x6f0, 0xfd0, 0xf70],
+    [0xf00, 0xf0f, 0xf0f, 0x50f, 0x80f, 0x90f, 0xe0f, 0xf0c],
+  ];
+  addColorModelsButtonsRGB(models, { channels: ["A"] })
+</script>
+
+</html>

@@ -7,6 +7,8 @@ void setupRocket();
 void loopRocket();
 void setupPixels();
 void loopPixels();
+void setup9Outputs();
+void loop9Outputs();
 
 void setup() {
   xSemaphoreGive(xSemaphoreWire);
@@ -16,6 +18,8 @@ void setup() {
   setupRocket();
 #elif BOARD_TYPE == KIND_PIXELS
   setupPixels();
+#elif BOARD_TYPE == KIND_9_OUTPUTS
+  setup9Outputs();
 #else
   setupExample();
 #endif
@@ -28,6 +32,8 @@ void loop() {
   loopRocket();
 #elif BOARD_TYPE == KIND_PIXELS
   loopPixels();
+#elif BOARD_TYPE == KIND_9_OUTPUTS
+  loop9Outputs();
 #else
   loopExample();
 #endif

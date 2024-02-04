@@ -1,9 +1,12 @@
+#include "config.h"
+
+#ifdef PARAM_LOGGING_INTERVAL
+
 #include <SPIFFS.h>
 #include <stdio.h>
-#include "config.h"
-#include "params.h"
 #include "esp_log.h"
 #include "esp_spiffs.h"
+#include "params.h"
 
 void TaskSPIFSLogger(void* pvParameters) {
   vTaskDelay(1151);
@@ -92,3 +95,5 @@ void taskSPIFSLogger() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+
+#endif
