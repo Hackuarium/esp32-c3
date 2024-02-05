@@ -3,7 +3,7 @@
 #define KIND_9_OUTPUTS 3
 #define KIND_EXAMPLE 99
 
-#define BOARD_TYPE KIND_9_OUTPUTS
+#define BOARD_TYPE KIND_PIXELS
 
 #if BOARD_TYPE == KIND_ROCKET
 #include "./configRocket.h"

@@ -17,6 +17,7 @@
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
+void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
 void compact(Adafruit_NeoPixel& pixels);
 
@@ -35,10 +36,13 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
   uint8_t slot = floor((getSeconds() % 30) / 5);
   uint8_t intensity = (getSeconds() % 30) - slot * 5;
   switch (slot) {
-    case 0:  // sunrise, sunset
+    case 199:  // weather icon
+      iconDisplay(pixels);
+      break;
+    case 200:  // sunrise, sunset
       sunriseDisplay(pixels);
       break;
-    case 999:  // disabled current temperature / humidity
+    case 201:  // disabled current temperature / humidity
       currentDisplay(pixels);
       break;
     default:
@@ -117,12 +121,19 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
   }
 }
 
+void iconDisplay(Adafruit_NeoPixel& pixels) {
+  uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
+  float_t* currentWeather = getCurrentWeather();
+  int icon = currentWeather[2];
+}
+
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   // what about the current forecast
   float_t* forecast = getForecast();
   getHourMinute(hourMinute);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   int intTemperature = round(forecast[0]);
+  int iconDayV2 = forecast[3];
   String temperature =
       (intTemperature >= 0 ? "+" : "") + String(intTemperature);
 

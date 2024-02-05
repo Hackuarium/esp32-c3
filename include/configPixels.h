@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define LED_ON_BOARD 21
+// #define LED_ON_BOARD 8
 
 #define THR_PIXELS 1
 // #define THR_FORECAST 1

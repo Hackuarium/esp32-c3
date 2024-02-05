@@ -1,4 +1,7 @@
 #include "./config.h"
+
+#ifdef PARAM_RED1
+
 #include "./params.h"
 
 uint8_t COLORS_OUT1[8] = {
@@ -59,3 +62,5 @@ void updateColors() {
 
   updateOutColors(COLORS_OUT3, PARAM_RED3, PARAM_GREEN3, PARAM_BLUE3);
 }
+
+#endif

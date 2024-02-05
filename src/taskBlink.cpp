@@ -9,9 +9,9 @@ void TaskBlink(void* pvParameters) {
 
   while (true) {
     digitalWrite(LED_ON_BOARD, HIGH);
-    vTaskDelay(2);
+    vTaskDelay(5000);
     digitalWrite(LED_ON_BOARD, LOW);
-    vTaskDelay(100);
+    vTaskDelay(5000);
   }
 }
 

@@ -39,7 +39,7 @@ void TaskWifi(void* pvParameters) {
   // The following line is required because of a bug in the LOLIN esp32-c3 board
   // https://github.com/espressif/arduino-esp32/issues/6767
   // It could be removed in the other cases and yield to better connection range
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  // WiFi.setTxPower(WIFI_POWER_8_5dBm);
   // WiFi.disconnect(true);
   //
   // if identity not defined use username as identity
