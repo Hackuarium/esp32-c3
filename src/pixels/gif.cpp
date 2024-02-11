@@ -36,7 +36,7 @@ void setGIF(const char* string) {
     unsigned int file_size = file.size();
     Serial.print("File size: ");
     Serial.println(file_size);
-    uint8_t buffer[10000] = {0};
+    uint8_t buffer[5000] = {0};
     file.readBytes((char*)buffer, file_size);
     currentGif = gif.openFLASH(buffer, file_size, GIFDraw);
   }
@@ -56,28 +56,26 @@ void GIFDraw(GIFDRAW* pDraw) {
   int height = pDraw->iHeight;
 
   // Apply the new gifPixels to the main image
-  if (pDraw->ucHasTransparency)  // if transparency used
-  {
+  if (pDraw->ucHasTransparency) {
+    // if transparency used
     const uint8_t ucTransparent = pDraw->ucTransparent;
     for (x = 0; x < width; x++) {
       if (s[x] == ucTransparent) {
-        gifPixels.setPixelColor(getLedIndex(((width - 1 - x) * height) + y),
-                                getBackgroundColor());
+        gifPixels.setPixelColor(getLedIndex(y, x), getBackgroundColor());
       } else {
         p = &pPal[s[x] * 3];
-        gifPixels.setPixelColor(getLedIndex(((width - 1 - x) * height) + y),
+        gifPixels.setPixelColor(getLedIndex(y, x),
                                 gifPixels.Color(p[0], p[1], p[2]));
       }
     }
-  } else  // no transparency, just copy them all
-  {
+  } else {
+    // no transparency, just copy them all
     for (x = 0; x < width; x++) {
       p = &pPal[s[x] * 3];
-      gifPixels.setPixelColor(getLedIndex(((width - 1 - x) * height) + y),
+      gifPixels.setPixelColor(getLedIndex(y, x),
                               gifPixels.Color(p[0], p[1], p[2]));
     }
   }
-
 } /* GIFDraw() */
 
 void updateGif(Adafruit_NeoPixel& pixels) {
