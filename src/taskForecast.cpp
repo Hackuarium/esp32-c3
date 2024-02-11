@@ -33,7 +33,6 @@ esp_http_client_config_t config = {
 /*
   Update the weather forecast
 */
-
 void TaskForecast(void* pvParameters) {
   char* token;
 
@@ -82,6 +81,16 @@ void TaskForecast(void* pvParameters) {
 
     vTaskDelay(10 * 1000);
   }
+}
+
+void printSunrise(Print* output) {
+  output->print("Sunrise: ");
+  output->println(sunrise);
+}
+
+void printSunset(Print* output) {
+  output->print("Sunset: ");
+  output->println(sunset);
 }
 
 float_t* getForecast() {

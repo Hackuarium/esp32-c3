@@ -20,8 +20,10 @@
 #include "./pixels/spiral.h"
 #include "./pixels/test.h"
 #include "./pixels/wave.h"
+#include "./taskForecast.h"
 #include "isNight.h"
 #include "params.h"
+#include "taskNTPD.h"
 
 #define PIXELS_PIN 8
 
@@ -69,26 +71,21 @@ void TaskPixels(void* pvParameters) {
       programChanged = 0;
     }
 
-    if (pixels.getBrightness() != 0) {
-      doAction();
-    } else {
-      vTaskDelay(500);
-    }
-
     // Turn off the device on sunset / sunrise schedule
 
     if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
         (isNight() && getParameterBit(PARAM_SCHEDULE, 1))) {
+      doAction();
       pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
     } else {
       pixels.setBrightness(0);
     }
 
     if (pixels.getBrightness() == 0 && previousBrightness == 0) {
+      vTaskDelay(500);
       continue;
-    } else {
-      previousBrightness = pixels.getBrightness();
     }
+    previousBrightness = pixels.getBrightness();
 
     /*
     #define NEO_RGB ((0 << 6) | (0 << 4) | (1 << 2) | (2)) // 6
@@ -168,12 +165,13 @@ void taskPixels() {
 }
 
 void printPixelsHelp(Print* output) {
-  output->println(F("(pc) Reset parameters for cube"));
-  output->println(F("(pr) Reset parameters for square 8x8"));
-  output->println(F("(ps) Reset parameters for square 16x16"));
   output->println(F("(pb) Reset parameters for big christmas tree"));
+  output->println(F("(pc) Reset parameters for cube"));
+  output->println(F("(pi) Info"));
   output->println(F("(pl) Reset parameters for line"));
   output->println(F("(pn) Reset parameters for line christmas"));
+  output->println(F("(pr) Reset parameters for square 8x8"));
+  output->println(F("(ps) Reset parameters for square 16x16"));
 }
 
 void processPixelsCommand(char command,
@@ -209,6 +207,40 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_ACTION_4, 8300);
 
       updateMapping();
+      break;
+    case 'i':  // information
+      printTime(output);
+      output->print("Brightness: ");
+      output->println(getParameter(PARAM_BRIGHTNESS));
+      for (uint8_t i = 0; i < sizeof(ACTIONS); i++) {
+        int16_t currentActionValue = getParameter(ACTIONS[i]);
+
+        if (currentActionValue < 0) {
+          continue;
+        }
+        int16_t brightness = currentActionValue / 2000;
+        int16_t hourMinute = currentActionValue - brightness * 2000;
+        output->print("Action ");
+        output->print(i + 1);
+        output->print(" : ");
+        output->printf("%02.0f", floor(hourMinute / 60.0));
+        output->print(":");
+        output->printf("%02.0f", hourMinute % 60);
+        output->print(" - ");
+        output->println(brightness * 16);
+      }
+      output->print("Is night: ");
+      output->println(isNight());
+      output->print("On during the day: ");
+      output->println(getParameterBit(PARAM_SCHEDULE, 0));
+      output->print("On during the night: ");
+      output->println(getParameterBit(PARAM_SCHEDULE, 1));
+      printSunrise(output);
+      printSunset(output);
+      output->print("Sunset offset: ");
+      output->println(getParameter(PARAM_SUNSET_OFFSET));
+      output->print("Sunrise offset: ");
+      output->println(getParameter(PARAM_SUNRISE_OFFSET));
       break;
     case 'r':  // square 8x8
       setAndSaveParameter(PARAM_BRIGHTNESS, 5);

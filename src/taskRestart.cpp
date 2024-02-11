@@ -7,7 +7,7 @@ void TaskRestart(void* pvParameters) {
   (void)pvParameters;
 
   while (true) {
-    if (esp_timer_get_time() > (1e6 * 3600 * 24)) {
+    if ((esp_timer_get_time() / 1e6) > (3600 * 24)) {
       esp_restart();
     }
   }

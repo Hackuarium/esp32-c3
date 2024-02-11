@@ -3,6 +3,7 @@
 
 #include <Adafruit_NeoPixel.h>
 #include "font53.h"
+#include "gif.h"
 #include "params.h"
 #include "pixels.h"
 #include "taskForecast.h"
@@ -17,7 +18,7 @@
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
-void iconDisplay(Adafruit_NeoPixel& pixels);
+void iconDisplay(Adafruit_NeoPixel& pixels, int iconID);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
 void compact(Adafruit_NeoPixel& pixels);
 
@@ -26,8 +27,6 @@ char* hourMinute = new char[6];
 void updateMeteo(Adafruit_NeoPixel& pixels) {
   // Display the time
 
-  pixels.clear();
-
   if (getParameter(PARAM_NB_COLUMNS) < 16) {
     compact(pixels);
     return;
@@ -35,9 +34,10 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
 
   uint8_t slot = floor((getSeconds() % 30) / 5);
   uint8_t intensity = (getSeconds() % 30) - slot * 5;
+  // there are 6 slots
   switch (slot) {
-    case 199:  // weather icon
-      iconDisplay(pixels);
+    case 0:  // weather icon
+      iconDisplay(pixels, 2);
       break;
     case 200:  // sunrise, sunset
       sunriseDisplay(pixels);
@@ -46,6 +46,7 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
       currentDisplay(pixels);
       break;
     default:
+      pixels.clear();
       fullMeteoDisplay(pixels);
   }
 }
@@ -121,10 +122,15 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
   }
 }
 
-void iconDisplay(Adafruit_NeoPixel& pixels) {
-  uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
-  float_t* currentWeather = getCurrentWeather();
-  int icon = currentWeather[2];
+int previousIconID = 0;
+
+void iconDisplay(Adafruit_NeoPixel& pixels, int iconID) {
+  if (previousIconID != iconID) {
+    previousIconID = iconID;
+    setGIF("/gifs/dog.gif");
+  }
+
+  updateGif(pixels);
 }
 
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {

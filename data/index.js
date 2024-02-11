@@ -2,7 +2,7 @@
 
 //const server = "http://192.168.4.1/";
 //const server = "http://192.168.1.222/";
-//const server = "http://192.168.1.205/";
+//const server = "http://192.168.1.197/";
 const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
