@@ -18,7 +18,7 @@
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
-void iconDisplay(Adafruit_NeoPixel& pixels, int iconID);
+void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
 void compact(Adafruit_NeoPixel& pixels);
 
@@ -37,7 +37,7 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
   // there are 6 slots
   switch (slot) {
     case 0:  // weather icon
-      iconDisplay(pixels, 2);
+      iconDisplay(pixels);
       break;
     case 200:  // sunrise, sunset
       sunriseDisplay(pixels);
@@ -124,10 +124,15 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
 
 int previousIconID = 0;
 
-void iconDisplay(Adafruit_NeoPixel& pixels, int iconID) {
-  if (previousIconID != iconID) {
-    previousIconID = iconID;
-    setGIF("/gifs/dog.gif");
+char gifPath[100];
+
+void iconDisplay(Adafruit_NeoPixel& pixels) {
+  float_t* forecast = getForecast();
+  int iconDayV2 = forecast[2];
+  if (previousIconID != iconDayV2) {
+    previousIconID = iconDayV2;
+    sprintf(gifPath, "/gifs/weather/%d.gif", iconDayV2);
+    setGIF(gifPath);
   }
 
   updateGif(pixels);
@@ -139,7 +144,6 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   getHourMinute(hourMinute);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   int intTemperature = round(forecast[0]);
-  int iconDayV2 = forecast[3];
   String temperature =
       (intTemperature >= 0 ? "+" : "") + String(intTemperature);
 
@@ -208,23 +212,11 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
       }
     }
 
-    /*
-     int temperatureIntensity = abs((uint8_t)(temperature / 1));
-        for (uint8_t j = 0; j <= temperatureIntensity; j++) {
-          uint16_t led = getLedIndex(7 - j+4, i / 4 +7);
-          if (temperature >= 0) {
-               pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255,0,0));
-          } else {
-               pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0,0,255));
-          }
-        }
-    */
-
     bool firstHalf = (millis() % 1000) < 500;
     bool firstTenth = (millis() % 1000) < 100;
 
     // RAIN
-    int rainIntensity = rain < 0.1 ? 0 : (log10(rain) / log10(3) + 3);
+    int rainIntensity = round(rain < 0.1 ? 0 : (log10(rain) / log10(3) + 3));
     for (uint8_t j = 0; j < rainIntensity; j++) {
       if (weather & RAIN_MASK) {
         uint16_t led = getLedIndex(14 - j, i / 4 - 1);

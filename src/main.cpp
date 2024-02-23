@@ -9,6 +9,8 @@ void setupPixels();
 void loopPixels();
 void setup9Outputs();
 void loop9Outputs();
+void setupHandrail();
+void loopHandrail();
 
 void setup() {
   xSemaphoreGive(xSemaphoreWire);
@@ -20,6 +22,8 @@ void setup() {
   setupPixels();
 #elif BOARD_TYPE == KIND_9_OUTPUTS
   setup9Outputs();
+#elif BOARD_TYPE == KIND_HANDRAIL
+  setupHandrail();
 #else
   setupExample();
 #endif
@@ -34,6 +38,8 @@ void loop() {
   loopPixels();
 #elif BOARD_TYPE == KIND_9_OUTPUTS
   loop9Outputs();
+#elif BOARD_TYPE == KIND_HANDRAIL
+  loopHandrail();
 #else
   loopExample();
 #endif

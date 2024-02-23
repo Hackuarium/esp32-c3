@@ -70,6 +70,7 @@ static const char* getResetReasonStr() {
 }
 
 void printUtilitiesHelp(Print* output) {
+  output->println(F("(ub) Reboot"));
   output->println(F("(uc) Compact settings"));
   output->println(F("(ue) Epoch"));
   output->println(F("(uf) Free"));
@@ -156,12 +157,18 @@ static void printInfo(Print* output) {
 
   output->printf("Sketch size: %d KB\n", ESP.getSketchSize() / (1024));
   output->printf("Sketch MD5: %s\n", ESP.getSketchMD5().c_str());
+  output->printf("Free sketch space: %d KB\n", ESP.getFreeSketchSpace() / 1024);
+  output->printf("Reset reason: %s\n", getResetReasonStr());
+  output->printf("Uptime: %d s\n", (esp_timer_get_time() / (int64_t)1e6));
 }
 
 void processUtilitiesCommand(char command,
                              char* paramValue,
                              Print* output) {  // char and char* ??
   switch (command) {
+    case 'b':
+      esp_restart();
+      break;
     case 'c':
       if (paramValue[0] != '\0') {
         printCompactParameters(output, atoi(paramValue));

@@ -1,6 +1,7 @@
 #define KIND_ROCKET 1
 #define KIND_PIXELS 2
 #define KIND_9_OUTPUTS 3
+#define KIND_HANDRAIL 4
 #define KIND_EXAMPLE 99
 
 #define BOARD_TYPE KIND_PIXELS
@@ -13,6 +14,8 @@
 #include "./configExample.h"
 #elif BOARD_TYPE == KIND_9_OUTPUTS
 #include "./config9Outputs.h"
+#elif BOARD_TYPE == KIND_HANDRAIL
+#include "./configHandrail.h"
 #else
 #error "Unknown board type"
 #endif

@@ -1,5 +1,5 @@
 #include "config.h"
-#if BOARD_TYPE == KIND_PIXELS
+#if BOARD_TYPE == KIND_HANDRAIL
 #include "params.h"
 
 void deepSleep(int seconds);
@@ -9,45 +9,43 @@ void taskNTPD();
 void taskPixels();
 void taskOutput();
 void taskOneWire();
-void taskServo();
 void taskTest();
-void taskForecast();
-void taskUptime();
 void taskWifi();
 void taskWifiAP();
 void taskOTA();
 void taskMDNS();
 void taskInternalTemperature();
 void taskWebserver();
+void task9Outputs();
+void taskInput();
+void taskRestart();
+void taskTimer();
 
-void setupPixels() {
+void setupHandrail() {
   Serial.begin(115200);  // only for debug purpose
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();
   // taskTest();
-  taskPixels();
 
   taskSerial();
 
+  taskInput();
+  task9Outputs();
+  taskRestart();
   taskOTA();
   // taskMDNS();  // incompatible with taskOTA
-  taskWifi();
-  // taskWifiAP();
+  // taskWifi();
+  taskWifiAP();
   taskWebserver();
-  taskForecast();
-
+  taskTimer();
   taskNTPD();
-#ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();
-#endif
-  // taskUptime();
-  // taskBlink();  // can crash tinyexpr if not correctly assigned
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
 }
 
-void loopPixels() {
+void loopHandrail() {
   vTaskDelay(100);
 }
 

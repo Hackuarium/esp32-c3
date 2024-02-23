@@ -35,11 +35,11 @@ void setup9Outputs() {
   taskRestart();
   taskOTA();
   // taskMDNS();  // incompatible with taskOTA
-  taskWifi();
-  // taskWifiAP();
+  // taskWifi();
+  taskWifiAP();
   taskWebserver();
   taskTimer();
-  taskNTPD();
+  // taskNTPD();
   taskInternalTemperature();
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
