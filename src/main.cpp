@@ -43,7 +43,7 @@ void loop() {
 #else
   loopExample();
 #endif
-  vTaskDelay(100);
+  vTaskDelay(100000);
 }
 
 void restart() {

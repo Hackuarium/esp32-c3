@@ -25,8 +25,6 @@
 #include "params.h"
 #include "taskNTPD.h"
 
-#define PIXELS_PIN 8
-
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
 void resetLine();
@@ -72,7 +70,6 @@ void TaskPixels(void* pvParameters) {
     }
 
     // Turn off the device on sunset / sunrise schedule
-
     if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
         (isNight() && getParameterBit(PARAM_SCHEDULE, 1))) {
       doAction();
