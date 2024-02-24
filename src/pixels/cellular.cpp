@@ -9,13 +9,16 @@
 uint16_t cellularCounter = 0;
 uint8_t currentCellularUpdateRow = 0;
 
+void initCellularFirstRow(uint16_t state[]);
 void updateCellular(Adafruit_NeoPixel& pixels,
                     uint16_t state[],
                     uint32_t rowColors[],
                     uint8_t programChanged) {
   if (programChanged) {
+    setParameter(PARAM_COMMAND_2,
+                 1 << (byte)(getParameter(PARAM_NB_COLUMNS) / 2));
     rowColors[getParameter(PARAM_NB_ROWS)] = {0};
-    state[getLedIndex(0, getParameter(PARAM_NB_COLUMNS) / 2)] = 1;
+    initCellularFirstRow(state);
     setParameter(PARAM_COMMAND_1, getParameter(PARAM_COMMAND_1) % 256);
   }
 
@@ -56,9 +59,17 @@ void updateCellular(Adafruit_NeoPixel& pixels,
   cellularCounter++;
 
   if (cellularCounter % (25 * (21 - getParameter(PARAM_SPEED))) == 0) {
-    state[getLedIndex(0, getParameter(PARAM_NB_COLUMNS) / 2)] = 1;
+    initCellularFirstRow(state);
     setParameter(PARAM_COMMAND_1, (getParameter(PARAM_COMMAND_1) + 1) % 256);
     currentCellularUpdateRow = 0;
+  }
+}
+
+void initCellularFirstRow(uint16_t state[]) {
+  // depending bits we set initial configuration
+  for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS); column++) {
+    state[getLedIndex(0, column)] =
+        getParameterBit(PARAM_COMMAND_2, column % 16);
   }
 }
 

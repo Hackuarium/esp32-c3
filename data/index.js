@@ -2,8 +2,8 @@
 
 //const server = "http://192.168.4.1/";
 //const server = "http://192.168.1.222/";
-//const server = "http://192.168.1.197/";
-const server = "";
+const server = "http://192.168.1.197/";
+//const server = "";
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams && urlParams.get("servers")) {
@@ -37,6 +37,27 @@ function download(data) {
   document.body.appendChild(elem);
   elem.click();
   document.body.removeChild(elem);
+}
+
+async function updateGIFList() {
+  const results = await sendCommand('fd');
+  const lines = results.split('\n').filter(line => line.includes('.gif') && !line.includes('weather'))
+  const gifs = lines.map(line => {
+    const fields = line.trim().split(' ');
+    return {
+      size: fields[0],
+      filename: fields[1],
+      name: fields[1].replace(/.*\//, ''),
+    }
+  })
+  const buttons = gifs.map(gif => `<button value="${gif.filename}">${gif.name}</button>`).join('')
+  document.getElementById('gifButtons').innerHTML = buttons
+  setGIF(gifs[0].filename)
+}
+
+function setGIF(gif) {
+  sendCommand('pg' + gif)
+  console.log({ gif })
 }
 
 

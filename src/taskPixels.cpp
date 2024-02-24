@@ -164,6 +164,7 @@ void taskPixels() {
 void printPixelsHelp(Print* output) {
   output->println(F("(pb) Reset parameters for big christmas tree"));
   output->println(F("(pc) Reset parameters for cube"));
+  output->println(F("(pg) Set gif"));
   output->println(F("(pi) Info"));
   output->println(F("(pl) Reset parameters for line"));
   output->println(F("(pn) Reset parameters for line christmas"));
@@ -204,6 +205,9 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_ACTION_4, 8300);
 
       updateMapping();
+      break;
+    case 'g':
+      setGIF(paramValue);
       break;
     case 'i':  // information
       printTime(output);
@@ -279,6 +283,9 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_LED_GREEN, 63);
       setAndSaveParameter(PARAM_LED_BLUE, 0);
       setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+
+      setAndSaveParameter(PARAM_NB_PLAYERS, 1);
+      setAndSaveParameter(PARAM_WIN_LIMIT, 20);
       clearActions();
 
       updateMapping();

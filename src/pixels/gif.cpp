@@ -22,19 +22,26 @@ void GIFDraw(GIFDRAW* pDraw);
 int gifInterframeMs = 0;
 int currentGif = 0;
 uint8_t gifBuffer[5000] = {0};
+char previousGIF[100];
 
-void setGIF(const char* string) {
+void setGIF(const char* newGIF) {
+  // should we change the gif ?
+
+  if (strcmp(newGIF, previousGIF) == 0) {
+    return;
+  }
+  strcpy(previousGIF, newGIF);
+
   if (currentGif) {
     gif.close();
   }
   gif.begin(GIF_PALETTE_RGB888);
-  file = SPIFFS.open(string, "r");
+  file = SPIFFS.open(newGIF, "r");
   if (!file) {
     Serial.print("Failed to open file for reading: ");
-    Serial.println(string);
+    Serial.println(newGIF);
     return;
   }
-  Serial.println(string);
   unsigned int file_size = file.size();
   file.readBytes((char*)gifBuffer, file_size);
   currentGif = gif.openFLASH(gifBuffer, file_size, GIFDraw);

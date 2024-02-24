@@ -30,7 +30,7 @@ void setupPixels() {
 
   taskSerial();
 
-  taskOTA();
+  // taskOTA(); // incompatible with Lolin32 ??
   // taskMDNS();  // incompatible with taskOTA
   taskWifi();
   // taskWifiAP();
@@ -42,7 +42,9 @@ void setupPixels() {
   taskInternalTemperature();
 #endif
   // taskUptime();
-  // taskBlink();  // can crash tinyexpr if not correctly assigned
+#ifdef LED_ON_BOARD
+  taskBlink();  // can crash tinyexpr if not correctly assigned
+#endif
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
 }

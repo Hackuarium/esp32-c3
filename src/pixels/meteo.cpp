@@ -122,18 +122,12 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
   }
 }
 
-int previousIconID = 0;
-
-char gifPath[100];
+char gifPath[50];
 
 void iconDisplay(Adafruit_NeoPixel& pixels) {
   float_t* forecast = getForecast();
-  int iconDayV2 = forecast[2];
-  if (previousIconID != iconDayV2) {
-    previousIconID = iconDayV2;
-    sprintf(gifPath, "/gifs/weather/%d.gif", iconDayV2);
-    setGIF(gifPath);
-  }
+  sprintf(gifPath, "/gifs/weather/%d.gif", (int)forecast[2]);
+  setGIF(gifPath);
 
   updateGif(pixels);
 }
