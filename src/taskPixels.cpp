@@ -118,11 +118,9 @@ void TaskPixels(void* pvParameters) {
         updateMeteo(pixels);
         break;
       case 6:
-
         updateSnake(pixels, programChanged);
         break;
       case 7:
-
         updateLife(pixels, programChanged);
         break;
       case 8:

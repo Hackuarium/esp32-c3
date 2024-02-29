@@ -210,7 +210,18 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
     bool firstTenth = (millis() % 1000) < 100;
 
     // RAIN
-    int rainIntensity = round(rain < 0.1 ? 0 : (log10(rain) / log10(3) + 3));
+    int rainIntensity = 0;
+    if (rain > 0.1)
+      rainIntensity = 1;
+    if (rain > 1)
+      rainIntensity = 2;
+    if (rain > 5)
+      rainIntensity = 3;
+    if (rain > 20)
+      rainIntensity = 4;
+    if (rain > 50)
+      rainIntensity = 5;
+
     for (uint8_t j = 0; j < rainIntensity; j++) {
       if (weather & RAIN_MASK) {
         uint16_t led = getLedIndex(14 - j, i / 4 - 1);

@@ -112,6 +112,16 @@ void paintLife(Adafruit_NeoPixel& pixels) {
         uint8_t ascii = (uint8_t)generationStr.charAt(i);
         paintSymbol(pixels, ascii, i * 4, 0);
       }
+      if (generation > 300 && stableActive == 51) {
+        Serial.print("<option value=\"");
+        Serial.print(getParameter(PARAM_COMMAND_3));
+        Serial.print("\">");
+        Serial.print(getParameter(PARAM_COMMAND_3));
+        Serial.print(" (");
+        Serial.print(generation - 51);
+        Serial.print(")");
+        Serial.println("</option>");
+      }
       String idStr = String((uint16_t)getParameter(PARAM_COMMAND_3));
       for (uint8_t i = 0; i < min(4, (int)idStr.length()); ++i) {
         uint8_t ascii = (uint8_t)idStr.charAt(i);
@@ -143,12 +153,11 @@ void paintLife(Adafruit_NeoPixel& pixels) {
 }
 
 void resetLife(Adafruit_NeoPixel& pixels) {
-  if (getParameter(PARAM_SPEED) == 20) {
-    setParameter(PARAM_COMMAND_3, getParameter(PARAM_COMMAND_3) + 1);
-  } else if (getParameter(PARAM_COMMAND_2) == 0) {
+  if (getParameter(PARAM_COMMAND_2) == 0) {
     setParameter(PARAM_COMMAND_3, millis() % 65536);
   } else {
     setParameter(PARAM_COMMAND_3, getParameter(PARAM_COMMAND_2));
+    setParameter(PARAM_COMMAND_2, getParameter(PARAM_COMMAND_2) + 1);
   }
   srand(getParameter(PARAM_COMMAND_3));
 

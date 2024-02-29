@@ -39,6 +39,8 @@
     Number of events: <input data-label="B" type="range" oninput="sendSlowlyCommand('B'+this.value)" min="0"
       max="7"></input><br>
     Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('C'+this.value)" min="0" max="20"></input><br>
+    Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('H'+value)" min="0"
+      max="255"></input><br>
   </div>
 
   <div>
@@ -82,6 +84,8 @@
       <option value="6">Vertical</option>
       <option value="7">Any</option>
     </select><br>
+    Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('H'+value)" min="0"
+      max="255"></input><br>
   </div>
 
   <div>
@@ -308,46 +312,16 @@
     <button class="border-2 border-black" onmousedown="sendCommand('P-1,0')">Random seed</button>
 
     Demo: <select data-label="P" onchange="sendCommand('P-1,'+this.value)">
-      <option value="150">150 (infinite)</option>
-      <option value="177">177 (33)</option>
-      <option value="177">183 (514)</option>
-      <option value="613">613 (sympa)</option>
-      <option value="685">685 (677)</option>
-      <option value="692">692 (infinite)</option>
-      <option value="843">843 (254)</option>
-      <option value="1850">1850 (infinite)</option>
-      <option value="2424">2424 (273)</option>
-      <option value="2793">2793 (infinite)</option>
-      <option value="3589">3589 (318)</option>
-      <option value="3622">3622 (multimove)</option>
-      <option value="3791">3791 (infinite)</option>
-      <option value="4026">4026 (infinite)</option>
-      <option value="4026">4026 (infinite)</option>
-      <option value="4043">4043 (nice)</option>
-      <option value="4044">4044 (infinite)</option>
-      <option value="4059">4059 (check over 50)</option>
-      <option value="4072">4072 (check over 50)</option>
-      <option value="4072">4426 (752)</option>
-
-      <option value="8491">8491 (658)</option>
-      <option value="9944">9944 (inf)</option>
-      <option value="9995">9995 ()</option>
-      <option value="9308">9308 (706)</option>
-      <option value="10045">10045 (inf)</option>
-      <option value="10130">10130 (fun)</option>
-      <option value="10440">10440 (fun)</option>
-      <option value="12357">12357 (350)</option>
-      <option value="20183">20183 (760)</option>
-      <option value="20701">20701 (Spaceship !)</option>
-      <option value="20183">23161 (800)</option>
-
-      <option value="25725">25725 (472)</option>
-      <option value="28932">28932 (108, cool)</option>
-      <option value="40774">40774 (369)</option>
-      <option value="48880">48880 (447)</option>
-      <option value="49693">49693 (384)</option>
-      <option value="50628">50628 (243)</option>
-      <option value="56501">56501 Best (632)</option>
+      <option value="4">4 (372)</option>
+      <option value="23">23 (507)</option>
+      <option value="29">29 (276)</option>
+      <option value="55">55 (250)</option>
+      <option value="78">78 (449)</option>
+      <option value="81">81 (471)</option>
+      <option value="84">84 (430)</option>
+      <option value="85">85 (300)</option>
+      <option value="104">104 (398)</option>
+      <option value="119">119 (447)</option>
 
     </select>
   </div>
