@@ -18,6 +18,7 @@ void printWifiHelp(Print* output) {
   output->println(F("(wl) MQTT log publish topic"));
   output->println(F("(wb) MQTT publish topic"));
   output->println(F("(wt) MQTT subscribe topic"));
+  output->println(F("(wx) Scan for wifi network"));
 }
 
 void processWifiCommand(char command,
@@ -107,6 +108,31 @@ void processWifiCommand(char command,
       setParameter("wifi.username", paramValue);
       output->println(paramValue);
       break;
+    case 'x': {  // scan network
+      int n = WiFi.scanComplete();
+      if (n == -2) {
+        output->println("Scanning started, wait 10s to ask for results.");
+        WiFi.scanNetworks(true);
+      } else if (n) {
+        for (int i = 0; i < n; ++i) {
+          output->print("- ");
+          output->print(i + 1);
+          output->println(" -");
+          output->print("SSOD: ");
+          output->println(WiFi.SSID(i));
+          output->print("RSSI: ");
+          output->println(WiFi.RSSI(i));
+          output->print("Mac: ");
+          output->println(WiFi.BSSIDstr(i));
+          output->print("Channel: ");
+          output->println(WiFi.channel(i));
+          output->print("Encryption: ");
+          output->println(WiFi.encryptionType(i));
+        }
+        WiFi.scanDelete();
+      }
+      break;
+    }
     case 'd':
       setParameter("wifi.identity", paramValue);
       output->println(paramValue);
