@@ -19,7 +19,6 @@ void taskOTA();
 void taskMDNS();
 void taskInternalTemperature();
 void taskWebserver();
-void taskEventSourceSender();
 
 void setupPixels() {
   Serial.begin(115200);  // only for debug purpose
@@ -37,8 +36,6 @@ void setupPixels() {
   // taskWifiAP();
   taskWebserver();
   taskForecast();
-
-  taskEventSourceSender();
 
 #ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();
