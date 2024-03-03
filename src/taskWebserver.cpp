@@ -9,6 +9,7 @@
 #include "config.h"
 
 AsyncWebServer server(80);
+AsyncEventSource events("/events");
 
 void notFound(AsyncWebServerRequest* request) {
   String message = "File Not Found\n\n";
@@ -85,18 +86,21 @@ void TaskWebserver(void* pvParameters) {
 #endif
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
-
   server.serveStatic("/test.jpg", SPIFFS, "/test.jpg");
-
   server.onNotFound(notFound);
+  server.addHandler(&events);
 
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   server.begin();
   Serial.println("HTTP server started");
 
   while (true) {
-    vTaskDelay(24 * 3600 * 1000);
+    vTaskDelay(1000);
   }
+}
+
+void sendEventSource(char* event, char* data) {
+  events.send(data, event, millis());
 }
 
 void taskWebserver() {

@@ -19,6 +19,7 @@ void taskOTA();
 void taskMDNS();
 void taskInternalTemperature();
 void taskWebserver();
+void taskEventSourceSender();
 
 void setupPixels() {
   Serial.begin(115200);  // only for debug purpose
@@ -30,14 +31,15 @@ void setupPixels() {
 
   taskSerial();
 
-  // taskOTA(); // incompatible with Lolin32 ??
+  taskOTA();  // incompatible with Lolin32 ??
   // taskMDNS();  // incompatible with taskOTA
   taskWifi();
   // taskWifiAP();
   taskWebserver();
   taskForecast();
 
-  taskNTPD();
+  taskEventSourceSender();
+
 #ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();
 #endif
