@@ -1,5 +1,7 @@
 #include <Arduino.h>
 
+extern SemaphoreHandle_t xSemaphoreFetch;
+
 // #define LED_ON_BOARD 8
 
 #define THR_PIXELS 1

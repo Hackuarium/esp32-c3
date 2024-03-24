@@ -4,6 +4,7 @@
 
 #include <WiFi.h>
 #include "./charToFloat.h"
+#include "config.h"
 #include "esp_http_client.h"
 
 static float_t forecast[36] = {0};
@@ -16,9 +17,9 @@ static int16_t sunsetMin = 0;
 esp_err_t _http_event_handler(esp_http_client_event_t* evt);
 int16_t getMinutes(char* text);
 
-char response[200] = {0};
+char responseForecast[200] = {0};
 
-esp_http_client_config_t config = {
+esp_http_client_config_t configForecast = {
     .url = "http://weather-proxy.cheminfo.org/forecast24",
     .username = "user",
     .password = "password",
@@ -27,8 +28,11 @@ esp_http_client_config_t config = {
     .timeout_ms = 2000,
     .event_handler =
         _http_event_handler,  // need an event handler to get the result
-    .user_data = response,
+    .user_data = responseForecast,
 };
+
+esp_http_client_handle_t clientForecast;
+esp_err_t errForecast;
 
 /*
   Update the weather forecast
@@ -36,50 +40,51 @@ esp_http_client_config_t config = {
 void TaskForecast(void* pvParameters) {
   char* token;
 
-  vTaskDelay(10000);
+  vTaskDelay(5000);
   while (true) {
     while (WiFi.status() != WL_CONNECTED) {
       vTaskDelay(5000);
     }
+    if (xSemaphoreTake(xSemaphoreFetch, 1) == pdTRUE) {
+      clientForecast = esp_http_client_init(&configForecast);
+      errForecast = esp_http_client_perform(clientForecast);
 
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    // GET
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-      currentWeather[2] = {NAN};
-      // we will parse the data
-      token = strtok(response, ",");
-      uint8_t position = 0;
+      if (errForecast == ESP_OK) {
+        currentWeather[2] = {NAN};
+        // we will parse the data
+        token = strtok(responseForecast, ",");
+        uint8_t position = 0;
 
-      while (token != NULL) {
-        if (position == 37) {
-          position++;
-          for (int i = 0; i < 5; i++) {
-            sunset[i] = token[i];
+        while (token != NULL) {
+          if (position == 37) {
+            position++;
+            for (int i = 0; i < 5; i++) {
+              sunset[i] = token[i];
+            }
+            sunsetMin = getMinutes(sunset);
+          } else if (position == 36) {
+            position++;
+            for (int i = 0; i < 5; i++) {
+              sunrise[i] = token[i];
+            }
+            sunriseMin = getMinutes(sunrise);
+          } else if (position < 36) {
+            forecast[position] = charToFloat(token);
+            position++;
+          } else if (position > 37 && position < 40) {
+            currentWeather[position - 38] = charToFloat(token);
+            position++;
           }
-          sunsetMin = getMinutes(sunset);
-        } else if (position == 36) {
-          position++;
-          for (int i = 0; i < 5; i++) {
-            sunrise[i] = token[i];
-          }
-          sunriseMin = getMinutes(sunrise);
-        } else if (position < 36) {
-          forecast[position] = charToFloat(token);
-          position++;
-        } else if (position > 37 && position < 40) {
-          currentWeather[position - 38] = charToFloat(token);
-          position++;
+          token = strtok(NULL, ",");
         }
-        token = strtok(NULL, ",");
+
+      } else {
+        Serial.println("Failing to retrieve weather info");
       }
-
-    } else {
-      Serial.println("Failing to retrieve weather info");
+      esp_http_client_cleanup(clientForecast);
+      xSemaphoreGive(xSemaphoreFetch);
     }
-    esp_http_client_cleanup(client);
-
-    vTaskDelay(10 * 1000);
+    vTaskDelay(60 * 1000);
   }
 }
 
@@ -120,7 +125,7 @@ char* getSunset() {
 void taskForecast() {
   // Now set up two tasks to rntpdun independently.
   xTaskCreatePinnedToCore(TaskForecast, "TaskForecast",
-                          20000,  // This stack size can be checked & adjusted
+                          10000,  // This stack size can be checked & adjusted
                                   // by reading the Stack Highwater
                           NULL,
                           0,  // Priority, with 3 (configMAX_PRIORITIES - 1)
@@ -135,10 +140,13 @@ int16_t getMinutes(char* text) {
 }
 
 esp_err_t _http_event_handler(esp_http_client_event_t* evt) {
-  static char* output_buffer;  // Buffer to store response of http request from
-                               // event handler
+  static char* output_buffer;  // Buffer to store response of http request
+                               // from event handler
   static int output_len;       // Stores number of bytes read
   switch (evt->event_id) {
+    case HTTP_EVENT_ON_CONNECTED:
+      memset(&evt->data, 0, sizeof(evt->data));
+      break;
     case HTTP_EVENT_ON_DATA:
       /*
        *  Check for chunked encoding is added as the URL for chunked encoding

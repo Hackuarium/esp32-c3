@@ -12,6 +12,7 @@ void taskOneWire();
 void taskServo();
 void taskTest();
 void taskForecast();
+void taskFronius();
 void taskUptime();
 void taskWifi();
 void taskWifiAP();
@@ -36,6 +37,7 @@ void setupPixels() {
   // taskWifiAP();
   taskWebserver();
   taskForecast();
+  taskFronius();
 
 #ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();

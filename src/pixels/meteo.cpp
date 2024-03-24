@@ -7,6 +7,7 @@
 #include "params.h"
 #include "pixels.h"
 #include "taskForecast.h"
+#include "taskFronius.h"
 #include "taskNTPD.h"
 
 #define SUN_MASK 0b0000000001000000
@@ -20,6 +21,7 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
 void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
+void froniusDisplay(Adafruit_NeoPixel& pixels);
 void compact(Adafruit_NeoPixel& pixels);
 
 char* hourMinute = new char[6];
@@ -39,6 +41,9 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
     case 0:  // weather icon
       iconDisplay(pixels);
       break;
+    case 3:
+      froniusDisplay(pixels);
+      break;
     case 200:  // sunrise, sunset
       sunriseDisplay(pixels);
       break;
@@ -47,8 +52,57 @@ void updateMeteo(Adafruit_NeoPixel& pixels) {
       break;
     default:
       pixels.clear();
+      // froniusDisplay(pixels);
       fullMeteoDisplay(pixels);
   }
+}
+
+uint8_t rowLevels[16] = {0, 0, 0, 0, 0, 1, 2, 3, 4, 4, 4, 4, 4, 3, 2, 1};
+uint8_t columnLevels[16] = {0, 1, 2, 3, 4, 4, 4, 4, 4, 3, 2, 1, 0, 0, 0, 0};
+
+void paintSquare(Adafruit_NeoPixel& pixels,
+                 uint8_t row,
+                 uint8_t column,
+                 uint32_t color,
+                 uint32_t backgroundColor,
+                 uint8_t level) {
+  for (uint8_t i = 0; i < 5; ++i) {
+    for (uint8_t j = 0; j < 5; ++j) {
+      pixels.setPixelColor(getLedIndex(row + i, column + j), backgroundColor);
+    }
+  }
+  pixels.setPixelColor(getLedIndex(row + 2, column + 2), color);
+  if (level > 16)
+    level = 16;
+  for (uint8_t i = 0; i < level; ++i) {
+    pixels.setPixelColor(
+        getLedIndex(row + rowLevels[i], column + columnLevels[i]), color);
+    pixels.setPixelColor(
+        getLedIndex(row + rowLevels[i], column + columnLevels[i]), color);
+  }
+}
+
+void froniusDisplay(Adafruit_NeoPixel& pixels) {
+  pixels.clear();
+  FroniusStatus status = getFroniusStatus();
+  // PV
+  paintSquare(pixels, 0, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
+              Adafruit_NeoPixel::Color(0x33, 0x33, 0x00),
+              (uint8_t)round(status.powerFromPV / 500));
+  // Battery
+  paintSquare(pixels, 0, 11, Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
+              Adafruit_NeoPixel::Color(0x00, 0x33, 0x00),
+              (uint8_t)round(status.batteryChargePercentage / 6));
+  // Network
+  int16_t networkLevel = (uint8_t)round(status.powerFromGrid / 500);
+  if (networkLevel < 0)
+    networkLevel = -networkLevel;
+  paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
+              Adafruit_NeoPixel::Color(0x33, 0x33, 0x33), networkLevel);
+  // Consumption
+  paintSquare(pixels, 11, 11, Adafruit_NeoPixel::Color(0xff, 0x00, 0x00),
+              Adafruit_NeoPixel::Color(0x33, 0x00, 0x00),
+              (uint8_t)round(status.currentLoad / 500));
 }
 
 void currentDisplay(Adafruit_NeoPixel& pixels) {

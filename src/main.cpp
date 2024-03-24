@@ -2,6 +2,7 @@
 #include "params.h"
 
 SemaphoreHandle_t xSemaphoreWire = xSemaphoreCreateBinary();
+SemaphoreHandle_t xSemaphoreFetch = xSemaphoreCreateBinary();
 
 void setupRocket();
 void loopRocket();
@@ -14,6 +15,7 @@ void loopHandrail();
 
 void setup() {
   xSemaphoreGive(xSemaphoreWire);
+  xSemaphoreGive(xSemaphoreFetch);
   Serial.begin(115200);  // only for debug purpose
 
 #if BOARD_TYPE == KIND_ROCKET
