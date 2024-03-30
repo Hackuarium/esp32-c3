@@ -20,7 +20,7 @@
 #include "./pixels/spiral.h"
 #include "./pixels/test.h"
 #include "./pixels/wave.h"
-#include "./taskForecast.h"
+#include "forecast.h"
 #include "isNight.h"
 #include "params.h"
 #include "taskNTPD.h"
@@ -68,6 +68,7 @@ void TaskPixels(void* pvParameters) {
     } else {
       programChanged = 0;
     }
+    counter++;
 
     // Turn off the device on sunset / sunrise schedule
     if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
@@ -115,7 +116,7 @@ void TaskPixels(void* pvParameters) {
         updateWave(pixels);
         break;
       case 5:
-        updateMeteo(pixels);
+        updateMeteo(pixels, counter);
         break;
       case 6:
         updateSnake(pixels, programChanged);

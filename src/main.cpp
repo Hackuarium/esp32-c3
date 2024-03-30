@@ -1,8 +1,8 @@
 #include "config.h"
 #include "params.h"
 
-SemaphoreHandle_t xSemaphoreWire = xSemaphoreCreateBinary();
-SemaphoreHandle_t xSemaphoreFetch = xSemaphoreCreateBinary();
+StaticSemaphore_t xMutexBufferWire;
+SemaphoreHandle_t xSemaphoreWire = NULL;
 
 void setupRocket();
 void loopRocket();
@@ -14,8 +14,7 @@ void setupHandrail();
 void loopHandrail();
 
 void setup() {
-  xSemaphoreGive(xSemaphoreWire);
-  xSemaphoreGive(xSemaphoreFetch);
+  xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
   Serial.begin(115200);  // only for debug purpose
 
 #if BOARD_TYPE == KIND_ROCKET

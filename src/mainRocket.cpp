@@ -19,7 +19,6 @@ void taskBluetooth();
 void taskOneWire();
 void taskServo();
 void taskSPIFSLogger();
-void taskForecast();
 void taskUptime();
 void taskWifi();
 void taskWifiAP();
@@ -51,9 +50,6 @@ void setupRocket() {
   // taskWifi();
   taskWifiAP();
   taskWebserver();
-#ifdef THR_FORECAST
-  taskForecast();
-#endif
 
   taskOutput();  // blink 2 3 6
 

@@ -1,0 +1,1 @@
+char* fetch(char* url);

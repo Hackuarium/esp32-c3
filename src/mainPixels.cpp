@@ -11,8 +11,7 @@ void taskOutput();
 void taskOneWire();
 void taskServo();
 void taskTest();
-void taskForecast();
-void taskFronius();
+void taskFetch();
 void taskUptime();
 void taskWifi();
 void taskWifiAP();
@@ -34,10 +33,10 @@ void setupPixels() {
   taskOTA();  // incompatible with Lolin32 ??
   // taskMDNS();  // incompatible with taskOTA
   taskWifi();
+  taskNTPD();
   // taskWifiAP();
   taskWebserver();
-  taskForecast();
-  taskFronius();
+  taskFetch();
 
 #ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();

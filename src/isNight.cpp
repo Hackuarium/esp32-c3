@@ -1,8 +1,8 @@
 #include "config.h"
 #ifdef PARAM_SUNRISE_OFFSET
 
+#include "forecast.h"
 #include "params.h"
-#include "taskForecast.h"
 #include "taskNTPD.h"
 
 bool isNight() {

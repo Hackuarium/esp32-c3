@@ -10,3 +10,4 @@ void printSunset(Print* output);
 
 int16_t getSunriseInMin();
 int16_t getSunsetInMin();
+void updateForecast();
