@@ -1,8 +1,8 @@
 #include "./taskNTPD.h"
 #include <WiFi.h>
 // #include <sys/time.h>
-#include "config.h"
 #include "./taskNTPD.h"
+#include "config.h"
 #include "esp_sntp.h"
 
 const char* ntpServer = "pool.ntp.org";
@@ -10,6 +10,8 @@ const char* ntpServer = "pool.ntp.org";
 struct tm timeInfo;
 time_t now;
 char strftime_buf[64];
+
+#define CONFIG_LWIP_SNTP_UPDATE_DELAY 60 * 1000  // every minute
 
 // TODO This task is useless and code can be moved to wifi
 // can also add a paraemter for daylightOffset
@@ -21,11 +23,12 @@ void TaskNTPD(void* pvParameters) {
     vTaskDelay(5000);
   }
 
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, "pool.ntp.org");
+  sntp_init();
+
   while (true) {
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_init();
-    vTaskDelay(60 * 60 * 1000);
+    vTaskDelay(1800 * 1000);
   }
 }
 
