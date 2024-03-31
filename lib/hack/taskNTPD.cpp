@@ -6,7 +6,6 @@
 #include "esp_sntp.h"
 
 const char* ntpServer = "pool.ntp.org";
-// summer winter time: 7200 for summer, 3600 for winter
 struct tm timeInfo;
 time_t now;
 char strftime_buf[64];
@@ -16,7 +15,7 @@ char strftime_buf[64];
 // TODO This task is useless and code can be moved to wifi
 // can also add a paraemter for daylightOffset
 void TaskNTPD(void* pvParameters) {
-  setenv("TZ", "GMT-1", 1);  // -1 = winter, -2 = summer
+  setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
   tzset();
 
   while (WiFi.status() != WL_CONNECTED) {
