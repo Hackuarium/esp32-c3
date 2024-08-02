@@ -1,3 +1,4 @@
+#include "config.h"
 
 float_t* getForecast();
 float_t* getCurrentWeather();

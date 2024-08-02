@@ -60,13 +60,15 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
 void paintSquare(Adafruit_NeoPixel& pixels,
                  uint8_t row,
                  uint8_t column,
-                 uint32_t color,
+                 uint32_t highColor,
+                 uint32_t lowColor,
                  uint32_t backgroundColor,
-                 uint8_t level) {
-  if (level > 16) {  // we fill completely the square with bright color
+                 uint8_t highValue,
+                 uint8_t lowValue) {
+  if (highValue > 16) {  // we fill completely the square with bright color
     for (uint8_t i = 0; i < 5; ++i) {
       for (uint8_t j = 0; j < 5; ++j) {
-        pixels.setPixelColor(getLedIndex(row + i, column + j), color);
+        pixels.setPixelColor(getLedIndex(row + i, column + j), highColor);
       }
     }
     return;
@@ -83,11 +85,17 @@ void paintSquare(Adafruit_NeoPixel& pixels,
     }
   }
 
-  for (uint8_t i = 0; i < level; ++i) {
+  for (uint8_t i = 0; i < highValue; ++i) {
     pixels.setPixelColor(
-        getLedIndex(row + rowLevels[i], column + columnLevels[i]), color);
+        getLedIndex(row + rowLevels[i], column + columnLevels[i]), highColor);
     pixels.setPixelColor(
-        getLedIndex(row + rowLevels[i], column + columnLevels[i]), color);
+        getLedIndex(row + rowLevels[i], column + columnLevels[i]), highColor);
+  }
+
+  // details information in the centrum
+  for (uint8_t i = 0; i < min(lowValue, (uint8_t)9); ++i) {
+    pixels.setPixelColor(
+        getLedIndex(row + 1 + floor(i / 3), column + 1 + i % 3), lowColor);
   }
 }
 
@@ -123,38 +131,45 @@ int8_t getFluxSpeed(uint16_t counter, float power) {
   if (powerLevel <= 0)
     return -1;
   if (powerLevel > 10) {
-    return (counter / 3) % 3;
+    return (counter / 2) % 3;
   }
   if (powerLevel > 5) {
-    return (counter / 10) % 3;
+    return (counter / 5) % 3;
   }
   if (powerLevel > 2) {
-    return (counter / 25) % 3;
+    return (counter / 10) % 3;
   }
-  return (counter / 50) % 3;
+  return (counter / 25) % 3;
 }
 
 void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   pixels.clear();
   FroniusStatus status = getFroniusStatus();
+
   // PV
+  uint8_t highValue = floor(status.powerFromPV / 500);
+  uint8_t lowValue = floor((status.powerFromPV - highValue * 500) / 50);
   paintSquare(pixels, 0, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
-              Adafruit_NeoPixel::Color(0x10, 0x10, 0x00),
-              (uint8_t)round(status.powerFromPV / 500));
+              Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
+              Adafruit_NeoPixel::Color(0x10, 0x10, 0x00), highValue, lowValue);
   // Battery
   paintSquare(pixels, 0, 11, Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
+              Adafruit_NeoPixel::Color(0, 0, 0),
               Adafruit_NeoPixel::Color(0x00, 0x10, 0x00),
-              (uint8_t)round(status.batteryChargePercentage / 6));
+              (uint8_t)round(status.batteryChargePercentage / 6), 0);
   // Network
   int8_t networkLevel = round(status.powerFromGrid / 500);
   if (networkLevel < 0)
     networkLevel = -networkLevel;
   paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
-              Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), networkLevel);
+              Adafruit_NeoPixel::Color(0, 0, 0),
+              Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), networkLevel, 0);
   // Consumption
+  highValue = floor(status.currentLoad / 500);
+  lowValue = floor((status.currentLoad - highValue * 500) / 50);
   paintSquare(pixels, 11, 11, Adafruit_NeoPixel::Color(0xff, 0x00, 0x00),
-              Adafruit_NeoPixel::Color(0x10, 0x00, 0x00),
-              (uint8_t)round(status.currentLoad / 500));
+              Adafruit_NeoPixel::Color(0x50, 0x00, 0x00),
+              Adafruit_NeoPixel::Color(0x10, 0x00, 0x00), highValue, lowValue);
   // Flux Network to Consumption
   paintFlux(pixels, 13, 5, 13, 11, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),
             Adafruit_NeoPixel::Color(0x00, 0x00, 0x10),
@@ -354,20 +369,18 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
       rainIntensity = 5;
 
     for (uint8_t j = 0; j < rainIntensity; j++) {
+      uint16_t led = getLedIndex(14 - j, i / 4 - 1);
       if (weather & RAIN_MASK) {
-        uint16_t led = getLedIndex(14 - j, i / 4 - 1);
         pixels.setPixelColor(led,
                              Adafruit_NeoPixel::Color(0, 192 * dim, 255 * dim));
       }
       if (weather & SNOW_MASK && (!firstHalf || (!(weather & RAIN_MASK)))) {
-        uint16_t led = getLedIndex(14 - j, i / 4 - 1);
         pixels.setPixelColor(
             led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 255 * dim));
       }
       if ((weather & LIGHTNING_MASK) && firstTenth) {
-        uint16_t led = getLedIndex(14 - j, i / 4 - 1);
-        pixels.setPixelColor(led,
-                             Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));
+        pixels.setPixelColor(
+            led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));  // yellow
       }
     }
 
@@ -383,6 +396,11 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
       uint16_t led = getLedIndex(15, i / 4 - 1);
       pixels.setPixelColor(
           led, Adafruit_NeoPixel::Color(127 * dim, 127 * dim, 127 * dim));
+    }
+    if ((weather & LIGHTNING_MASK) && firstTenth) {
+      uint16_t led = getLedIndex(15, i / 4 - 1);
+      pixels.setPixelColor(
+          led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));  // yellow
     }
   }
 }

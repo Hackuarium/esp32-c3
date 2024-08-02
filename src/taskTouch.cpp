@@ -1,8 +1,8 @@
 #include "./config.h"
 #include "./params.h"
-#include "driver/touch_pad.h"
 
 #ifdef TOUCH_PAD_NUM2
+#include "driver/touch_pad.h"
 
 #define TOUCH_GPIO TOUCH_PAD_NUM2
 
