@@ -153,23 +153,27 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
               Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
               Adafruit_NeoPixel::Color(0x10, 0x10, 0x00), highValue, lowValue);
   // Battery
+
   paintSquare(pixels, 0, 11, Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
               Adafruit_NeoPixel::Color(0, 0, 0),
               Adafruit_NeoPixel::Color(0x00, 0x10, 0x00),
-              (uint8_t)round(status.batteryChargePercentage / 6), 0);
+              (uint8_t)round((status.batteryChargePercentage - 6) / 5.68), 0);
   // Network
-  int8_t networkLevel = round(status.powerFromGrid / 500);
+  float networkLevel = status.powerFromGrid;
   if (networkLevel < 0)
     networkLevel = -networkLevel;
+  highValue = floor(networkLevel / 500);
+  lowValue = floor((networkLevel - highValue * 500) / 50);
   paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
-              Adafruit_NeoPixel::Color(0, 0, 0),
-              Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), networkLevel, 0);
+              Adafruit_NeoPixel::Color(0x50, 0x50, 0x50),
+              Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), highValue, lowValue);
   // Consumption
   highValue = floor(status.currentLoad / 500);
   lowValue = floor((status.currentLoad - highValue * 500) / 50);
   paintSquare(pixels, 11, 11, Adafruit_NeoPixel::Color(0xff, 0x00, 0x00),
               Adafruit_NeoPixel::Color(0x50, 0x00, 0x00),
               Adafruit_NeoPixel::Color(0x10, 0x00, 0x00), highValue, lowValue);
+
   // Flux Network to Consumption
   paintFlux(pixels, 13, 5, 13, 11, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),
             Adafruit_NeoPixel::Color(0x00, 0x00, 0x10),

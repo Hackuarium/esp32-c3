@@ -26,5 +26,5 @@
   },
   "liveServer.settings.port": 5501,
   "cmake.sourceDirectory": "/Users/lpatiny/git/hackuarium/esp32-c3/.pio/libdeps/lolin_c3_mini/Adafruit BusIO",
-  "idf.port": "/dev/cu.usbmodem101"
+  "idf.port": "/dev/tty.usbmodem101"
 }
