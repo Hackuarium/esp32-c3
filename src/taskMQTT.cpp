@@ -2,6 +2,7 @@
 #include <StringStream.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
+#include "./WifiUtilities.h"
 #include "./taskSerial.cpp"
 #include "config.h"
 #include "params.h"
@@ -9,6 +10,7 @@
 AsyncMqttClient mqttClient;
 
 char broker[40];
+char brokerIP[40];
 char subscribeTopic[40];
 char publishTopic[40];
 char logPublishTopic[40];
@@ -50,7 +52,6 @@ void TaskMQTT(void* pvParameters) {
   }
 
   if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
-    mqttClient.setServer(broker, 41013);
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
   };
@@ -76,8 +77,14 @@ void TaskMQTT(void* pvParameters) {
         break;
       }
       byte counter = 0;
+
       while (!mqttClient.connected() && counter++ < 10) {
-        Serial.println("Connecting to MQTT...");
+        dnsLookup(broker, brokerIP);
+        mqttClient.setServer(brokerIP, 41013);
+        Serial.print("Connecting to MQTT broker: ");
+        Serial.print(broker);
+        Serial.print(" IP: ");
+        Serial.println(brokerIP);
         mqttClient.connect();
         vTaskDelay(5 * 1000);
       }

@@ -14,6 +14,7 @@ void taskTest();
 void taskFetch();
 void taskUptime();
 void taskWifi();
+void taskMQTT();
 void taskWifiAP();
 void taskOTA();
 void taskMDNS();
@@ -36,6 +37,7 @@ void setupPixels() {
   taskNTPD();
   // taskWifiAP();
   taskWebserver();
+  taskMQTT();
   taskFetch();
 
 #ifdef PARAM_INT_TEMPERATURE_B

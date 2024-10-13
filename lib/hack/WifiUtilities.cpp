@@ -21,6 +21,12 @@ void printWifiHelp(Print* output) {
   output->println(F("(wx) Scan for wifi network"));
 }
 
+void dnsLookup(char* name, char* ip) {
+  IPAddress ntpServerIP;
+  WiFi.hostByName(name, ntpServerIP);
+  strcpy(ip, ntpServerIP.toString().c_str());
+}
+
 void processWifiCommand(char command,
                         char* paramValue,
                         Print* output) {  // char and char* ??
