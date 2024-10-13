@@ -56,10 +56,12 @@ void TaskPixels(void* pvParameters) {
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;
   uint8_t previousBrightness = 0;
+  uint8_t currentBrightness = 0;
 
   uint16_t counter = 0;
 
   while (true) {
+    previousBrightness = currentBrightness;
     if (previousProgram != getParameter(PARAM_CURRENT_PROGRAM)) {
       previousProgram = getParameter(PARAM_CURRENT_PROGRAM);
       programChanged = 1;
@@ -74,16 +76,14 @@ void TaskPixels(void* pvParameters) {
     if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
         (isNight() && getParameterBit(PARAM_SCHEDULE, 1))) {
       doAction();
-      pixels.setBrightness(getParameter(PARAM_BRIGHTNESS));
+      currentBrightness = getParameter(PARAM_BRIGHTNESS);
     } else {
-      pixels.setBrightness(0);
+      currentBrightness = 0;
     }
-
-    if (pixels.getBrightness() == 0 && previousBrightness == 0) {
+    if (currentBrightness == 0 && previousBrightness == 0) {
       vTaskDelay(500);
       continue;
     }
-    previousBrightness = pixels.getBrightness();
 
     /*
     #define NEO_RGB ((0 << 6) | (0 << 4) | (1 << 2) | (2)) // 6
@@ -100,19 +100,23 @@ void TaskPixels(void* pvParameters) {
 
     // protection against too high values. Need to calculate the amount of mA
     // taking into account the number of LEDs and their color
-    long currentConsumption = 0;
+    uint32_t currentConsumption = 0;  // to have the real value we should
+                                      // multiply by 20mA and divide by 256
     for (uint16_t i = 0; i < MAX_LED; i++) {
       uint32_t color = pixels.getPixelColor(i);
       uint8_t r = (color >> 16) & 0xFF;
       uint8_t g = (color >> 8) & 0xFF;
       uint8_t b = color & 0xFF;
-      currentConsumption += (r + g + b) * 20;
+      currentConsumption += (r + g + b);
     }
-    currentConsumption = (currentConsumption * previousBrightness) >> 16;
-    if (currentConsumption > 10000) {
-      pixels.setBrightness(0);
-      previousBrightness = 0;
+    currentConsumption = (currentConsumption * currentBrightness) >> 16;
+    static uint32_t MAX_CURRENT = 10000 / 20;  // 10A
+    if (currentConsumption > MAX_CURRENT) {
+      // calculate the maximum brightness to avoid too high current
+      currentBrightness = (float)currentBrightness * (float)MAX_CURRENT /
+                          (float)currentConsumption;
     }
+    pixels.setBrightness(currentBrightness);
 
     pixels.show();  // Send the updated pixel colors to the hardware.
 
