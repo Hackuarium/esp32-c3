@@ -80,6 +80,7 @@ void printResult(char* data, Print* output) {
   uint8_t paramValuePosition = 0;
   uint8_t i = 0;
   bool inValue = false;
+  bool afterComma = false;
   uint8_t wireTargetAddress = 0;  // used for the command like '55D123'
 
   while (!theEnd) {
@@ -101,7 +102,13 @@ void printResult(char* data, Print* output) {
     } else if (inChar > 64 &&
                inChar < 92) {  // an UPPERCASE character so we define the field
       // we extend however the code to allow 2 letters fields !!!
-      if (paramCurrent > 0) {
+      if (afterComma) {
+        // if there is a letter after a comma it means we don't have something
+        // like A1,2,3 but rather A1,C3
+        afterComma = false;
+        paramCurrent = 0;
+      }
+      if (paramCurrent > 0 && !afterComma) {
         paramCurrent *= 26;
       } else {  // do we have a number before the uppercase ????
         if (paramValuePosition > 0) {
@@ -118,6 +125,7 @@ void printResult(char* data, Print* output) {
     }
 
     if (inChar == ',' || theEnd) {  // store value and increment
+      afterComma = true;
       if (paramCurrent > 0) {
         if (paramValuePosition > 0) {
           if (wireTargetAddress > 0) {
