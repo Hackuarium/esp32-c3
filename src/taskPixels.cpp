@@ -97,6 +97,23 @@ void TaskPixels(void* pvParameters) {
     pixels.updateType(getParameter(PARAM_COLOR_LED_MODEL));
 
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    // protection against too high values. Need to calculate the amount of mA
+    // taking into account the number of LEDs and their color
+    long currentConsumption = 0;
+    for (uint16_t i = 0; i < MAX_LED; i++) {
+      uint32_t color = pixels.getPixelColor(i);
+      uint8_t r = (color >> 16) & 0xFF;
+      uint8_t g = (color >> 8) & 0xFF;
+      uint8_t b = color & 0xFF;
+      currentConsumption += (r + g + b) * 20;
+    }
+    currentConsumption = (currentConsumption * previousBrightness) >> 16;
+    if (currentConsumption > 5000) {
+      pixels.setBrightness(0);
+      previousBrightness = 0;
+    }
+
     pixels.show();  // Send the updated pixel colors to the hardware.
 
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {
@@ -152,7 +169,7 @@ void TaskPixels(void* pvParameters) {
 void taskPixels() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskPixels, "TaskPixels",
-                          15000,  // This stack size can be checked & adjusted
+                          10000,  // This stack size can be checked & adjusted
                                   // by reading the Stack Highwater
                           NULL,
                           3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
