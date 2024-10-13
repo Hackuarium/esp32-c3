@@ -109,7 +109,7 @@ void TaskPixels(void* pvParameters) {
       currentConsumption += (r + g + b) * 20;
     }
     currentConsumption = (currentConsumption * previousBrightness) >> 16;
-    if (currentConsumption > 5000) {
+    if (currentConsumption > 10000) {
       pixels.setBrightness(0);
       previousBrightness = 0;
     }

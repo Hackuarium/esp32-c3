@@ -2,9 +2,9 @@
 #include <StringStream.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
+#include "./taskSerial.cpp"
 #include "config.h"
 #include "params.h"
-#include "./taskSerial.cpp"
 
 AsyncMqttClient mqttClient;
 
@@ -12,6 +12,14 @@ char broker[40];
 char subscribeTopic[40];
 char publishTopic[40];
 char logPublishTopic[40];
+
+void retrieveMQTTParameters() {
+  getParameter("mqtt.broker", broker);
+  getParameter("mqtt.subscribe", subscribeTopic);
+  getParameter("mqtt.publish", publishTopic);
+  getParameter("mqtt.logpublish", logPublishTopic);
+}
+
 String mqttMessage;
 
 void sendCommandResult(char* command);
@@ -28,15 +36,21 @@ void onMqttMessage(char* subscribeTopic,
                    size_t total);
 
 void TaskMQTT(void* pvParameters) {
-  getParameter("mqtt.broker", broker);
-  getParameter("mqtt.subscribe", subscribeTopic);
-  getParameter("mqtt.publish", publishTopic);
-  getParameter("mqtt.logpublish", logPublishTopic);
+  retrieveMQTTParameters();
 
   vTaskDelay(1000);
 
+  if (strlen(broker) < 2 ||
+      (strlen(subscribeTopic) == 0 && strlen(publishTopic) == 0)) {
+    Serial.println("MQTT: No broker or topic defined defined");
+    while (strlen(broker) < 2) {
+      vTaskDelay(1000);
+      retrieveMQTTParameters();
+    }
+  }
+
   if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
-    mqttClient.setServer(broker, 1883);
+    mqttClient.setServer(broker, 41013);
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
   };
@@ -48,7 +62,7 @@ void TaskMQTT(void* pvParameters) {
   }
 
   if (strlen(publishTopic) != 0) {
-    mqttClient.onPublish(onMqttPublish);
+    //   mqttClient.onPublish(onMqttPublish);
   }
 
   while (true) {
@@ -75,10 +89,10 @@ void TaskMQTT(void* pvParameters) {
       if (strlen(logPublishTopic) == 0) {
         continue;
       }
-      mqttMessage = "";
-      StringStream stream((String&)mqttMessage);
-      printResult("uc", &stream);
-      mqttClient.publish(logPublishTopic, 1, true, &mqttMessage[0]);
+      //   mqttMessage = "";
+      //  StringStream stream((String&)mqttMessage);
+      // printResult("uc", &stream);
+      //    mqttClient.publish(logPublishTopic, 1, true, &mqttMessage[0]);
     }
   }
 }
@@ -114,8 +128,8 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
 
 void taskMQTT() {
   xTaskCreatePinnedToCore(TaskMQTT, "TaskMQTT",
-                          20000,  // This stack size can be checked & adjusted
-                                  // by reading the Stack Highwater
+                          5000,  // This stack size can be checked & adjusted
+                                 // by reading the Stack Highwater
                           NULL,
                           3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.
