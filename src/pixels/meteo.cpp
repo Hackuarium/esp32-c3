@@ -127,16 +127,16 @@ void paintFlux(Adafruit_NeoPixel& pixels,
  * @return uint8_t
  */
 int8_t getFluxSpeed(uint16_t counter, float power) {
-  int8_t powerLevel = round(power / 500);
+  int8_t powerLevel = round(power / 50);
   if (powerLevel <= 0)
     return -1;
-  if (powerLevel > 10) {
+  if (powerLevel > 100) {
     return (counter / 2) % 3;
   }
-  if (powerLevel > 5) {
+  if (powerLevel > 50) {
     return (counter / 5) % 3;
   }
-  if (powerLevel > 2) {
+  if (powerLevel > 20) {
     return (counter / 10) % 3;
   }
   return (counter / 25) % 3;
