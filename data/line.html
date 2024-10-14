@@ -184,52 +184,54 @@
   <div id="CometMode" class="tabcontent">
     <h1>Presets</h1>
     <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A192,2,20,3,9,4,6,1,1,800,255,255,255,0,5')">Both
-    </button>
+      <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A158,3,18,3,7,5,6,4,1,800,0,255,17,0,5')">Green
+        background
+      </button>
 
-    <h1>Advanced</h1>
-    Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D3,A'+value)" min="0"
-      max="255"></input><br>
-    Color: <select data-label="E" onchange="sendCommand('D3,E'+this.value)">
-      <option value="0">Fixed</option>
-      <option value="1">Orangish</option>
-      <option value="2">Random orangish</option>
-      <option value="3">Geenish</option>
-      <option value="4">Random greenish</option>
-      <option value="5">Violetish</option>
-      <option value="6">Random violetish</option>
-      <option value="7">Rainbow</option>
-      <option value="8">Random rainbow</option>
-      <option value="9">Random</option>
-      <option value="16">Black</option>
-      <option value="17">Red</option>
-      <option value="18">Green</option>
-      <option value="19">Yellow</option>
-      <option value="20">Blue</option>
-      <option value="21">Violet</option>
-      <option value="22">Cyan</option>
-      <option value="23">White</option>
-    </select><br>
-    Background / fixed color:<br>
-    <input type="color" data-label="KLM"
-      oninput="sendSlowlyCommand('D3,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+      <h1>Advanced</h1>
+      Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D3,A'+value)" min="0"
+        max="255"></input><br>
+      Color: <select data-label="E" onchange="sendCommand('D3,E'+this.value)">
+        <option value="0">Fixed</option>
+        <option value="1">Orangish</option>
+        <option value="2">Random orangish</option>
+        <option value="3">Geenish</option>
+        <option value="4">Random greenish</option>
+        <option value="5">Violetish</option>
+        <option value="6">Random violetish</option>
+        <option value="7">Rainbow</option>
+        <option value="8">Random rainbow</option>
+        <option value="9">Random</option>
+        <option value="16">Black</option>
+        <option value="17">Red</option>
+        <option value="18">Green</option>
+        <option value="19">Yellow</option>
+        <option value="20">Blue</option>
+        <option value="21">Violet</option>
+        <option value="22">Cyan</option>
+        <option value="23">White</option>
+      </select><br>
+      Background / fixed color:<br>
+      <input type="color" data-label="KLM"
+        oninput="sendSlowlyCommand('D3,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
 
-    If not fixed:<br>
-    Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('D3,F'+this.value)" min="0"
-      max="10"></input><br>
-    Fading speed: <input data-label="G" type="range" oninput="sendSlowlyCommand('D3,G'+this.value)" min="0"
-      max="9"></input><br>
-    Other options:<br>
-    Number of events: <input data-label="B" type="range" oninput="sendSlowlyCommand('D3,B'+this.value)" min="0"
-      max="7"></input><br>
-    Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D3,C'+this.value)" min="0"
-      max="20"></input><br>
-    Direction: <select data-label="O" onchange="sendCommand('D3,O'+this.value)">
-      <option value="1">From left to right</option>
-      <option value="2">From right to left</option>
-      <option value="5">Horizontal</option>
-    </select><br>
-    Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D3,H'+value)" min="0"
-      max="255"></input><br>
+      If not fixed:<br>
+      Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('D3,F'+this.value)" min="0"
+        max="10"></input><br>
+      Fading speed: <input data-label="G" type="range" oninput="sendSlowlyCommand('D3,G'+this.value)" min="0"
+        max="9"></input><br>
+      Other options:<br>
+      Number of events: <input data-label="B" type="range" oninput="sendSlowlyCommand('D3,B'+this.value)" min="0"
+        max="7"></input><br>
+      Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D3,C'+this.value)" min="0"
+        max="20"></input><br>
+      Direction: <select data-label="O" onchange="sendCommand('D3,O'+this.value)">
+        <option value="1">From left to right</option>
+        <option value="2">From right to left</option>
+        <option value="5">Horizontal</option>
+      </select><br>
+      Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D3,H'+value)" min="0"
+        max="255"></input><br>
 
   </div>
 

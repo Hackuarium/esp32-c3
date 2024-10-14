@@ -113,7 +113,10 @@ uint32_t getColor(uint8_t colorModel,
     return getHSV360(hsvStatus, 255, brightness);
   }
   if (colorModel >= COLOR_PURE_BLACK && colorModel <= COLOR_PURE_WHITE) {
-    return getHSV360((colorModel - COLOR_PURE_BLACK) * 60, 255, brightness);
+    uint8_t r = (colorModel - COLOR_PURE_BLACK) & 1 ? brightness : 0;
+    uint8_t g = (colorModel - COLOR_PURE_BLACK) & 2 ? brightness : 0;
+    uint8_t b = (colorModel - COLOR_PURE_BLACK) & 4 ? brightness : 0;
+    return Adafruit_NeoPixel::Color(r, g, b);
   }
   // default:
   // if (colorModel == COLOR_FULL_RANDOM) {
