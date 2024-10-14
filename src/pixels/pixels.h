@@ -2,8 +2,8 @@
 #include "config.h"
 #include "inttypes.h"
 typedef struct position_t {
-  uint8_t row;
-  uint8_t column;
+  int16_t row;
+  int16_t column;
 } position_t;
 
 uint32_t getColor();
@@ -20,12 +20,12 @@ bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led);
 void setColor(Adafruit_NeoPixel& pixels, uint16_t led);
 uint32_t getHSV360(uint16_t h, uint8_t s, uint8_t v);
 
-int16_t getNextLedIndex(uint8_t row, uint8_t column, uint8_t direction);
+int16_t getNextLedIndex(uint16_t row, uint16_t column, uint8_t direction);
 uint8_t getDirection();
 uint16_t getLedIndex(uint16_t led);
 
 uint16_t getStateIndex(int16_t row, int16_t column);
-uint16_t getLedIndex(uint8_t row, uint8_t column);
+uint16_t getLedIndex(uint16_t row, uint16_t column);
 uint16_t getNbLeds();
 uint16_t getLedIndex(position_t& position);
 

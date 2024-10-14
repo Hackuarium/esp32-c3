@@ -2,17 +2,29 @@
 
 //const server = "http://192.168.4.1/";
 //const server = "http://192.168.1.222/";
-//const server = "http://192.168.1.197/";
-const server = "";
+const server = "http://192.168.1.197/";
+//const server = "http://192.168.1.107/";
+//const server = "";
+let mqttServer = "";
+//const mqttServer = "https://mqtt.patiny.com/publish.cgi";
+let topics = ["line"];
 let servers = [server];
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams && urlParams.get("servers")) {
-  servers = urlParams
-    .get("servers")
-    .split(",")
-    .map((server) => "/" + server + "/");
+if (urlParams) {
+  if (urlParams.get("servers")) {
+    servers = urlParams
+      .get("servers")
+      .split(",")
+      .map((server) => "/" + server + "/");
+  }
+  if (urlParams.get("mqttServer")) {
+    mqttServer = urlParams.get("mqttServer");
+  }
+  if (urlParams.get("topics")) {
+    topics = urlParams.get("topics").split(",");
+  }
 }
-
+console.log(mqttServer, topics, servers);
 let timerId = undefined;
 let lastEvent = Date.now();
 let throttle = 200;
@@ -117,20 +129,39 @@ async function sendCommand(command, value, options = {}) {
       element.value = value || command.substring(1);
     }
   }
-  if (command.match(/^[A-Z][0-9,-]+$/)) {
-    command = prefix + command;
+  if (command.match(/^[A-Z][0-9]+/)) {
+    // split before uppercase without capture
+    const parts = command.split(/(?=[A-Z])/).map(part => prefix + part);
+    command = parts.join('');
   }
+  console.log(command)
 
   const results = [];
 
-  for (let server of servers) {
-    try {
-      const response = await fetch(
-        server + "command" + "?value=" + encodeURIComponent(command)
-      );
-      results.push(await response.text());
-    } catch (e) {
-      console.log("Can not access: " + server);
+  if (mqttServer) {
+    // command must start with uppercase
+    if (command.match(/^[A-Z]/)) {
+      for (let topic of topics) {
+        try {
+          let response = await fetch(
+            mqttServer + "?topic=" + encodeURIComponent(topic) + "&message=" + encodeURIComponent(command)
+          );
+          results.push(await response.text());
+        } catch (e) {
+          console.log("Can not access: " + server);
+        }
+      }
+    }
+  } else {
+    for (let server of servers) {
+      try {
+        let response = await fetch(
+          server + "command" + "?value=" + encodeURIComponent(command)
+        );
+        results.push(await response.text());
+      } catch (e) {
+        console.log("Can not access: " + server);
+      }
     }
   }
   if (logResult) document.getElementById("result").value = results.join("\n");
@@ -230,9 +261,7 @@ function addColorModelsButtons(models) {
       "linear-gradient(to right, " + colors + ")"
     );
     button.onmousedown = async () => {
-      await sendCommand(prefix + "P" + model.slice(0, 4).join(","));
-      await sendCommand(prefix + "V" + model.slice(4, 8).join(","));
-      await sendCommand(prefix + "D11"); // select line mode
+      await sendCommand("D11,P" + model.slice(0, 4).join(",") + ',V' + model.slice(4, 8).join(","));
       await reloadSettings();
     };
     modelsElement.append(button);

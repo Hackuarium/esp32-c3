@@ -12,12 +12,13 @@ void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
   cometCounter++;
   if ((cometCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet
-    for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
+    for (int16_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
       for (int16_t column = getParameter(PARAM_NB_COLUMNS) - 1; column >= 0;
            column--) {
         uint16_t led = getLedIndex(row, column);
-        if ((state[led] == 1) ||
-            (state[led] == 4)) {  // need to turn on the next one full power
+        if ((state[led] == 1) ||  // left to right
+            (state[led] == 4)     // bottom to top
+        ) {                       // need to turn on the next one full power
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
@@ -58,12 +59,12 @@ void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
     }
   }
 
-  // we create a new comet
   if (random(pow(2, 7 - getParameter(PARAM_INTENSITY))) != 0) {
     return;
   }
 
-  uint8_t row = random(0, getParameter(PARAM_NB_ROWS));
+  // we create a new comet
+  uint16_t row = random(0, getParameter(PARAM_NB_ROWS));
   uint16_t column = random(0, getParameter(PARAM_NB_COLUMNS));
   int16_t led;
   uint8_t direction = getDirection();

@@ -19,6 +19,14 @@
 #define COLOR_RAINBOW 7
 #define COLOR_RAINBOW_RANDOM 8
 #define COLOR_FULL_RANDOM 9
+#define COLOR_PURE_BLACK 16
+#define COLOR_PURE_RED 17
+#define COLOR_PURE_GREEN 18
+#define COLOR_PURE_YELLOW 19
+#define COLOR_PURE_BLUE 20
+#define COLOR_PURE_VIOLET 21
+#define COLOR_PURE_CYAN 22
+#define COLOR_PURE_WHITE 23
 
 uint16_t hsvStatus = 0;
 
@@ -104,6 +112,9 @@ uint32_t getColor(uint8_t colorModel,
     hsvStatus = (hsvStatus + hsbChangeSpeed) % 360;
     return getHSV360(hsvStatus, 255, brightness);
   }
+  if (colorModel >= COLOR_PURE_BLACK && colorModel <= COLOR_PURE_WHITE) {
+    return getHSV360((colorModel - COLOR_PURE_BLACK) * 60, 255, brightness);
+  }
   // default:
   // if (colorModel == COLOR_FULL_RANDOM) {
   return getHSV360(random(0, 360), 255, brightness);
@@ -179,7 +190,7 @@ uint16_t getLedIndex(uint16_t led) {
   return mapping[led];
 }
 
-uint16_t getLedIndex(uint8_t row, uint8_t column) {
+uint16_t getLedIndex(uint16_t row, uint16_t column) {
   row = row % getParameter(PARAM_NB_ROWS);
   column = column % getParameter(PARAM_NB_COLUMNS);
   return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
@@ -229,7 +240,7 @@ uint8_t getDirection() {
   }
 }
 
-int16_t getNextLedIndex(uint8_t row, uint8_t column, uint8_t direction) {
+int16_t getNextLedIndex(uint16_t row, uint16_t column, uint8_t direction) {
   switch (direction) {
     case 1:  // from left to right
       if (column < (getParameter(PARAM_NB_COLUMNS) - 1)) {
@@ -261,12 +272,12 @@ int16_t getNextLedIndex(uint8_t row, uint8_t column, uint8_t direction) {
  * (0,0) is on the top left
  */
 void updateMapping() {
-  uint8_t nbRow = getParameter(PARAM_NB_ROWS);
-  uint8_t nbColumn = getParameter(PARAM_NB_COLUMNS);
+  uint16_t nbRow = getParameter(PARAM_NB_ROWS);
+  uint16_t nbColumn = getParameter(PARAM_NB_COLUMNS);
 
   if (getParameter(PARAM_LAYOUT_MODEL) ==
       0) {  // normal square horizontal lines starting from top right
-    for (uint8_t row = 0; row < nbRow; row++) {
+    for (uint16_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         if (row % 2 == 0) {
@@ -279,7 +290,7 @@ void updateMapping() {
   } else if (getParameter(PARAM_LAYOUT_MODEL) ==
              1) {  // vertical lines like christmas tree that starts in the
                    // bottom
-    for (uint8_t row = 0; row < nbRow; row++) {
+    for (uint16_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         if (row % 2 == 0) {
@@ -291,7 +302,7 @@ void updateMapping() {
     }
     // normal square horizontal lines starting from top left
   } else if (getParameter(PARAM_LAYOUT_MODEL) == 2) {
-    for (uint8_t row = 0; row < nbRow; row++) {
+    for (uint16_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         if (row % 2 == 0) {
@@ -303,7 +314,7 @@ void updateMapping() {
     }
 
   } else {
-    for (uint8_t row = 0; row < nbRow; row++) {
+    for (uint16_t row = 0; row < nbRow; row++) {
       for (uint16_t column = 0; column < nbColumn; column++) {
         uint16_t led = row * nbColumn + column;
         uint16_t squareShift = (row > 7 ? 128 : 0) + (column > 7 ? 64 : 0);
