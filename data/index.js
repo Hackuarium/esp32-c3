@@ -25,11 +25,11 @@ async function sendSlowlyCommand(command, value) {
   clearTimeout(timerId);
   if (Date.now() - lastEvent > throttle) {
     lastEvent = Date.now();
-    sendCommand(command, value);
+    sendCommand(command, value, { reload: false });
   } else {
     timerId = setTimeout(() => {
       lastEvent = Date.now();
-      sendCommand(command, value);
+      sendCommand(command, value, { reload: false });
     }, throttle - (Date.now() - lastEvent));
   }
 }
@@ -164,7 +164,7 @@ async function getCurrentLineColor() {
 }
 
 async function sendCommand(command, value, options = {}) {
-  const { logResult = true } = options;
+  const { logResult = true, reload = true } = options;
   if (command.match(/^[A-Z][0-9-]+$/)) {
     let elements = document.querySelectorAll(
       `[data-label=${command.substring(0, 1)}]`
@@ -178,11 +178,10 @@ async function sendCommand(command, value, options = {}) {
     const parts = command.split(/(?=[A-Z])/).map(part => prefix + part);
     command = parts.join('');
   }
-  console.log(command)
 
   const results = [];
 
-  if (mqttServers) {
+  if (mqttServers.length > 0) {
     // command must start with uppercase
     if (command.match(/^[A-Z]/)) {
       for (const mqttServer of mqttServers) {
@@ -209,6 +208,7 @@ async function sendCommand(command, value, options = {}) {
         console.log("Can not access: " + server);
       }
     }
+    if (reload) reloadSettings();
   }
   if (logResult) document.getElementById("result").value = results.join("\n");
   return results.join("\n");
