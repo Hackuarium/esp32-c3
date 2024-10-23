@@ -25,6 +25,10 @@
 #include "params.h"
 #include "taskNTPD.h"
 
+const uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
+                            PARAM_ACTION_4, PARAM_ACTION_5, PARAM_ACTION_6,
+                            PARAM_ACTION_7, PARAM_ACTION_8};
+
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
 void resetLine();
@@ -235,7 +239,6 @@ void processPixelsCommand(char command,
       output->println(getParameter(PARAM_BRIGHTNESS));
       for (uint8_t i = 0; i < sizeof(ACTIONS); i++) {
         int16_t currentActionValue = getParameter(ACTIONS[i]);
-
         if (currentActionValue < 0) {
           continue;
         }
@@ -365,15 +368,15 @@ void processPixelsCommand(char command,
 }
 
 void resetLine() {
-  setAndSaveParameter(PARAM_BRIGHTNESS, 63);
-  setAndSaveParameter(PARAM_INTENSITY, 2);
-  setAndSaveParameter(PARAM_SPEED, 17);
-  setAndSaveParameter(PARAM_CURRENT_PROGRAM, 11);
+  setAndSaveParameter(PARAM_BRIGHTNESS, 32);
+  setAndSaveParameter(PARAM_INTENSITY, 4);
+  setAndSaveParameter(PARAM_SPEED, 20);
+  setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
   setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-  setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
+  setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 10);
+  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 2);
   setAndSaveParameter(PARAM_NB_ROWS, 1);
-  setAndSaveParameter(PARAM_NB_COLUMNS, 800);
+  setAndSaveParameter(PARAM_NB_COLUMNS, 1024);
   setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
 
   setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);

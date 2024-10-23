@@ -161,9 +161,9 @@ void printCompactParameters(Print* output) {
 }
 
 void checkParameters() {
-  if (getParameter(0) < ERROR_VALUE) {
-    resetParameters();
-  }
+  // if (getParameter(0) == ERROR_VALUE) {
+  //  resetParameters();
+  // }
 }
 
 void setQualifier(int16_t value) {

@@ -190,28 +190,30 @@ uint16_t mapping[MAX_LED];
  * Returns the real led index based on the mapping
  */
 uint16_t getLedIndex(uint16_t led) {
+  if (led >= MAX_LED) {
+    return 0;
+  }
   return mapping[led];
 }
 
 uint16_t getLedIndex(uint16_t row, uint16_t column) {
   row = row % getParameter(PARAM_NB_ROWS);
   column = column % getParameter(PARAM_NB_COLUMNS);
-  return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
+  return getLedIndex(row * getParameter(PARAM_NB_COLUMNS) + column);
 }
 
 uint16_t getStateIndex(int16_t row, int16_t column) {
-  row = row % getParameter(PARAM_NB_ROWS);
-  column = column % getParameter(PARAM_NB_COLUMNS);
-  return mapping[row * getParameter(PARAM_NB_COLUMNS) + column];
+  return getLedIndex(row, column);
 }
 
 uint16_t getNbLeds() {
-  return getParameter(PARAM_NB_COLUMNS) * getParameter(PARAM_NB_ROWS);
+  uint16_t nbLeds =
+      getParameter(PARAM_NB_COLUMNS) * getParameter(PARAM_NB_ROWS);
+  return nbLeds > MAX_LED ? MAX_LED : nbLeds;
 }
 
 uint16_t getLedIndex(position_t& position) {
-  return mapping[position.row * getParameter(PARAM_NB_COLUMNS) +
-                 position.column];
+  return getLedIndex(position.row, position.column);
 }
 
 uint8_t getDirection() {
@@ -243,30 +245,37 @@ uint8_t getDirection() {
   }
 }
 
-int16_t getNextLedIndex(uint16_t row, uint16_t column, uint8_t direction) {
+int16_t getNextLedIndex(uint16_t row,
+                        uint16_t column,
+                        uint8_t direction,
+                        uint8_t distance) {
   switch (direction) {
     case 1:  // from left to right
-      if (column < (getParameter(PARAM_NB_COLUMNS) - 1)) {
-        return getLedIndex(row, column + 1);
+      if (column < (getParameter(PARAM_NB_COLUMNS) - distance)) {
+        return getLedIndex(row, column + distance);
       }
       return -1;
     case 2:  // from right to left
-      if (column > 0) {
-        return getLedIndex(row, column - 1);
+      if (column > distance - 1) {
+        return getLedIndex(row, column - distance);
       }
       return -1;
     case 3:  // from top to bottom
-      if (row < (getParameter(PARAM_NB_ROWS) - 1)) {
-        return getLedIndex(row + 1, column);
+      if (row < (getParameter(PARAM_NB_ROWS) - distance)) {
+        return getLedIndex(row + distance, column);
       }
       return -1;
     case 4:  // from bottom to top
-      if (row > 0) {
-        return getLedIndex(row - 1, column);
+      if (row > distance - 1) {
+        return getLedIndex(row - distance, column);
       }
       return -1;
   }
   return -1;
+}
+
+int16_t getNextLedIndex(uint16_t row, uint16_t column, uint8_t direction) {
+  return getNextLedIndex(row, column, direction, 1);
 }
 
 /**

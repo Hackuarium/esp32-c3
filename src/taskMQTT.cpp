@@ -38,9 +38,9 @@ void onMqttMessage(char* subscribeTopic,
                    size_t total);
 
 void TaskMQTT(void* pvParameters) {
-  retrieveMQTTParameters();
-
   vTaskDelay(1000);
+
+  retrieveMQTTParameters();
 
   if (strlen(broker) < 2 ||
       (strlen(subscribeTopic) == 0 && strlen(publishTopic) == 0)) {
@@ -52,6 +52,7 @@ void TaskMQTT(void* pvParameters) {
   }
 
   if (strlen(subscribeTopic) != 0 || strlen(publishTopic) != 0) {
+    mqttClient.setKeepAlive(60);
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
   };
@@ -67,7 +68,7 @@ void TaskMQTT(void* pvParameters) {
   }
 
   while (true) {
-    while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED || WiFi.localIP() == INADDR_NONE) {
       vTaskDelay(1000);
     }
 
@@ -96,10 +97,6 @@ void TaskMQTT(void* pvParameters) {
       if (strlen(logPublishTopic) == 0) {
         continue;
       }
-      //   mqttMessage = "";
-      //  StringStream stream((String&)mqttMessage);
-      // printResult("uc", &stream);
-      //    mqttClient.publish(logPublishTopic, 1, true, &mqttMessage[0]);
     }
   }
 }
@@ -135,7 +132,7 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
 
 void taskMQTT() {
   xTaskCreatePinnedToCore(TaskMQTT, "TaskMQTT",
-                          5000,  // This stack size can be checked & adjusted
+                          7000,  // This stack size can be checked & adjusted
                                  // by reading the Stack Highwater
                           NULL,
                           3,  // Priority, with 3 (configMAX_PRIORITIES - 1)
@@ -148,14 +145,15 @@ void onMqttConnect(bool sessionPresent) {
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
   if (strlen(subscribeTopic) != 0) {
-    uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 0);
-    Serial.print("Subscribing at QoS 0, packetId: ");
+    uint16_t packetIdSub = mqttClient.subscribe(subscribeTopic, 1);
+    Serial.print("Subscribing at QoS 1, packetId: ");
     Serial.println(packetIdSub);
   }
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.println("Disconnected from MQTT.");
+  Serial.print("Disconnected from MQTT: ");
+  Serial.println((int8_t)reason);
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
@@ -170,7 +168,7 @@ void onMqttMessage(char* topic,
                    size_t len,
                    size_t index,
                    size_t total) {
-  if (true) {
+  if (false) {
     Serial.println("Message received.");
     Serial.print("  topic: ");
     Serial.println(topic);

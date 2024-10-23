@@ -4,9 +4,9 @@
 #include "params.h"
 #include "taskNTPD.h"
 
-uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
-                      PARAM_ACTION_4, PARAM_ACTION_5, PARAM_ACTION_6,
-                      PARAM_ACTION_7, PARAM_ACTION_8};
+const uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
+                            PARAM_ACTION_4, PARAM_ACTION_5, PARAM_ACTION_6,
+                            PARAM_ACTION_7, PARAM_ACTION_8};
 
 void doAction() {
   int16_t currentHourMinute = getHourMinute();

@@ -85,23 +85,24 @@
     <button class="tablinks" onclick="openTab(event, 'LineMode')" id="defaultOpen">Line mode</button>
     <button class="tablinks" onclick="openTab(event, 'RainMode')">Rain mode</button>
     <button class="tablinks" onclick="openTab(event, 'CometMode')">Comet mode</button>
-    <button class="tablinks" onclick="openTab(event, 'Disco')">Disco</button>
-    <button class="tablinks" onclick="openTab(event, 'Advanced')">Advanced</button>
+    <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>Disco</button>
+    <button class="tablinks" onclick="openTab(event, 'Advanced')" data-only-http>Advanced</button>
   </div>
 
 
 
+
   <div id="LineMode" class="tabcontent">
-    <h1>Presets</h1>
+    <h1>Select a predefined color model</h1>
     <div class="flex flex-wrap" id="models"></div>
-    <h1>Advanced</h1>
-    <span style="width: 50px">&nbsp;Change all colors at once:</span>
-    <input type="color" data-label="Y" style="width: 25px" oninput="changeAllColors(value)"></input>
-    <div>
-      Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D11,A'+value)" min="0"
-        max="255"></input><br>
-      Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D11,C'+this.value)" min="0"
-        max="20"></input><br>
+
+    <div data-only-http>
+      <h1>Customize the colors</h1>
+      <div>
+        <span style="width: 50px">&nbsp;Change all colors at once:</span>
+        <input type="color" data-label="Y" style="width: 25px" oninput="changeAllColors(value)"></input>
+      </div>
+      or select individually the 8 colors:
       <input type="color" data-label="P" style="width: 25px"
         oninput="sendSlowlyCommand('D11,P'+colorHexTo12(value))"></input>
       <input type="color" data-label="Q" style="width: 25px"
@@ -118,30 +119,38 @@
         oninput="sendSlowlyCommand('D11,X'+colorHexTo12(value))"></input>
       <input type="color" data-label="Y" style="width: 25px"
         oninput="sendSlowlyCommand('D11,Y'+colorHexTo12(value))"></input>
-      <br>
-      Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('D11,B'+this.value)" min="0"
-        max="7"></input><br>
+    </div>
+
+    <h1>Tune the effect</h1>
+    <div>
+      <div data-only-http>
+        Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D11,A'+value)" min="0"
+          max="255"></input>
+      </div>
+      <div>
+        Change speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D11,C'+this.value)" min="0"
+          max="20"></input></div>
+      <div>
+        Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('D11,B'+this.value)" min="0"
+          max="7"></input>
+      </div>
     </div>
   </div>
 
   <div id="RainMode" class="tabcontent">
-    <h1>Presets</h1>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,7,10,0,27,1,800,0,128,9,0,1')">Green
+    <h1>Select a predefined model</h1>
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,7,10,0,27,K0,128,9')">Green
       christmas
     </button>
-    <button class="text-xl w-1/4 h-8 text-black"
-      onclick="sendCommand('A67,4,17,1,7,10,0,8,1,800,255,255,255,0,1')">White
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,7,10,0,8,K255,255,255')">White
       christmas
     </button>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,1,1,0,8,1,800,0,17,255,0,1')">Blue
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,1,1,0,8,K0,17,255')">Blue
     </button>
-    <button class="text-xl w-1/4 h-8 text-black"
-      onclick="sendCommand('A152,5,20,1,0,10,6,0,1,800,255,255,255,0,1')">White flash
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A152,5,20,1,0,10,6,0,K255,255,255')">White flash
     </button>
 
-    <h1>Advanced</h1>
-    Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D1,A'+value)" min="0"
-      max="255"></input><br>
+    <h1>Custom</h1>
     Color: <select data-label="E" onchange="sendCommand('D1,E'+this.value)">
       <option value="0">Fixed</option>
       <option value="1">Orangish</option>
@@ -166,6 +175,10 @@
     <input type="color" data-label="KLM"
       oninput="sendSlowlyCommand('D1,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
 
+    <div data-only-http>
+      Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D1,A'+value)" min="0"
+        max="255"></input>
+    </div>
     If not fixed:<br>
     Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('D1,F'+this.value)" min="0"
       max="10"></input><br>
@@ -189,10 +202,12 @@
       </button>
 
       <h1>Advanced</h1>
-      Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D3,A'+value)" min="0"
-        max="255"></input><br>
+      <div data-only-http>
+        Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D3,A'+value)" min="0"
+          max="255"></input>
+      </div>
       Color: <select data-label="E" onchange="sendCommand('D3,E'+this.value)">
-        <option value="0">Fixed</option>
+        <option value="0">Custom</option>
         <option value="1">Orangish</option>
         <option value="2">Random orangish</option>
         <option value="3">Geenish</option>
@@ -268,6 +283,7 @@
     <button class="border-2 border-black" onmousedown="sendCommand('h')">Help</button>
     <button class="border-2 border-black" onmousedown="sendCommand('s')">Settings</button>
     <button class="border-2 border-black" onmousedown="getCurrentSettings()">Current settings</button>
+    <button class="border-2 border-black" onmousedown="getSchedule()">Schedule</button>
     <button class="border-2 border-black" onmousedown="getCurrentLineColor()">Current color settings</button>
     <h1>Advanced</h1>
     <form>
@@ -276,9 +292,12 @@
     </form>
     <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
     <pre>
-CA NEO_RGB: 6 - NEO_GRB: 82
-    </pre>
-
+      CA: NEO_RGB: 6 - NEO_GRB: 82
+      CB: 1 day, 2 night, 3 day+night
+      CC: Sunset offset
+      CD: Sunrise offset
+      CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
+     </pre>
 
   </div>
 

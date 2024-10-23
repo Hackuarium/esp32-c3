@@ -80,7 +80,7 @@ extern int16_t parameters[MAX_PARAM];
 /*
  * JUST FOR PIXELs WS2812
  */
-#define MAX_LED 800
+#define MAX_LED 1024
 
 #define PARAM_BRIGHTNESS 52             // BA
 #define PARAM_INTENSITY 53              // BB

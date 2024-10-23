@@ -20,7 +20,7 @@ void updateRain(Adafruit_NeoPixel& pixels, uint16_t state[]) {
     };
   }
 
-  if (rainCounter % ((21 - getParameter(PARAM_SPEED)) * 3) != 0) {
+  if (rainCounter % ((21 - getParameter(PARAM_SPEED))) != 0) {
     return;
   }
 

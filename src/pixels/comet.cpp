@@ -20,6 +20,12 @@ void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
             (state[led] == 4)     // bottom to top
         ) {                       // need to turn on the next one full power
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
+          // check if the next led is not already on and there is a 'clash'
+          if (nextLedIndex >= 0 &&
+              (state[nextLedIndex] > 0 && state[nextLedIndex] < 5)) {
+            // we try to jump over
+            nextLedIndex = getNextLedIndex(row, column, state[led], 2);
+          }
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
             copyPixelColor(pixels, led, nextLedIndex);
@@ -36,6 +42,11 @@ void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
         if ((state[led] == 2) ||
             (state[led] == 3)) {  // need to turn on the next one full power
           int16_t nextLedIndex = getNextLedIndex(row, column, state[led]);
+          if (nextLedIndex >= 0 &&
+              (state[nextLedIndex] > 0 && state[nextLedIndex] < 5)) {
+            // we try to jump over
+            nextLedIndex = getNextLedIndex(row, column, state[led], 2);
+          }
           if (nextLedIndex >= 0) {
             state[nextLedIndex] = state[led];
             copyPixelColor(pixels, led, nextLedIndex);

@@ -35,10 +35,13 @@ void TaskWifi(void* pvParameters) {
   Serial.println(password);
 
   WiFi.mode(WIFI_STA);
+  // WiFi.setMinSecurity(WIFI_AUTH_WEP); // does not seems to have any impact
+  // WiFi.setMinSecurity(WIFI_AUTH_WPA_PSK);  // Lower min security to WPA.
+
   // WiFi.begin(ssid, password);
-  // The following line is required because of a bug in the LOLIN esp32-c3 board
-  // https://github.com/espressif/arduino-esp32/issues/6767
-  // It could be removed in the other cases and yield to better connection range
+  // The following line is required because of a bug in the LOLIN esp32-c3
+  // board https://github.com/espressif/arduino-esp32/issues/6767 It could
+  // be removed in the other cases and yield to better connection range
   // WiFi.setTxPower(WIFI_POWER_8_5dBm);
   // WiFi.disconnect(true);
   //
@@ -49,7 +52,13 @@ void TaskWifi(void* pvParameters) {
   // parameter wifi type
   bool wifi_Enterprise_type = false;
   // if identity and username not defined use domestic WPA2 to connect to wifi
-  if (strlen(identity) == 0 && strlen(username) == 0) {
+  if (strlen(identity) == 0 && strlen(/* The `username` variable in the code is
+  being used to store the username required for connecting to a WiFi network
+  using WPA2 Enterprise security. It is retrieved from the parameters and used
+  along with the `identity` and `password` to establish a secure connection to
+  the WiFi network. If the `identity` is not defined, the `username` is used as
+  the identity for the WPA2 Enterprise connection. */
+                                      username) == 0) {
     Serial.println("Using domestic WPA2");
     wifi_Enterprise_type = false;
   }

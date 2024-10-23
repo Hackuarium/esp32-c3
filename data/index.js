@@ -1,30 +1,23 @@
 // we use a prefix if the parameters do not start at 'A' but at 'BA' for example.
 
-//const server = "http://192.168.4.1/";
-//const server = "http://192.168.1.222/";
-const server = "http://192.168.1.197/";
-//const server = "http://192.168.1.107/";
-//const server = "";
-let mqttServer = "";
-//const mqttServer = "https://mqtt.patiny.com/publish.cgi";
-let topics = ["line"];
-let servers = [server];
+let mqttServers = [];
+let mqttTopics = [];
+let servers = [];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams) {
   if (urlParams.get("servers")) {
-    servers = urlParams
-      .get("servers")
-      .split(",")
-      .map((server) => "/" + server + "/");
+    servers = urlParams.get("servers").split(",")
   }
-  if (urlParams.get("mqttServer")) {
-    mqttServer = urlParams.get("mqttServer");
+  if (urlParams.get("mqttTopics")) {
+    mqttTopics = urlParams.get("mqttTopics").split(",")
   }
-  if (urlParams.get("topics")) {
-    topics = urlParams.get("topics").split(",");
+  if (urlParams.get("mqttServers")) {
+    mqttServers = urlParams.get("mqttServers").split(',');
   }
 }
-console.log(mqttServer, topics, servers);
+if (servers.length === 0) {
+  servers.push('')
+}
 let timerId = undefined;
 let lastEvent = Date.now();
 let throttle = 200;
@@ -40,6 +33,22 @@ async function sendSlowlyCommand(command, value) {
     }, throttle - (Date.now() - lastEvent));
   }
 }
+
+// if there is some mqttServers we need to add in the class name 'onlyHTTP' with the property display: none
+// to hide the mqtt part
+const style = document.createElement('style');
+if (mqttServers.length > 0) {
+  style.innerHTML = '[data-only-http] {display: none}'
+} else {
+  style.innerHTML = '[data-only-mqtt] {display: none}'
+}
+document.head.appendChild(style);
+
+
+
+
+
+
 
 function download(data) {
   const blob = new Blob([data], { type: 'text/csv' });
@@ -72,15 +81,55 @@ function setGIF(gif) {
   console.log({ gif })
 }
 
+async function getSchedule() {
+  // first parameter is CA
+  const parameters = (await getAllParameters()).slice(78);
+  const lines = [];
+  const dayNight = { 1: 'Day', 2: 'Night', 3: 'Day and Night' }
+  lines.push("On during: " + (dayNight[parameters[1]] ? dayNight[parameters[1]] : 'Never'));
+  lines.push("Sunset offset: " + parameters[2] + ' minutes');
+  lines.push("Sunrise offset: " + parameters[3] + ' minutes');
+  for (let i = 4; i < 12; i++) {
+    const value = parameters[i];
+    const label = 'C' + String.fromCharCode(i + 65);
+    console.log(value)
+    if (value < 0) {
+      lines.push(label + ': No action')
+    } else {
+      const intensity = Math.floor(value / 2000);
+      const minutes = value % 2000;
+      const hours = Math.floor(minutes / 60);
+      const minutesLeft = minutes % 60;
+      lines.push(label + `: At ${hours}h${minutesLeft}m, intensity ${intensity}`);
+    }
+  }
+  document.getElementById("result").value = lines.join('\n');
+}
 
 async function setServo1(status) {
-  const settings = await getSettings();
+  const settings = await getParameters();
   const off = settings[19]
   const on = settings[20]
   sendCommand('I' + (status ? on : off))
 }
 
-async function getSettings() {
+function parseParametersString(string) {
+  const parameters = new Int16Array((string.length / 4) >> 0);
+  for (let i = 0; i < string.length; i = i + 4) {
+    parameters[i / 4] = parseInt(string.substr(i, 4), 16);
+  }
+  return parameters;
+}
+
+
+async function getAllParameters() {
+  const response = await fetch(servers[0] + "command" + "?value=uc");
+  let result = await response.text();
+  result = result.substring(8); // first 8 symbols is epoch
+  return parseParametersString(result);
+}
+
+async function getParameters() {
   const response = await fetch(servers[0] + "command" + "?value=uc");
   let result = await response.text();
   if (prefix) {
@@ -89,22 +138,17 @@ async function getSettings() {
   } else {
     result = result.substring(8); // first 8 symbols is epoch
   }
-  const parameters = [];
-  for (let i = 0; i < Math.min(result.length, 104); i = i + 4) {
-    parameters.push(parseInt(result.substr(i, 4), 16));
-  }
-  return parameters;
+  return parseParametersString(result);
 }
 
 async function getCurrentSettings() {
-  let parameters = await getSettings();
-  parameters = parameters.slice(0, 15);
-  document.getElementById("result").value = "A" + parameters.join(",");
+  let parameters = await getParameters();
+  document.getElementById("result").value = "A" + parameters.slice(0, 8).join(",") + ",K" + parameters.slice(10, 13).join(",");
   return result;
 }
 
 async function getCurrentLineColor() {
-  let parameters = await getSettings();
+  let parameters = await getParameters();
   const colors =
     "[" +
     parameters
@@ -138,17 +182,19 @@ async function sendCommand(command, value, options = {}) {
 
   const results = [];
 
-  if (mqttServer) {
+  if (mqttServers) {
     // command must start with uppercase
     if (command.match(/^[A-Z]/)) {
-      for (let topic of topics) {
-        try {
-          let response = await fetch(
-            mqttServer + "?topic=" + encodeURIComponent(topic) + "&message=" + encodeURIComponent(command)
-          );
-          results.push(await response.text());
-        } catch (e) {
-          console.log("Can not access: " + server);
+      for (const mqttServer of mqttServers) {
+        for (let topic of mqttTopics) {
+          try {
+            let response = await fetch(
+              mqttServer + "?topic=" + encodeURIComponent(topic) + "&message=" + encodeURIComponent(command)
+            );
+            results.push(await response.text());
+          } catch (e) {
+            console.log("Can not access: " + mqttServer);
+          }
         }
       }
     }

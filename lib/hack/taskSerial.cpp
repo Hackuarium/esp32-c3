@@ -214,7 +214,7 @@ void noThread(Print* output) {
 void taskSerial() {
   // Now set up two tasks to run independently.
   xTaskCreatePinnedToCore(TaskSerial, "TaskSerial",
-                          4096,  // This stack size can be checked & adjusted by
+                          6000,  // This stack size can be checked & adjusted by
                                  // reading the Stack Highwater
                           NULL,
                           1,  // Priority, with 3 (configMAX_PRIORITIES - 1)
