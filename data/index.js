@@ -229,7 +229,7 @@ async function sendFunction() {
   document.getElementById("result").value = results.join("\n");
 }
 async function reloadSettings() {
-  let result = await sendCommand("uc", undefined, { logResult: false });
+  let result = await sendCommand("uc", undefined, { logResult: false, reload: false });
   // TODO we could check the checkDigit ...
   if (prefix) {
     const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
