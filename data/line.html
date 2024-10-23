@@ -171,9 +171,7 @@
       <option value="22">Cyan</option>
       <option value="23">White</option>
     </select><br>
-    Background / fixed color:<br>
-    <input type="color" data-label="KLM"
-      oninput="sendSlowlyCommand('D1,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+
 
     <div data-only-http>
       Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D1,A'+value)" min="0"
@@ -189,8 +187,34 @@
       max="7"></input><br>
     Speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D1,C'+this.value)" min="0"
       max="20"></input><br>
-    Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D1,H'+value)" min="0"
-      max="255"></input><br>
+    Background:<br>
+    <div data-only-mqtt>
+      <button style="background-color: #000000; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K0,0,0,0')"></button>
+      <button style="background-color: #ff0000; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K255,0,0')"></button>
+      <button style="background-color: #00ff00; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K0,255,0')"></button>
+      <button style="background-color: #0000ff; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K0,0,255')"></button>
+      <button style="background-color: #ffff00; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K255,255,0')"></button>
+      <button style="background-color: #ff00ff; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K255,0,255')"></button>
+      <button style="background-color: #00ffff; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K0,255,255')"></button>
+      <button style="background-color: #ffffff; width: 30px; height: 30px"
+        onclick="sendCommand('D1,K255,255,255')"></button>
+    </div>
+
+    <div data-only-http>
+      <input type="color" data-label="KLM"
+        oninput="sendSlowlyCommand('D1,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+    </div>
+    <div data-only-http>
+      Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D1,H'+value)" min="0"
+        max="255"></input>
+    </div>
 
   </div>
 
@@ -226,9 +250,7 @@
         <option value="22">Cyan</option>
         <option value="23">White</option>
       </select><br>
-      Background / fixed color:<br>
-      <input type="color" data-label="KLM"
-        oninput="sendSlowlyCommand('D3,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+
 
       If not fixed:<br>
       Color change speed: <input data-label="F" type="range" oninput="sendSlowlyCommand('D3,F'+this.value)" min="0"
@@ -245,8 +267,33 @@
         <option value="2">From right to left</option>
         <option value="5">Horizontal</option>
       </select><br>
-      Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D3,H'+value)" min="0"
-        max="255"></input><br>
+      Background:<br>
+      <div data-only-mqtt>
+        <button style="background-color: #000000; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K0,0,0,0')"></button>
+        <button style="background-color: #ff0000; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K255,0,0')"></button>
+        <button style="background-color: #00ff00; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K0,255,0')"></button>
+        <button style="background-color: #0000ff; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K0,0,255')"></button>
+        <button style="background-color: #ffff00; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K255,255,0')"></button>
+        <button style="background-color: #ff00ff; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K255,0,255')"></button>
+        <button style="background-color: #00ffff; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K0,255,255')"></button>
+        <button style="background-color: #ffffff; width: 30px; height: 30px"
+          onclick="sendCommand('D3,K255,255,255')"></button>
+      </div>
+      <div data-only-http>
+        <input type="color" data-label="KLM"
+          oninput="sendSlowlyCommand('D3,K'+value.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16)).join(','))"></input><br>
+      </div>
+      <div data-only-http>
+        Background Brightness: <input data-label="H" type="range" oninput="sendSlowlyCommand('D3,H'+value)" min="0"
+          max="255"></input>
+      </div>
 
   </div>
 
