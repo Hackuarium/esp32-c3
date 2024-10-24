@@ -124,3 +124,96 @@ textarea {
 .w-1\/2 {
   width: 50%;
 }
+
+.color-button {
+  display: inline-block;
+  width: 100px;
+  height: 30px;
+  margin: 5px;
+  color: white;
+  text-align: center;
+  line-height: 30px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fixed {
+  background-color: grey;
+}
+.orangish {
+  background-color: orange;
+}
+.random-orangish {
+  background: linear-gradient(45deg, orange, yellow);
+}
+.greenish {
+  background-color: green;
+}
+.random-greenish {
+  background: linear-gradient(45deg, green, lime);
+}
+.violetish {
+  background-color: violet;
+}
+.random-violetish {
+  background: linear-gradient(45deg, violet, purple);
+}
+.rainbow {
+  background: linear-gradient(
+    45deg,
+    red,
+    orange,
+    yellow,
+    green,
+    blue,
+    indigo,
+    violet
+  );
+}
+.random-rainbow {
+  background: linear-gradient(
+    45deg,
+    red,
+    orange,
+    yellow,
+    green,
+    blue,
+    indigo,
+    violet
+  );
+}
+.random {
+  background: linear-gradient(45deg, red, green, blue, yellow, purple, cyan);
+}
+.black {
+  background-color: black;
+}
+.red {
+  background-color: red;
+}
+.green {
+  background-color: green;
+}
+.yellow {
+  background-color: yellow;
+}
+.blue {
+  background-color: blue;
+}
+.violet {
+  background-color: violet;
+}
+.cyan {
+  background-color: cyan;
+}
+.white {
+  background-color: white;
+  color: black;
+}
+
+.color-square {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  margin: 5px;
+  cursor: pointer;
+}

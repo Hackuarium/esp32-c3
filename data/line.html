@@ -8,13 +8,12 @@
     const prefix = "B";
 
     function openTab(evt, tabName) {
-      var i, tabcontent, tablinks;
-      tabcontent = document.getElementsByClassName("tabcontent");
-      for (i = 0; i < tabcontent.length; i++) {
+      const tabcontent = document.getElementsByClassName("tabcontent");
+      for (let i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
       }
-      tablinks = document.getElementsByClassName("tablinks");
-      for (i = 0; i < tablinks.length; i++) {
+      const tablinks = document.getElementsByClassName("tablinks");
+      for (let i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
       }
       document.getElementById(tabName).style.display = "block";
@@ -127,9 +126,16 @@
         Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D11,A'+value)" min="0"
           max="255"></input>
       </div>
-      <div>
-        Change speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D11,C'+this.value)" min="0"
-          max="20"></input></div>
+      <div data-only-http>
+        <div>
+          Change speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D11,C'+this.value)" min="0"
+            max="20"></input></div>
+      </div>
+      <div data-only-mqtt>
+        <div>
+          Change speed: <input data-label="C" type="range" oninput="sendSlowlyCommand('D11,C'+this.value)" min="0"
+            max="6"></input></div>
+      </div>
       <div>
         Color length: <input data-label="B" type="range" oninput="sendSlowlyCommand('D11,B'+this.value)" min="0"
           max="7"></input>
@@ -139,38 +145,53 @@
 
   <div id="RainMode" class="tabcontent">
     <h1>Select a predefined model</h1>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,7,10,0,27,K0,128,9')">Green
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B4,17,1,7,10,0,K0,128,9')">Green
       christmas
     </button>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,7,10,0,8,K255,255,255')">White
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B4,17,1,7,10,0,K255,255,255')">White
       christmas
     </button>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A67,4,17,1,1,1,0,8,K0,17,255')">Blue
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B4,17,1,1,1,0,K0,17,255')">Blue
     </button>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A152,5,20,1,0,10,6,0,K255,255,255')">White flash
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B5,20,1,0,10,6,K255,255,255')">White flash
     </button>
 
     <h1>Custom</h1>
-    Color: <select data-label="E" onchange="sendCommand('D1,E'+this.value)">
-      <option value="0">Fixed</option>
-      <option value="1">Orangish</option>
-      <option value="2">Random orangish</option>
-      <option value="3">Geenish</option>
-      <option value="4">Random greenish</option>
-      <option value="5">Violetish</option>
-      <option value="6">Random violetish</option>
-      <option value="7">Rainbow</option>
-      <option value="8">Random rainbow</option>
-      <option value="9">Random</option>
-      <option value="16">Black</option>
-      <option value="17">Red</option>
-      <option value="18">Green</option>
-      <option value="19">Yellow</option>
-      <option value="20">Blue</option>
-      <option value="21">Violet</option>
-      <option value="22">Cyan</option>
-      <option value="23">White</option>
-    </select><br>
+    <div data-only-http>
+      Color: <select data-label="E" onchange="sendCommand('D1,E'+this.value)">
+        <option value="0">Fixed</option>
+        <option value="1">Orangish</option>
+        <option value="2">Random orangish</option>
+        <option value="3">Geenish</option>
+        <option value="4">Random greenish</option>
+        <option value="5">Violetish</option>
+        <option value="6">Random violetish</option>
+        <option value="7">Rainbow</option>
+        <option value="8">Random rainbow</option>
+        <option value="9">Random</option>
+        <option value="16">Black</option>
+        <option value="17">Red</option>
+        <option value="18">Green</option>
+        <option value="19">Yellow</option>
+        <option value="20">Blue</option>
+        <option value="21">Violet</option>
+        <option value="22">Cyan</option>
+        <option value="23">White</option>
+      </select></div>
+    <div data-only-mqtt>
+      <div class="color-button random-orangish" onclick="sendCommand('D1,E2')">Orangish</div>
+      <div class="color-button random-greenish" onclick="sendCommand('D1,E4')">Greenish</div>
+      <div class="color-button random-violetish" onclick="sendCommand('D1,E6')">Violetish</div>
+      <div class="color-button rainbow" onclick="sendCommand('D1,E7')">Rainbow</div>
+      <div class="color-button random" onclick="sendCommand('D1,E9')">Random</div>
+      <div class="color-button red" onclick="sendCommand('D1,E17')">Red</div>
+      <div class="color-button green" onclick="sendCommand('D1,E18')">Green</div>
+      <div class="color-button yellow" onclick="sendCommand('D1,E19')">Yellow</div>
+      <div class="color-button blue" onclick="sendCommand('D1,E20')">Blue</div>
+      <div class="color-button violet" onclick="sendCommand('D1,E21')">Violet</div>
+      <div class="color-button cyan" onclick="sendCommand('D1,E22')">Cyan</div>
+      <div class="color-button white" onclick="sendCommand('D1,E23')">White</div>
+    </div>
 
 
     <div data-only-http>
@@ -189,22 +210,14 @@
       max="20"></input><br>
     Background:<br>
     <div data-only-mqtt>
-      <button style="background-color: #000000; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K0,0,0,0')"></button>
-      <button style="background-color: #ff0000; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K255,0,0')"></button>
-      <button style="background-color: #00ff00; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K0,255,0')"></button>
-      <button style="background-color: #0000ff; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K0,0,255')"></button>
-      <button style="background-color: #ffff00; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K255,255,0')"></button>
-      <button style="background-color: #ff00ff; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K255,0,255')"></button>
-      <button style="background-color: #00ffff; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K0,255,255')"></button>
-      <button style="background-color: #ffffff; width: 30px; height: 30px"
-        onclick="sendCommand('D1,K255,255,255')"></button>
+      <div class="color-square black" onclick="sendCommand('D1,K0,0,0,0')"></div>
+      <div class="color-square red" onclick="sendCommand('D1,K255,0,0')"></div>
+      <div class="color-square green" onclick="sendCommand('D1,K0,255,0')"></div>
+      <div class="color-square blue" onclick="sendCommand('D1,K0,0,255')"></div>
+      <div class="color-square yellow" onclick="sendCommand('D1,K255,255,0')"></div>
+      <div class="color-square violet" onclick="sendCommand('D1,K255,0,255')"></div>
+      <div class="color-square cyan" onclick="sendCommand('D1,K0,255,255')"></div>
+      <div class="color-square white" onclick="sendCommand('D1,K255,255,255')"></div>
     </div>
 
     <div data-only-http>
@@ -220,8 +233,8 @@
 
   <div id="CometMode" class="tabcontent">
     <h1>Presets</h1>
-    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A192,2,20,3,9,4,6,1,1,800,255,255,255,0,5')">Both
-      <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('A158,3,18,3,7,5,6,4,1,800,0,255,17,0,5')">Green
+    <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B2,20,3,9,4,6,K255,255,255')">Both
+      <button class="text-xl w-1/4 h-8 text-black" onclick="sendCommand('B3,18,3,7,5,6,K0,255,17')">Green
         background
       </button>
 
@@ -230,26 +243,40 @@
         Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('D3,A'+value)" min="0"
           max="255"></input>
       </div>
-      Color: <select data-label="E" onchange="sendCommand('D3,E'+this.value)">
-        <option value="0">Custom</option>
-        <option value="1">Orangish</option>
-        <option value="2">Random orangish</option>
-        <option value="3">Geenish</option>
-        <option value="4">Random greenish</option>
-        <option value="5">Violetish</option>
-        <option value="6">Random violetish</option>
-        <option value="7">Rainbow</option>
-        <option value="8">Random rainbow</option>
-        <option value="9">Random</option>
-        <option value="16">Black</option>
-        <option value="17">Red</option>
-        <option value="18">Green</option>
-        <option value="19">Yellow</option>
-        <option value="20">Blue</option>
-        <option value="21">Violet</option>
-        <option value="22">Cyan</option>
-        <option value="23">White</option>
-      </select><br>
+      <div data-only-http>
+        Color: <select data-label="E" onchange="sendCommand('D3,E'+this.value)">
+          <option value="0">Fixed</option>
+          <option value="1">Orangish</option>
+          <option value="2">Random orangish</option>
+          <option value="3">Geenish</option>
+          <option value="4">Random greenish</option>
+          <option value="5">Violetish</option>
+          <option value="6">Random violetish</option>
+          <option value="7">Rainbow</option>
+          <option value="8">Random rainbow</option>
+          <option value="9">Random</option>
+          <option value="16">Black</option>
+          <option value="17">Red</option>
+          <option value="18">Green</option>
+          <option value="19">Yellow</option>
+          <option value="20">Blue</option>
+          <option value="21">Violet</option>
+          <option value="22">Cyan</option>
+          <option value="23">White</option>
+        </select></div>
+      <div data-only-mqtt>
+        <div class="color-button random-orangish" onclick="sendCommand('D3,E2')">Orangish</div>
+        <div class="color-button random-greenish" onclick="sendCommand('D3,E4')">Greenish</div>
+        <div class="color-button random-violetish" onclick="sendCommand('D3,E6')">Violetish</div>
+        <div class="color-button random" onclick="sendCommand('D3,E9')">Random</div>
+        <div class="color-button red" onclick="sendCommand('D3,E17')">Red</div>
+        <div class="color-button green" onclick="sendCommand('D3,E18')">Green</div>
+        <div class="color-button yellow" onclick="sendCommand('D3,E19')">Yellow</div>
+        <div class="color-button blue" onclick="sendCommand('D3,E20')">Blue</div>
+        <div class="color-button violet" onclick="sendCommand('D3,E21')">Violet</div>
+        <div class="color-button cyan" onclick="sendCommand('D3,E22')">Cyan</div>
+        <div class="color-button white" onclick="sendCommand('D3,E23')">White</div>
+      </div>
 
 
       If not fixed:<br>
@@ -269,22 +296,14 @@
       </select><br>
       Background:<br>
       <div data-only-mqtt>
-        <button style="background-color: #000000; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K0,0,0,0')"></button>
-        <button style="background-color: #ff0000; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K255,0,0')"></button>
-        <button style="background-color: #00ff00; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K0,255,0')"></button>
-        <button style="background-color: #0000ff; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K0,0,255')"></button>
-        <button style="background-color: #ffff00; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K255,255,0')"></button>
-        <button style="background-color: #ff00ff; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K255,0,255')"></button>
-        <button style="background-color: #00ffff; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K0,255,255')"></button>
-        <button style="background-color: #ffffff; width: 30px; height: 30px"
-          onclick="sendCommand('D3,K255,255,255')"></button>
+        <div class="color-square black" onclick="sendCommand('D3,K0,0,0,0')"></div>
+        <div class="color-square red" onclick="sendCommand('D3,K255,0,0')"></div>
+        <div class="color-square green" onclick="sendCommand('D3,K0,255,0')"></div>
+        <div class="color-square blue" onclick="sendCommand('D3,K0,0,255')"></div>
+        <div class="color-square yellow" onclick="sendCommand('D3,K255,255,0')"></div>
+        <div class="color-square violet" onclick="sendCommand('D3,K255,0,255')"></div>
+        <div class="color-square cyan" onclick="sendCommand('D3,K0,255,255')"></div>
+        <div class="color-square white" onclick="sendCommand('D3,K255,255,255')"></div>
       </div>
       <div data-only-http>
         <input type="color" data-label="KLM"

@@ -143,8 +143,10 @@ async function getParameters() {
 
 async function getCurrentSettings() {
   let parameters = await getParameters();
-  document.getElementById("result").value = "A" + parameters.slice(0, 8).join(",") + ",K" + parameters.slice(10, 13).join(",");
-  return result;
+  const withIntensities = "A" + parameters.slice(0, 8).join(",") + ",K" + parameters.slice(10, 13).join(",");
+  const withoutIntensities = "B" + parameters.slice(1, 7).join(",") + ",K" + parameters.slice(10, 13).join(",");
+  document.getElementById("result").value = `With intensities: ${withIntensities}\nWithout intensities: ${withoutIntensities}`;
+  return withIntensities;
 }
 
 async function getCurrentLineColor() {

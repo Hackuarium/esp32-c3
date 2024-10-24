@@ -70,7 +70,7 @@ void TaskPixels(void* pvParameters) {
       previousProgram = getParameter(PARAM_CURRENT_PROGRAM);
       programChanged = 1;
       state[MAX_LED] = {0};
-
+      pixels.clear();
     } else {
       programChanged = 0;
     }
