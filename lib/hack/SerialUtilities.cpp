@@ -20,26 +20,6 @@ static String mac2String(uint64_t mac) {
   return s;
 }
 
-static const char* getFlashModeStr() {
-  switch (ESP.getFlashChipMode()) {
-    case FM_DIO:
-      return "DIO";
-    case FM_DOUT:
-      return "DOUT";
-    case FM_FAST_READ:
-      return "FAST READ";
-    case FM_QIO:
-      return "QIO";
-    case FM_QOUT:
-      return "QOUT";
-    case FM_SLOW_READ:
-      return "SLOW READ";
-    case FM_UNKNOWN:
-    default:
-      return "UNKNOWN";
-  }
-}
-
 static const char* getResetReasonStr() {
   switch (esp_reset_reason()) {
     case ESP_RST_BROWNOUT:
@@ -149,12 +129,10 @@ static void printInfo(Print* output) {
       info.features & CHIP_FEATURE_EMB_PSRAM ? " Embedded-PSRAM" : "");
 
   output->printf("EFuse MAC: %s\n", mac2String(ESP.getEfuseMac()).c_str());
-
-  output->printf("Flash size: %d MB (mode: %s, speed: %d MHz)\n",
-                 ESP.getFlashChipSize() / (1024 * 1024), getFlashModeStr(),
+  output->printf("Flash size: %d MB (speed: %d MHz)\n",
+                 ESP.getFlashChipSize() / (1024 * 1024),
                  ESP.getFlashChipSpeed() / (1024 * 1024));
   output->printf("PSRAM size: %d MB\n", ESP.getPsramSize() / (1024 * 1024));
-
   output->printf("Sketch size: %d KB\n", ESP.getSketchSize() / (1024));
   output->printf("Sketch MD5: %s\n", ESP.getSketchMD5().c_str());
   output->printf("Free sketch space: %d KB\n", ESP.getFreeSketchSpace() / 1024);

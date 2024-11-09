@@ -310,6 +310,12 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_NB_PLAYERS, 1);
       setAndSaveParameter(PARAM_WIN_LIMIT, 20);
       clearActions();
+      setAndSaveParameter(PARAM_METEO_SLOT_1, SLOT_METEO_WEATHER_ICON);
+      setAndSaveParameter(PARAM_METEO_SLOT_2, SLOT_METEO_TEMPERATURE);
+      setAndSaveParameter(PARAM_METEO_SLOT_3, SLOT_METEO_TEMPERATURE);
+      setAndSaveParameter(PARAM_METEO_SLOT_4, SLOT_METEO_FRONIUS);
+      setAndSaveParameter(PARAM_METEO_SLOT_5, SLOT_METEO_TEMPERATURE);
+      setAndSaveParameter(PARAM_METEO_SLOT_6, SLOT_METEO_TEMPERATURE);
 
       updateMapping();
       break;

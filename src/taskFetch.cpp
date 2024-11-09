@@ -19,7 +19,9 @@ void TaskFetch(void* pvParameters) {
     while (WiFi.status() != WL_CONNECTED) {
       vTaskDelay(5000);
     }
+#ifdef FRONIUS
     updateFronius();
+#endif
     if (counter % 60 == 0) {
       updateForecast();
     }

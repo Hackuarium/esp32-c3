@@ -17,6 +17,10 @@
 #define SNOW_MASK 0b0000000000000010
 #define LIGHTNING_MASK 0b0000000000100000
 
+const uint8_t SLOT_METEO[6] = {PARAM_METEO_SLOT_1, PARAM_METEO_SLOT_2,
+                               PARAM_METEO_SLOT_3, PARAM_METEO_SLOT_4,
+                               PARAM_METEO_SLOT_5, PARAM_METEO_SLOT_6};
+
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
 void iconDisplay(Adafruit_NeoPixel& pixels);
@@ -35,21 +39,20 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
   }
 
   uint8_t slot = floor((getSeconds() % 30) / 5);
+  uint16_t task = getParameter(SLOT_METEO[slot]);
   uint8_t intensity = (getSeconds() % 30) - slot * 5;
   // there are 6 slots
-  switch (slot) {
-    case 0:  // weather icon
+  switch (task) {
+    case SLOT_METEO_WEATHER_ICON:  // weather icon
       iconDisplay(pixels);
       break;
-    case 3:
-    case 4:
+#ifdef FRONIUS
+    case SLOT_METEO_FRONIUS:
       froniusDisplay(pixels, counter);
       break;
-    case 200:  // sunrise, sunset
+#endif
+    case SLOT_METEO_SUNRISE_SUNSET:
       sunriseDisplay(pixels);
-      break;
-    case 201:  // disabled current temperature / humidity
-      currentDisplay(pixels);
       break;
     default:
       // froniusDisplay(pixels, counter);
@@ -242,6 +245,7 @@ void currentDisplay(Adafruit_NeoPixel& pixels) {
 }
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels) {
+  pixels.clear();
   uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
   {
     char* sunrise = getSunrise();

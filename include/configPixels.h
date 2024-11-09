@@ -1,7 +1,9 @@
 #include <Arduino.h>
 
 #define THR_PIXELS 1
-// #define THR_FORECAST 1
+#define FRONIUS 1
+
+#define MAX_LED 256
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
@@ -62,11 +64,6 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_GATE8_IN 50
 #define PARAM_GATE8_OUT 51
 
-/*
- * JUST FOR PIXELs WS2812
- */
-#define MAX_LED 1024
-
 #define PARAM_BRIGHTNESS 52             // BA
 #define PARAM_INTENSITY 53              // BB
 #define PARAM_SPEED 54                  // BC
@@ -114,3 +111,15 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_ACTION_6 87  // CJ
 #define PARAM_ACTION_7 88  // CK
 #define PARAM_ACTION_8 89  // CL
+
+#define PARAM_METEO_SLOT_1 90  // CM
+#define PARAM_METEO_SLOT_2 91  // CN
+#define PARAM_METEO_SLOT_3 92  // CO
+#define PARAM_METEO_SLOT_4 93  // CP
+#define PARAM_METEO_SLOT_5 94  // CQ
+#define PARAM_METEO_SLOT_6 95  // CR
+
+#define SLOT_METEO_TEMPERATURE 0     // temperature / rain
+#define SLOT_METEO_WEATHER_ICON 1    // weather icon
+#define SLOT_METEO_FRONIUS 2         // fronius
+#define SLOT_METEO_SUNRISE_SUNSET 3  // sunrise / sunset
