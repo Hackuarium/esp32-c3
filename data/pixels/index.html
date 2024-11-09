@@ -1,11 +1,11 @@
 <html>
   <head>
     <script>
-      function writeLine(ip) {
+      function writeLine(server) {
         document.write("<tr>");
-        document.write("<td>" + ip + "</td>");
+        document.write("<td>" + server + "</td>");
         document.write(
-          '<td><a href="./line.html?servers=http://' + ip + '/">HTTP</a></td>'
+          '<td><a href="./line.html?servers=' + server + '/">HTTP</a></td>'
         );
         document.write("</tr>");
       }
@@ -16,18 +16,11 @@
     <table>
       <tr>
         <script>
-          writeLine("192.168.1.109");
-          writeLine("192.168.1.112");
-          writeLine("192.168.1.130");
-          writeLine("192.168.1.166");
+          writeLine("https://mqtt.patiny.com/star/");
         </script>
       </tr>
     </table>
 
-    <a
-      href="./line.html?server=&mqttServers=https://mqtt.patiny.com/publish.cgi&mqttTopics=line"
-      >MQTT line</a
-    >
     <a
       href="./line.html?server=&mqttServers=https://mqtt.patiny.com/publish.cgi&mqttTopics=test"
       >MQTT test</a

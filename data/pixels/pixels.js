@@ -12,6 +12,16 @@ export class Pixels {
       reapplySettings(this.parameters);
     });
     this.addListeners();
+
+    // if there is some mqttServers we need to add in the class name 'onlyHTTP' with the property display: none
+    // to hide the mqtt part
+    const style = document.createElement("style");
+    if (this.mqttServers.length > 0) {
+      style.innerHTML = "[data-only-http] {display: none}";
+    } else {
+      style.innerHTML = "[data-only-mqtt] {display: none}";
+    }
+    document.head.appendChild(style);
   }
 
   async getParameters() {

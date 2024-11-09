@@ -1,12 +1,15 @@
-export async function reapplySettings(parameters) {
+export async function reapplySettings(cachedParameters) {
   const elements = document.querySelectorAll("[data-label]");
   for (const element of elements) {
-    const code = element.getAttribute("data-label").split(",")[0];
-    const parameter = parameters.find((p) => p.code === code);
-    if (!parameter) continue;
+    const codes = element.getAttribute("data-label").split(",");
+    const parameters = codes
+      .map((code) => cachedParameters.find((p) => p.code === code))
+      .filter((p) => p);
+    if (parameters.length === 0) continue;
+    const firstParameter = parameters[0];
     switch (element.getAttribute("type")) {
       case "radio":
-        if (parameter.value) {
+        if (firstParameter.value) {
           element.setAttribute("checked", "checked");
         } else {
           element.removeAttribute("checked");
@@ -15,25 +18,23 @@ export async function reapplySettings(parameters) {
       case "color":
         // check if data-rgb
         if (element.getAttribute("data-rgb")) {
-          //element.value = parameter.value;
+          // full RGB value on 3 parameters, value from 0 to 255
+          element.value =
+            "#" +
+            parameters
+              .map((p) => p.value.toString(16).padStart(2, "0"))
+              .join("");
         } else {
-          element.value = color12ToHex(parameter.value);
+          element.value = color12ToHex(firstParameter.value);
         }
         break;
       default:
         element.value =
-          parameter.value > 32767 ? parameter.value - 65536 : parameter.value;
+          firstParameter.value > 32767
+            ? firstParameter.value - 65536
+            : firstParameter.value;
     }
   }
-
-  // color button (in KLM)
-  /*
-  let elements = document.querySelectorAll(`[data-label="KLM"]`);
-  for (let element of elements) {
-    element.value =
-      "#" + result.substr(42, 2) + result.substr(46, 2) + result.substr(50, 2);
-  }
-      */
 }
 
 export function color12ToHex(value) {
