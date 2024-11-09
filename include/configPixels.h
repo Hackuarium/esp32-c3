@@ -3,7 +3,7 @@
 #define THR_PIXELS 1
 #define FRONIUS 1
 
-#define MAX_LED 256
+#define MAX_LED 1024
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];

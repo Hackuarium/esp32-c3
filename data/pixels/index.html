@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <script>
+      function writeLine(ip) {
+        document.write("<tr>");
+        document.write("<td>" + ip + "</td>");
+        document.write(
+          '<td><a href="./line.html?servers=http://' + ip + '/">HTTP</a></td>'
+        );
+        document.write("</tr>");
+      }
+    </script>
+  </head>
+
+  <body>
+    <table>
+      <tr>
+        <script>
+          writeLine("192.168.1.109");
+          writeLine("192.168.1.112");
+          writeLine("192.168.1.130");
+          writeLine("192.168.1.166");
+        </script>
+      </tr>
+    </table>
+
+    <a
+      href="./line.html?server=&mqttServers=https://mqtt.patiny.com/publish.cgi&mqttTopics=line"
+      >MQTT line</a
+    >
+    <a
+      href="./line.html?server=&mqttServers=https://mqtt.patiny.com/publish.cgi&mqttTopics=test"
+      >MQTT test</a
+    >
+  </body>
+</html>

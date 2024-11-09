@@ -37,7 +37,7 @@ void setupPixels() {
   taskNTPD();
   // taskWifiAP();
   taskWebserver();
-  // taskMQTT();
+  taskMQTT();
   taskFetch();
 
 #ifdef PARAM_INT_TEMPERATURE_B
