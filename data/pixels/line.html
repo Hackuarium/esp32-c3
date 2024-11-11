@@ -86,21 +86,21 @@
 
       <h1>Tune the effect</h1>
       <div>
-        <div data-only-http>
+        <div class="color-slider" data-only-http>
           Brightness: <input data-label="BA" type="range" min="0" max="255" />
         </div>
         <div data-only-http>
-          <div>
+          <div class="color-slider">
             Change speed:
             <input data-label="BC" type="range" min="0" max="20" />
           </div>
         </div>
         <div data-only-mqtt>
-          <div>
+          <div class="color-slider">
             Change speed: <input data-label="BC" type="range" min="0" max="6" />
           </div>
         </div>
-        <div>
+        <div class="color-slider">
           Color length: <input data-label="BB" type="range" min="0" max="7" />
         </div>
       </div>
@@ -205,60 +205,61 @@
         </div>
       </div>
 
-      <div data-only-http>
+      <div class="color-slider" data-only-http>
         Brightness:
         <input data-label="BA" type="range" min="0" max="255" />
       </div>
       If not fixed:<br />
-      Color change speed:
-      <input data-label="BF" type="range" min="0" max="10" /><br />
-      Fading speed:
-      <input data-label="BG" type="range" min="0" max="9" /><br />
+      <div class="color-slider">Color change speed:
+        <input data-label="BF" type="range" min="0" max="10" /><br /></div>
+      <div class="color-slider">Fading speed:
+        <input data-label="BG" type="range" min="0" max="9" /><br /></div>
       Other options:<br />
-      Number of events:
-      <input data-label="BB" type="range" min="0" max="7" /><br />
-      Speed:
-      <input data-label="BC" type="range" min="0" max="20" /><br />
-      Background:<br />
-      <div data-only-mqtt>
-        <div
-          class="color-square black"
-          onclick="pixels.sendCommand('BK0,0,0,0')"
-        ></div>
-        <div
-          class="color-square red"
-          onclick="pixels.sendCommand('BK255,0,0')"
-        ></div>
-        <div
-          class="color-square green"
-          onclick="pixels.sendCommand('BK0,255,0')"
-        ></div>
-        <div
-          class="color-square blue"
-          onclick="pixels.sendCommand('BK0,0,255')"
-        ></div>
-        <div
-          class="color-square yellow"
-          onclick="pixels.sendCommand('BK255,255,0')"
-        ></div>
-        <div
-          class="color-square violet"
-          onclick="pixels.sendCommand('BK255,0,255')"
-        ></div>
-        <div
-          class="color-square cyan"
-          onclick="pixels.sendCommand('BK0,255,255')"
-        ></div>
-        <div
-          class="color-square white"
-          onclick="pixels.sendCommand('BK255,255,255')"
-        ></div>
-      </div>
+      <div class="color-slider">Number of events:
+        <input data-label="BB" type="range" min="0" max="7" /><br /></div>
+      <div class="color-slider">Speed:
+        <input data-label="BC" type="range" min="0" max="20" /><br /></div>
+      <div class="color-slider">Background:
+        <div data-only-mqtt>
+          <div
+            class="color-square black"
+            onclick="pixels.sendCommand('BK0,0,0,0')"
+          ></div>
+          <div
+            class="color-square red"
+            onclick="pixels.sendCommand('BK255,0,0')"
+          ></div>
+          <div
+            class="color-square green"
+            onclick="pixels.sendCommand('BK0,255,0')"
+          ></div>
+          <div
+            class="color-square blue"
+            onclick="pixels.sendCommand('BK0,0,255')"
+          ></div>
+          <div
+            class="color-square yellow"
+            onclick="pixels.sendCommand('BK255,255,0')"
+          ></div>
+          <div
+            class="color-square violet"
+            onclick="pixels.sendCommand('BK255,0,255')"
+          ></div>
+          <div
+            class="color-square cyan"
+            onclick="pixels.sendCommand('BK0,255,255')"
+          ></div>
+          <div
+            class="color-square white"
+            onclick="pixels.sendCommand('BK255,255,255')"
+          ></div>
+          <div data-only-http>
+            <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
+          </div>
+        </div></div>
 
-      <div data-only-http>
-        <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
-      </div>
-      <div data-only-http>
+      
+      <div class="color-slider" data-only-http>
         Background brightness:
         <input data-label="BH" type="range" min="0" max="255" />
       </div>
@@ -280,7 +281,7 @@
       </button>
 
       <h1>Advanced</h1>
-      <div data-only-http>
+      <div class="color-slider">
         Brightness:
         <input
           data-label="BA"
@@ -290,7 +291,7 @@
           max="255"
         />
       </div>
-      <div data-only-http>
+      <div class="color-slider" data-only-http>
         Color:
         <select data-label="BE" onchange="pixels.sendCommand('BE'+this.value)">
           <option value="0">Fixed</option>
@@ -362,58 +363,58 @@
       </div>
 
       If not fixed:<br />
-      Color change speed:
-      <input data-label="BF" type="range" min="0" max="10" /><br />
-      Fading speed: <input data-label="BG" type="range" min="0" max="9" /><br />
+      <div class="color-slider">Color change speed:
+        <input data-label="BF" type="range" min="0" max="10" /><br /></div>
+      <div class="color-slider">speed: <input data-label="BG" type="range" min="0" max="9" /><br /></div> 
       Other options:<br />
-      Number of events:
-      <input data-label="BB" type="range" min="0" max="7" /><br />
-      Speed: <input data-label="BC" type="range" min="0" max="20" /><br />
-      Direction:
-      <select data-label="BO">
-        <option value="1">From left to right</option>
-        <option value="2">From right to left</option>
-        <option value="5">Horizontal</option></select
-      ><br />
-      Background:<br />
-      <div data-only-mqtt>
-        <div
-          class="color-square black"
-          onclick="pixels.sendCommand('BK0,0,0,0')"
-        ></div>
-        <div
-          class="color-square red"
-          onclick="pixels.sendCommand('BK255,0,0')"
-        ></div>
-        <div
-          class="color-square green"
-          onclick="pixels.sendCommand('BK0,255,0')"
-        ></div>
-        <div
-          class="color-square blue"
-          onclick="pixels.sendCommand('BK0,0,255')"
-        ></div>
-        <div
-          class="color-square yellow"
-          onclick="pixels.sendCommand('BK255,255,0')"
-        ></div>
-        <div
-          class="color-square violet"
-          onclick="pixels.sendCommand('BK255,0,255')"
-        ></div>
-        <div
-          class="color-square cyan"
-          onclick="pixels.sendCommand('BK0,255,255')"
-        ></div>
-        <div
-          class="color-square white"
-          onclick="pixels.sendCommand('BK255,255,255')"
-        ></div>
-      </div>
-      <div data-only-http>
-        <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
-      </div>
-      <div data-only-http>
+      <div class="color-slider">Number of events:
+        <input data-label="BB" type="range" min="0" max="7" /><br /></div>
+      <div class="color-slider">Speed: <input data-label="BC" type="range" min="0" max="20" /><br /></div>
+      <div class="color-slider">Direction:
+        <select data-label="BO">
+          <option value="1">From left to right</option>
+          <option value="2">From right to left</option>
+          <option value="5">Horizontal</option></select
+        ><br /></div>
+      <div class="color-slider">Background:<br />
+        <div data-only-mqtt>
+          <div
+            class="color-square black"
+            onclick="pixels.sendCommand('BK0,0,0,0')"
+          ></div>
+          <div
+            class="color-square red"
+            onclick="pixels.sendCommand('BK255,0,0')"
+          ></div>
+          <div
+            class="color-square green"
+            onclick="pixels.sendCommand('BK0,255,0')"
+          ></div>
+          <div
+            class="color-square blue"
+            onclick="pixels.sendCommand('BK0,0,255')"
+          ></div>
+          <div
+            class="color-square yellow"
+            onclick="pixels.sendCommand('BK255,255,0')"
+          ></div>
+          <div
+            class="color-square violet"
+            onclick="pixels.sendCommand('BK255,0,255')"
+          ></div>
+          <div
+            class="color-square cyan"
+            onclick="pixels.sendCommand('BK0,255,255')"
+          ></div>
+          <div
+            class="color-square white"
+            onclick="pixels.sendCommand('BK255,255,255')"
+          ></div>
+        </div>
+        <div data-only-http>
+          <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
+        </div></div>
+      <div class="color-slider" data-only-http>
         Background Brightness:
         <input
           data-label="BH"
