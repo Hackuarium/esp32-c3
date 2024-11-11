@@ -146,6 +146,28 @@
 
         <section class="control-section">
           <h2>🎨 Color Selection</h2>
+          <div data-only-http>
+            <select data-label="BE" class="color-select">
+              <option value="0">Fixed</option>
+              <option value="1">Orangish</option>
+              <option value="2">Random orangish</option>
+              <option value="3">Greenish</option>
+              <option value="4">Random greenish</option>
+              <option value="5">Violetish</option>
+              <option value="6">Random violetish</option>
+              <option value="7">Rainbow</option>
+              <option value="8">Random rainbow</option>
+              <option value="9">Random</option>
+              <option value="16">Black</option>
+              <option value="17">Red</option>
+              <option value="18">Green</option>
+              <option value="19">Yellow</option>
+              <option value="20">Blue</option>
+              <option value="21">Violet</option>
+              <option value="22">Cyan</option>
+              <option value="23">White</option>
+            </select>
+          </div>
           <div class="color-controls" data-only-mqtt>
             <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
             <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
@@ -220,8 +242,15 @@
                   <button class="color-square cyan" onclick="pixels.sendCommand('BK0,255,255')"></button>
                   <button class="color-square white" onclick="pixels.sendCommand('BK255,255,255')"></button>
                 </div>
-                <div data-only-http>
+                <!-- <div data-only-http>
                   <input type="color" data-rgb="true" data-label="BK,BL,BM" class="background-picker" />
+                </div> -->
+              </div>
+              <div class="color-slider" data-only-http>
+                <label>Background Brightness</label>
+                <div class="slider-with-value">
+                  <input data-label="BH" type="range" min="0" max="255" />
+                  <span class="slider-value"></span>
                 </div>
               </div>
             </div>
@@ -242,12 +271,34 @@
     
             <section class="control-section">
               <h2>🎨 Color Selection</h2>
+              <div data-only-http>
+                <select data-label="BE" class="color-select">
+                  <option value="0">Fixed</option>
+                  <option value="1">Orangish</option>
+                  <option value="2">Random orangish</option>
+                  <option value="3">Greenish</option>
+                  <option value="4">Random greenish</option>
+                  <option value="5">Violetish</option>
+                  <option value="6">Random violetish</option>
+                  <option value="7">Rainbow</option>
+                  <option value="8">Random rainbow</option>
+                  <option value="9">Random</option>
+                  <option value="16">Black</option>
+                  <option value="17">Red</option>
+                  <option value="18">Green</option>
+                  <option value="19">Yellow</option>
+                  <option value="20">Blue</option>
+                  <option value="21">Violet</option>
+                  <option value="22">Cyan</option>
+                  <option value="23">White</option>
+                </select>
+              </div>
               <div class="color-controls" data-only-mqtt>
                 <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
                 <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
                 <button class="color-button random-violetish" onclick="pixels.sendCommand('BE6')">Violetish</button>
-                <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
                 <button class="color-button rainbow" onclick="pixels.sendCommand('BE7')">Rainbow</button>
+                <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
                 <button class="color-button red" onclick="pixels.sendCommand('BE17')">Red</button>
                 <button class="color-button green" onclick="pixels.sendCommand('BE18')">Green</button>
                 <button class="color-button yellow" onclick="pixels.sendCommand('BE19')">Yellow</button>
@@ -257,6 +308,7 @@
                 <button class="color-button white" onclick="pixels.sendCommand('BE23')">White</button>
               </div>
             </section>
+    
             <section class="control-section">
                 <h2>⚙️ Effect Controls</h2>
                 <div class="slider-group">
