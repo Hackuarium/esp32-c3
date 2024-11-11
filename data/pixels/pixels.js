@@ -152,7 +152,11 @@ export class Pixels {
           }
         }
       }
-    } else {
+    }
+    if (
+      this.servers.length > 0 &&
+      (this.mqttServers.length === 0 || !command.match(/^[A-Z]/))
+    ) {
       for (let server of this.servers) {
         try {
           let response = await fetch(

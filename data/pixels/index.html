@@ -5,7 +5,12 @@
         document.write("<tr>");
         document.write("<td>" + server + "</td>");
         document.write(
-          '<td><a href="./line.html?servers=' + server + '/">HTTP</a></td>'
+          '<td><a href="./line.html?servers=' +
+            server +
+            '/">HTTP</a></td>' +
+            '<td><a href="./line.html?&mqttServers=https://mqtt.patiny.com/publish.cgi&mqttTopics=test&servers=' +
+            server +
+            '/">HTTP + MQTT Test</a></td>'
         );
         document.write("</tr>");
       }
