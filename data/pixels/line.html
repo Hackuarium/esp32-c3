@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="style.css" rel="stylesheet" />
+    <title>Christmas Lights Control</title>
     <script>
       function openTab(evt, tabName) {
         let command = evt.currentTarget.getAttribute("data-program");
@@ -24,556 +26,482 @@
     </script>
   </head>
 
-  <body style="zoom: 1.5">
-    <div class="tab">
-      <button
-        data-program="BD11"
-        class="tablinks"
-        onclick="openTab(event, 'LineMode')"
-      >
-        Line mode
-      </button>
-      <button
-        class="tablinks"
-        data-program="BD1"
-        onclick="openTab(event, 'RainMode')"
-      >
-        Rain mode
-      </button>
-      <button
-        class="tablinks"
-        data-program="BD3"
-        onclick="openTab(event, 'CometMode')"
-      >
-        Comet mode
-      </button>
-      <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>
-        Disco
-      </button>
-      <button
-        class="tablinks"
-        onclick="openTab(event, 'Advanced')"
-        data-only-http
-      >
-        Advanced
-      </button>
-    </div>
-
-    <div id="LineMode" class="tabcontent">
-      <h1>Select a predefined color model</h1>
-      <div class="flex flex-wrap" id="models"></div>
-
-      <div data-only-http>
-        <h1>Customize the colors</h1>
-        <div>
-          <span style="width: 50px">&nbsp;Change all colors at once:</span>
-          <input
-            type="color"
-            data-label="BP,BQ,BR,BS,BV,BW,BX,BY"
-            style="width: 25px"
-          />
-        </div>
-        or select individually the 8 colors:
-        <input type="color" data-label="BP" style="width: 25px" />
-        <input type="color" data-label="BQ" style="width: 25px" />
-        <input type="color" data-label="BR" style="width: 25px" />
-        <input type="color" data-label="BS" style="width: 25px" />
-        <input type="color" data-label="BV" style="width: 25px" />
-        <input type="color" data-label="BW" style="width: 25px" />
-        <input type="color" data-label="BX" style="width: 25px" />
-        <input type="color" data-label="BY" style="width: 25px" />
+  <body>
+    <div class="container">
+      <h1 class="main-title">🎄 Christmas Lights Control 🎄</h1>
+      
+      <div class="tab">
+        <button data-program="BD11" class="tablinks" onclick="openTab(event, 'LineMode')">
+          <span class="icon">💫</span> Line Mode
+        </button>
+        <button class="tablinks" data-program="BD1" onclick="openTab(event, 'RainMode')">
+          <span class="icon">🌧️</span> Rain Mode
+        </button>
+        <button class="tablinks" data-program="BD3" onclick="openTab(event, 'CometMode')">
+          <span class="icon">☄️</span> Comet Mode
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>
+          <span class="icon">🎵</span> Disco
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'Advanced')" data-only-http>
+          <span class="icon">⚙️</span> Advanced
+        </button>
       </div>
+      <div id="LineMode" class="tabcontent">
+        <section class="control-section">
+          <h2>🎨 Select Color Model</h2>
+          <div class="preset-grid" id="models"></div>
+        </section>
 
-      <h1>Tune the effect</h1>
-      <div>
-        <div data-only-http>
-          Brightness: <input data-label="BA" type="range" min="0" max="255" />
-        </div>
-        <div data-only-http>
-          <div>
-            Change speed:
-            <input data-label="BC" type="range" min="0" max="20" />
+        <section class="control-section" data-only-http>
+          <h2>🎯 Custom Colors</h2>
+          <div class="color-picker-group">
+            <div class="master-color">
+              <label>Change all colors at once:</label>
+              <input type="color" data-label="BP,BQ,BR,BS,BV,BW,BX,BY" class="master-picker" />
+            </div>
+            <label>or select individually the 8 colors:</label>
+            <div class="individual-colors">
+              <div class="color-item">
+                <input type="color" data-label="BP" />
+                <span>1</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BQ" />
+                <span>2</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BR" />
+                <span>3</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BS" />
+                <span>4</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BV" />
+                <span>5</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BW" />
+                <span>6</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BX" />
+                <span>7</span>
+              </div>
+              <div class="color-item">
+                <input type="color" data-label="BY" />
+                <span>8</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div data-only-mqtt>
-          <div>
-            Change speed: <input data-label="BC" type="range" min="0" max="6" />
+        </section>
+
+        <section class="control-section">
+          <h2>⚡ Effect Controls</h2>
+          <div class="slider-group">
+            <div class="color-slider" data-only-http>
+              <label>Brightness</label>
+              <div class="slider-with-value">
+                <input data-label="BA" type="range" min="0" max="255" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
+            <div class="color-slider">
+              <label>Animation Speed</label>
+              <div class="slider-with-value" data-only-http>
+                <input data-label="BC" type="range" min="0" max="20" />
+                <span class="slider-value"></span>
+              </div>
+              <div class="slider-with-value" data-only-mqtt>
+                <input data-label="BC" type="range" min="0" max="6" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
+            <div class="color-slider">
+              <label>Color Length</label>
+              <div class="slider-with-value">
+                <input data-label="BB" type="range" min="0" max="7" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div>
-          Color length: <input data-label="BB" type="range" min="0" max="7" />
-        </div>
+        </section>
       </div>
-    </div>
+      <div id="RainMode" class="tabcontent">
+        <section class="control-section">
+          <h2>🌟 Preset Effects</h2>
+          <div class="preset-grid">
+            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,7,10,0,BK0,128,9')">
+              <span class="icon">🎄</span> Green Christmas
+            </button>
+            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,7,10,0,BK255,255,255')">
+              <span class="icon">❄️</span> White Christmas
+            </button>
+            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,1,1,0,BK0,17,255')">
+              <span class="icon">💫</span> Blue Magic
+            </button>
+            <button class="preset-button" onclick="pixels.sendCommand('BB5,20,1,0,10,6,BK255,255,255')">
+              <span class="icon">⚡</span> White Flash
+            </button>
+          </div>
+        </section>
 
-    <div id="RainMode" class="tabcontent">
-      <h1>Select a predefined model</h1>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB4,17,1,7,10,0,BK0,128,9')"
-      >
-        Green christmas
-      </button>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB4,17,1,7,10,0,BK255,255,255')"
-      >
-        White christmas
-      </button>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB4,17,1,1,1,0,BK0,17,255')"
-      >
-        Blue
-      </button>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB5,20,1,0,10,6,BK255,255,255')"
-      >
-        White flash
-      </button>
+        <section class="control-section">
+          <h2>🎨 Color Selection</h2>
+          <div data-only-http>
+            <select data-label="BE" class="color-select">
+              <option value="0">Fixed</option>
+              <option value="1">Orangish</option>
+              <option value="2">Random orangish</option>
+              <option value="3">Greenish</option>
+              <option value="4">Random greenish</option>
+              <option value="5">Violetish</option>
+              <option value="6">Random violetish</option>
+              <option value="7">Rainbow</option>
+              <option value="8">Random rainbow</option>
+              <option value="9">Random</option>
+              <option value="16">Black</option>
+              <option value="17">Red</option>
+              <option value="18">Green</option>
+              <option value="19">Yellow</option>
+              <option value="20">Blue</option>
+              <option value="21">Violet</option>
+              <option value="22">Cyan</option>
+              <option value="23">White</option>
+            </select>
+          </div>
+          <div class="color-controls" data-only-mqtt>
+            <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
+            <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
+            <button class="color-button random-violetish" onclick="pixels.sendCommand('BE6')">Violetish</button>
+            <button class="color-button rainbow" onclick="pixels.sendCommand('BE7')">Rainbow</button>
+            <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
+            <button class="color-button red" onclick="pixels.sendCommand('BE17')">Red</button>
+            <button class="color-button green" onclick="pixels.sendCommand('BE18')">Green</button>
+            <button class="color-button yellow" onclick="pixels.sendCommand('BE19')">Yellow</button>
+            <button class="color-button blue" onclick="pixels.sendCommand('BE20')">Blue</button>
+            <button class="color-button violet" onclick="pixels.sendCommand('BE21')">Violet</button>
+            <button class="color-button cyan" onclick="pixels.sendCommand('BE22')">Cyan</button>
+            <button class="color-button white" onclick="pixels.sendCommand('BE23')">White</button>
+          </div>
+        </section>
+        <section class="control-section">
+            <h2>⚙️ Effect Controls</h2>
+            <div class="slider-group">
+              <div class="color-slider" data-only-http>
+                <label>Brightness</label>
+                <div class="slider-with-value">
+                  <input data-label="BA" type="range" min="0" max="255" />
+                  <span class="slider-value"></span>
+                </div>
+              </div>
+  
+              <div class="control-group">
+                <h3>Color Animation</h3>
+                <div class="color-slider">
+                  <label>Color Change Speed</label>
+                  <div class="slider-with-value">
+                    <input data-label="BF" type="range" min="0" max="10" />
+                    <span class="slider-value"></span>
+                  </div>
+                </div>
+                <div class="color-slider">
+                  <label>Fading Speed</label>
+                  <div class="slider-with-value">
+                    <input data-label="BG" type="range" min="0" max="9" />
+                    <span class="slider-value"></span>
+                  </div>
+                </div>
+              </div>
+  
+              <div class="control-group">
+                <h3>Animation Settings</h3>
+                <div class="color-slider">
+                  <label>Number of Events</label>
+                  <div class="slider-with-value">
+                    <input data-label="BB" type="range" min="0" max="7" />
+                    <span class="slider-value"></span>
+                  </div>
+                </div>
+                <div class="color-slider">
+                  <label>Animation Speed</label>
+                  <div class="slider-with-value">
+                    <input data-label="BC" type="range" min="0" max="20" />
+                    <span class="slider-value"></span>
+                  </div>
+                </div>
+              </div>
+  
+              <div class="background-control">
+                <h3>Background Color</h3>
+                <div class="color-squares" data-only-mqtt>
+                  <button class="color-square black" onclick="pixels.sendCommand('BK0,0,0,0')"></button>
+                  <button class="color-square red" onclick="pixels.sendCommand('BK255,0,0')"></button>
+                  <button class="color-square green" onclick="pixels.sendCommand('BK0,255,0')"></button>
+                  <button class="color-square blue" onclick="pixels.sendCommand('BK0,0,255')"></button>
+                  <button class="color-square yellow" onclick="pixels.sendCommand('BK255,255,0')"></button>
+                  <button class="color-square violet" onclick="pixels.sendCommand('BK255,0,255')"></button>
+                  <button class="color-square cyan" onclick="pixels.sendCommand('BK0,255,255')"></button>
+                  <button class="color-square white" onclick="pixels.sendCommand('BK255,255,255')"></button>
+                </div>
+                <!-- <div data-only-http>
+                  <input type="color" data-rgb="true" data-label="BK,BL,BM" class="background-picker" />
+                </div> -->
+              </div>
+              <div class="color-slider" data-only-http>
+                <label>Background Brightness</label>
+                <div class="slider-with-value">
+                  <input data-label="BH" type="range" min="0" max="255" />
+                  <span class="slider-value"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div id="CometMode" class="tabcontent">
+            <section class="control-section">
+              <h2>✨ Preset Effects</h2>
+              <div class="preset-grid">
+                <button class="preset-button" onclick="pixels.sendCommand('BB2,20,3,9,4,6,BK255,255,255')">
+                  <span class="icon">🌠</span> Both Ways
+                </button>
+                <button class="preset-button" onclick="pixels.sendCommand('BB3,18,3,7,5,6,BK0,255,17')">
+                  <span class="icon">🌲</span> Green Background
+                </button>
+              </div>
+            </section>
+    
+            <section class="control-section">
+              <h2>🎨 Color Selection</h2>
+              <div data-only-http>
+                <select data-label="BE" class="color-select">
+                  <option value="0">Fixed</option>
+                  <option value="1">Orangish</option>
+                  <option value="2">Random orangish</option>
+                  <option value="3">Greenish</option>
+                  <option value="4">Random greenish</option>
+                  <option value="5">Violetish</option>
+                  <option value="6">Random violetish</option>
+                  <option value="7">Rainbow</option>
+                  <option value="8">Random rainbow</option>
+                  <option value="9">Random</option>
+                  <option value="16">Black</option>
+                  <option value="17">Red</option>
+                  <option value="18">Green</option>
+                  <option value="19">Yellow</option>
+                  <option value="20">Blue</option>
+                  <option value="21">Violet</option>
+                  <option value="22">Cyan</option>
+                  <option value="23">White</option>
+                </select>
+              </div>
+              <div class="color-controls" data-only-mqtt>
+                <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
+                <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
+                <button class="color-button random-violetish" onclick="pixels.sendCommand('BE6')">Violetish</button>
+                <button class="color-button rainbow" onclick="pixels.sendCommand('BE7')">Rainbow</button>
+                <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
+                <button class="color-button red" onclick="pixels.sendCommand('BE17')">Red</button>
+                <button class="color-button green" onclick="pixels.sendCommand('BE18')">Green</button>
+                <button class="color-button yellow" onclick="pixels.sendCommand('BE19')">Yellow</button>
+                <button class="color-button blue" onclick="pixels.sendCommand('BE20')">Blue</button>
+                <button class="color-button violet" onclick="pixels.sendCommand('BE21')">Violet</button>
+                <button class="color-button cyan" onclick="pixels.sendCommand('BE22')">Cyan</button>
+                <button class="color-button white" onclick="pixels.sendCommand('BE23')">White</button>
+              </div>
+            </section>
+    
+            <section class="control-section">
+                <h2>⚙️ Effect Controls</h2>
+                <div class="slider-group">
+                  <div class="color-slider" data-only-http>
+                    <label>Brightness</label>
+                    <div class="slider-with-value">
+                      <input data-label="BA" type="range" min="0" max="255" 
+                             oninput="pixels.sendSlowlyCommand('BA'+value)" />
+                      <span class="slider-value"></span>
+                    </div>
+                  </div>
+      
+                  <div class="control-group">
+                    <h3>Color Animation</h3>
+                    <div class="color-slider">
+                      <label>Color Change Speed</label>
+                      <div class="slider-with-value">
+                        <input data-label="BF" type="range" min="0" max="10" />
+                        <span class="slider-value"></span>
+                      </div>
+                    </div>
+                    <div class="color-slider">
+                      <label>Fading Speed</label>
+                      <div class="slider-with-value">
+                        <input data-label="BG" type="range" min="0" max="9" />
+                        <span class="slider-value"></span>
+                      </div>
+                    </div>
+                  </div>
+      
+                  <div class="control-group">
+                    <h3>Animation Settings</h3>
+                    <div class="color-slider">
+                      <label>Number of Events</label>
+                      <div class="slider-with-value">
+                        <input data-label="BB" type="range" min="0" max="7" />
+                        <span class="slider-value"></span>
+                      </div>
+                    </div>
+                    <div class="color-slider">
+                      <label>Animation Speed</label>
+                      <div class="slider-with-value">
+                        <input data-label="BC" type="range" min="0" max="20" />
+                        <span class="slider-value"></span>
+                      </div>
+                    </div>
+                  </div>
+      
+                  <div class="direction-control">
+                    <h3>Direction</h3>
+                    <select data-label="BO" class="direction-select">
+                      <option value="1">Left to Right</option>
+                      <option value="2">Right to Left</option>
+                      <option value="5">Horizontal</option>
+                    </select>
+                  </div>
+              </section>
+            </div>
+            <div id="Disco" class="tabcontent">
+                <section class="control-section">
+                  <h2>🎵 Disco Effects</h2>
+                  <div class="preset-grid">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,7,10,8,0,1,800,127,63,0,0,1')">
+                      <span class="icon">⚡</span> Rain Fast
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,7,10,7,0,1,800,127,63,0,0,1')">
+                      <span class="icon">💫</span> Rain Medium
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,0,1,7,10,3,0,1,800,127,63,0,0,1')">
+                      <span class="icon">🌧️</span> Rain Slow
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')">
+                      <span class="icon">🌈</span> Color Line Slow
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')">
+                      <span class="icon">↕️</span> Line Up Down
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB2,20,11,0,10,6,0,1,800,255,255,255,0,1')">
+                      <span class="icon">🎨</span> Color Line Fast
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,1,0,10,9,0,1,800,255,255,255,0,1')">
+                      <span class="icon">⚡</span> Strobe Fast
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,0,10,8,0,1,800,255,255,255,0,1')">
+                      <span class="icon">✨</span> Strobe Medium
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,16,1,0,10,6,0,1,800,255,255,255,0,1')">
+                      <span class="icon">🌟</span> Strobe Slow
+                    </button>
+                    <button class="preset-button" onclick="pixels.sendCommand('BA63,1,1,11,1,1,0,8,1,800,0,17,255,0,1')">
+                      <span class="icon">🌈</span> Rainbow
+                    </button>
+                  </div>
+                </section>
+              </div>
 
-      <h1>Custom</h1>
-      <div data-only-http>
-        Color:
-        <select data-label="BE">
-          <option value="0">Fixed</option>
-          <option value="1">Orangish</option>
-          <option value="2">Random orangish</option>
-          <option value="3">Geenish</option>
-          <option value="4">Random greenish</option>
-          <option value="5">Violetish</option>
-          <option value="6">Random violetish</option>
-          <option value="7">Rainbow</option>
-          <option value="8">Random rainbow</option>
-          <option value="9">Random</option>
-          <option value="16">Black</option>
-          <option value="17">Red</option>
-          <option value="18">Green</option>
-          <option value="19">Yellow</option>
-          <option value="20">Blue</option>
-          <option value="21">Violet</option>
-          <option value="22">Cyan</option>
-          <option value="23">White</option>
-        </select>
-      </div>
-      <div data-only-mqtt>
-        <div
-          class="color-button random-orangish"
-          onclick="pixels.sendCommand('BE2')"
-        >
-          Orangish
-        </div>
-        <div
-          class="color-button random-greenish"
-          onclick="pixels.sendCommand('BE4')"
-        >
-          Greenish
-        </div>
-        <div
-          class="color-button random-violetish"
-          onclick="pixels.sendCommand('BE6')"
-        >
-          Violetish
-        </div>
-        <div class="color-button rainbow" onclick="pixels.sendCommand('BE7')">
-          Rainbow
-        </div>
-        <div class="color-button random" onclick="pixels.sendCommand('BE9')">
-          Random
-        </div>
-        <div class="color-button red" onclick="pixels.sendCommand('BE17')">
-          Red
-        </div>
-        <div class="color-button green" onclick="pixels.sendCommand('BE18')">
-          Green
-        </div>
-        <div class="color-button yellow" onclick="pixels.sendCommand('BE19')">
-          Yellow
-        </div>
-        <div class="color-button blue" onclick="pixels.sendCommand('BE20')">
-          Blue
-        </div>
-        <div class="color-button violet" onclick="pixels.sendCommand('BE21')">
-          Violet
-        </div>
-        <div class="color-button cyan" onclick="pixels.sendCommand('BE22')">
-          Cyan
-        </div>
-        <div class="color-button white" onclick="pixels.sendCommand('BE23')">
-          White
-        </div>
-      </div>
+              <div id="Advanced" class="tabcontent">
+                <section class="control-section">
+                  <h2>⚙️ Advanced Configuration</h2>
+                  
+                  <div class="config-group">
+                    <div class="input-row">
+                      <label>Number of Rows:</label>
+                      <input data-label="BI" type="number" min="0" max="255" class="number-input" />
+                    </div>
+                    <div class="input-row">
+                      <label>LEDs per Row:</label>
+                      <input data-label="BJ" type="number" min="0" max="255" class="number-input" />
+                    </div>
+                  </div>
+        
+                  <div class="button-grid">
+                    <button class="control-button" onmousedown="pixels.sendCommand('h')">
+                      <span class="icon">❓</span> Help
+                    </button>
+                    <button class="control-button" onmousedown="pixels.sendCommand('s')">
+                      <span class="icon">⚙️</span> Settings
+                    </button>
+                    <button class="control-button" onmousedown="pixels.getCurrentSettings()">
+                      <span class="icon">📊</span> Current Settings
+                    </button>
+                    <button class="control-button" onmousedown="pixels.getSchedule()">
+                      <span class="icon">📅</span> Schedule
+                    </button>
+                    <button class="control-button" onmousedown="pixels.getCurrentLineColor()">
+                      <span class="icon">🎨</span> Current Line Color
+                    </button>
+                  </div>
+        
+                  <div class="command-section">
+                    <h3>🔧 Custom Command</h3>
+                    <form class="command-form">
+                      <input type="text" class="command-input" name="command" placeholder="Enter command..." />
+                      <button type="submit" class="submit-button" onclick="event.preventDefault(); pixels.sendCommand(this.form.command.value);">
+                        Send Command
+                      </button>
+                    </form>
+                    <textarea class="result-display" id="result" rows="10" cols="40"></textarea>
+                  </div>
+        
+                  <div class="help-section">
+                    <pre class="help-text">
+        CA: NEO_RGB: 6 - NEO_GRB: 82
+        CB: 1 day, 2 night, 3 day+night
+        CC: Sunset offset
+        CD: Sunrise offset
+        CE,CF,CG,CH,CI,CJ,CK,CL:<br/> Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
+                    </pre>
+                  </div>
+                </section>
+              </div>
+        
+              <script type="module">
+                import { Pixels } from "./pixels.js";
+                const pixels = new Pixels();
+                window.pixels = pixels;
+                const parameters = await pixels.getParameters();
+        
+                const models = [
+                  [0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000],
+                  [0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff],
+                  [0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00],
+                  [0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0],
+                  [0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f],
+                  [0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f],
+                  [0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff],
+                  [0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0],
+                  [0x00f, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0xf00],
+                  [0x0f0, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0x0f0],
+                  [0xf70, 0xf00, 0xf00, 0xfff, 0xf10, 0xf00, 0xf40, 0xf60],
+                  [0xf70, 0xf00, 0xf00, 0x000, 0xf10, 0xf00, 0xfd0, 0xf60],
+                  [0x01f, 0x08f, 0x04f, 0xfff, 0x0ef, 0xfff, 0x09f, 0x00f],
+                  [0x0f1, 0x0f0, 0xf00, 0x0f5, 0x0f0, 0xf00, 0xfff, 0xf00],
+                  [0xf00, 0xf0f, 0x20f, 0x0af, 0x0fb, 0x6f0, 0xfd0, 0xf70],
+                  [0xf00, 0xf0f, 0xf0f, 0x50f, 0x80f, 0x90f, 0xe0f, 0xf0c],
+                ];
+                pixels.addColorModelsButtons(models);
+        
+                const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
+                const element = document.querySelector('[data-program="BD' + bd.value + '"]');
+                element?.click();
+              </script>
+            </div>
+          </body>
+        </html>
+        
+        
+      
+    
+  
 
-      <div data-only-http>
-        Brightness:
-        <input data-label="BA" type="range" min="0" max="255" />
-      </div>
-      If not fixed:<br />
-      Color change speed:
-      <input data-label="BF" type="range" min="0" max="10" /><br />
-      Fading speed:
-      <input data-label="BG" type="range" min="0" max="9" /><br />
-      Other options:<br />
-      Number of events:
-      <input data-label="BB" type="range" min="0" max="7" /><br />
-      Speed:
-      <input data-label="BC" type="range" min="0" max="20" /><br />
-      Background:<br />
-      <div data-only-mqtt>
-        <div
-          class="color-square black"
-          onclick="pixels.sendCommand('BK0,0,0,0')"
-        ></div>
-        <div
-          class="color-square red"
-          onclick="pixels.sendCommand('BK255,0,0')"
-        ></div>
-        <div
-          class="color-square green"
-          onclick="pixels.sendCommand('BK0,255,0')"
-        ></div>
-        <div
-          class="color-square blue"
-          onclick="pixels.sendCommand('BK0,0,255')"
-        ></div>
-        <div
-          class="color-square yellow"
-          onclick="pixels.sendCommand('BK255,255,0')"
-        ></div>
-        <div
-          class="color-square violet"
-          onclick="pixels.sendCommand('BK255,0,255')"
-        ></div>
-        <div
-          class="color-square cyan"
-          onclick="pixels.sendCommand('BK0,255,255')"
-        ></div>
-        <div
-          class="color-square white"
-          onclick="pixels.sendCommand('BK255,255,255')"
-        ></div>
-      </div>
 
-      <div data-only-http>
-        <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
-      </div>
-      <div data-only-http>
-        Background brightness:
-        <input data-label="BH" type="range" min="0" max="255" />
-      </div>
-    </div>
-
-    <div id="CometMode" class="tabcontent">
-      <h1>Presets</h1>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB2,20,3,9,4,6,BK255,255,255')"
-      >
-        Both
-      </button>
-      <button
-        class="text-xl w-1/4 h-8 text-black"
-        onclick="pixels.sendCommand('BB3,18,3,7,5,6,BK0,255,17')"
-      >
-        Green background
-      </button>
-
-      <h1>Advanced</h1>
-      <div data-only-http>
-        Brightness:
-        <input
-          data-label="BA"
-          type="range"
-          oninput="pixels.sendSlowlyCommand('BA'+value)"
-          min="0"
-          max="255"
-        />
-      </div>
-      <div data-only-http>
-        Color:
-        <select data-label="BE" onchange="pixels.sendCommand('BE'+this.value)">
-          <option value="0">Fixed</option>
-          <option value="1">Orangish</option>
-          <option value="2">Random orangish</option>
-          <option value="3">Geenish</option>
-          <option value="4">Random greenish</option>
-          <option value="5">Violetish</option>
-          <option value="6">Random violetish</option>
-          <option value="7">Rainbow</option>
-          <option value="8">Random rainbow</option>
-          <option value="9">Random</option>
-          <option value="16">Black</option>
-          <option value="17">Red</option>
-          <option value="18">Green</option>
-          <option value="19">Yellow</option>
-          <option value="20">Blue</option>
-          <option value="21">Violet</option>
-          <option value="22">Cyan</option>
-          <option value="23">White</option>
-        </select>
-      </div>
-      <div data-only-mqtt>
-        <div
-          class="color-button random-orangish"
-          onclick="pixels.sendCommand('BE2')"
-        >
-          Orangish
-        </div>
-        <div
-          class="color-button random-greenish"
-          onclick="pixels.sendCommand('BE4')"
-        >
-          Greenish
-        </div>
-        <div
-          class="color-button random-violetish"
-          onclick="pixels.sendCommand('BE6')"
-        >
-          Violetish
-        </div>
-        <div class="color-button random" onclick="pixels.sendCommand('BE9')">
-          Random
-        </div>
-        <div class="color-button rainbow" onclick="pixels.sendCommand('BE7')">
-          Rainbow
-        </div>
-        <div class="color-button red" onclick="pixels.sendCommand('BE17')">
-          Red
-        </div>
-        <div class="color-button green" onclick="pixels.sendCommand('BE18')">
-          Green
-        </div>
-        <div class="color-button yellow" onclick="pixels.sendCommand('BE19')">
-          Yellow
-        </div>
-        <div class="color-button blue" onclick="pixels.sendCommand('BE20')">
-          Blue
-        </div>
-        <div class="color-button violet" onclick="pixels.sendCommand('BE21')">
-          Violet
-        </div>
-        <div class="color-button cyan" onclick="pixels.sendCommand('BE22')">
-          Cyan
-        </div>
-        <div class="color-button white" onclick="pixels.sendCommand('BE23')">
-          White
-        </div>
-      </div>
-
-      If not fixed:<br />
-      Color change speed:
-      <input data-label="BF" type="range" min="0" max="10" /><br />
-      Fading speed: <input data-label="BG" type="range" min="0" max="9" /><br />
-      Other options:<br />
-      Number of events:
-      <input data-label="BB" type="range" min="0" max="7" /><br />
-      Speed: <input data-label="BC" type="range" min="0" max="20" /><br />
-      Direction:
-      <select data-label="BO">
-        <option value="1">From left to right</option>
-        <option value="2">From right to left</option>
-        <option value="5">Horizontal</option></select
-      ><br />
-      Background:<br />
-      <div data-only-mqtt>
-        <div
-          class="color-square black"
-          onclick="pixels.sendCommand('BK0,0,0,0')"
-        ></div>
-        <div
-          class="color-square red"
-          onclick="pixels.sendCommand('BK255,0,0')"
-        ></div>
-        <div
-          class="color-square green"
-          onclick="pixels.sendCommand('BK0,255,0')"
-        ></div>
-        <div
-          class="color-square blue"
-          onclick="pixels.sendCommand('BK0,0,255')"
-        ></div>
-        <div
-          class="color-square yellow"
-          onclick="pixels.sendCommand('BK255,255,0')"
-        ></div>
-        <div
-          class="color-square violet"
-          onclick="pixels.sendCommand('BK255,0,255')"
-        ></div>
-        <div
-          class="color-square cyan"
-          onclick="pixels.sendCommand('BK0,255,255')"
-        ></div>
-        <div
-          class="color-square white"
-          onclick="pixels.sendCommand('BK255,255,255')"
-        ></div>
-      </div>
-      <div data-only-http>
-        <input type="color" data-rgb="true" data-label="BK,BL,BM" /><br />
-      </div>
-      <div data-only-http>
-        Background Brightness:
-        <input
-          data-label="BH"
-          type="range"
-          oninput="pixels.sendSlowlyCommand('BH'+value)"
-          min="0"
-          max="255"
-        />
-      </div>
-    </div>
-
-    <div id="Disco" class="tabcontent">
-      <div style="display: flex; flex-wrap: wrap">
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,19,1,7,10,8,0,1,800,127,63,0,0,1')"
-        >
-          Rain fast
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,19,1,7,10,7,0,1,800,127,63,0,0,1')"
-        >
-          Rain medium
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,0,1,7,10,3,0,1,800,127,63,0,0,1')"
-        >
-          Rain slow
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')"
-        >
-          Color line slow
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')"
-        >
-          Line up down
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB2,20,11,0,10,6,0,1,800,255,255,255,0,1')"
-        >
-          Color line fast
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,20,1,0,10,9,0,1,800,255,255,255,0,1')"
-        >
-          Strobe fast
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,19,1,0,10,8,0,1,800,255,255,255,0,1')"
-        >
-          Strobe medium
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BB7,16,1,0,10,6,0,1,800,255,255,255,0,1')"
-        >
-          Strobe slow
-        </button>
-        <button
-          class="text-xl w-1/4 h-8 text-black"
-          onclick="pixels.sendCommand('BA63,1,1,11,1,1,0,8,1,800,0,17,255,0,1')"
-        >
-          Rainbow
-        </button>
-      </div>
-    </div>
-
-    <div id="Advanced" class="tabcontent">
-      Nb rows:
-      <input data-label="BI" type="number" min="0" max="255" /><br />
-      Nb led per rows:
-      <input data-label="BJ" type="number" min="0" max="255" /><br />
-      <button
-        class="border-2 border-black"
-        onmousedown="pixels.sendCommand('h')"
-      >
-        Help
-      </button>
-      <button
-        class="border-2 border-black"
-        onmousedown="pixels.sendCommand('s')"
-      >
-        Settings
-      </button>
-      <button
-        class="border-2 border-black"
-        onmousedown="pixels.getCurrentSettings()"
-      >
-        Current settings
-      </button>
-      <button class="border-2 border-black" onmousedown="pixels.getSchedule()">
-        Schedule
-      </button>
-      <button
-        class="border-2 border-black"
-        onmousedown="pixels.getCurrentLineColor()"
-      >
-        Current line color
-      </button>
-      <h1>Advanced</h1>
-      <form>
-        <input type="text" class="border-2 border-black" name="command" />
-        <input
-          type="submit"
-          onclick="event.preventDefault(); pixels.sendCommand(this.form.command.value);"
-        />
-      </form>
-      <textarea class="border-2 border-black" id="result" rows="10" cols="40">
-      </textarea>
-      <pre>
-CA: NEO_RGB: 6 - NEO_GRB: 82
-CB: 1 day, 2 night, 3 day+night
-CC: Sunset offset
-CD: Sunrise offset
-CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
-     </pre
-      >
-    </div>
-
-    <script type="module">
-      import { Pixels } from "./pixels.js";
-      const pixels = new Pixels();
-      window.pixels = pixels;
-      const parameters = await pixels.getParameters();
-
-      const models = [
-        [0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000],
-        [0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff],
-        [0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00, 0xf00],
-        [0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0, 0x0f0],
-        [0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f, 0x00f],
-        [0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f, 0xf0f],
-        [0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff, 0x0ff],
-        [0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0],
-        [0x00f, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0xf00],
-        [0x0f0, 0x00f, 0x00f, 0x00f, 0xf00, 0xf00, 0xf00, 0x0f0],
-        [0xf70, 0xf00, 0xf00, 0xfff, 0xf10, 0xf00, 0xf40, 0xf60],
-        [0xf70, 0xf00, 0xf00, 0x000, 0xf10, 0xf00, 0xfd0, 0xf60],
-        [0x01f, 0x08f, 0x04f, 0xfff, 0x0ef, 0xfff, 0x09f, 0x00f],
-        [0x0f1, 0x0f0, 0xf00, 0x0f5, 0x0f0, 0xf00, 0xfff, 0xf00],
-        [0xf00, 0xf0f, 0x20f, 0x0af, 0x0fb, 0x6f0, 0xfd0, 0xf70],
-        [0xf00, 0xf0f, 0xf0f, 0x50f, 0x80f, 0x90f, 0xe0f, 0xf0c],
-      ];
-      pixels.addColorModelsButtons(models);
-
-      // need to find the one with the right data-command
-      const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
-      const element = document.querySelector(
-        '[data-program="BD' + bd.value + '"]'
-      );
-      element?.click();
-    </script>
-  </body>
-</html>
