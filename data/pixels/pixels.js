@@ -55,7 +55,7 @@ export class Pixels {
   async fetchAllParameters() {
     if (!this.servers?.[0]) return;
     const response = await fetch(this.servers[0] + "command" + "?value=uc");
-    let string = (await response.text()).substring(8); // first 8 symbols is epoch
+    let string = (await response.text()).slice(8); // first 8 symbols is epoch
     for (let i = 0; i < string.length / 4; i++) {
       let code = String.fromCharCode(65 + (i % 26));
       if (i > 25) {

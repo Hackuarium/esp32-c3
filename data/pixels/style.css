@@ -1,202 +1,216 @@
 :root {
-    --primary-color: #ff4646;
-    --secondary-color: #1a2a6c;
-    --accent-color: #fdbb2d;
-    --text-color: #ffffff;
-    --background-overlay: rgba(255, 255, 255, 0.1);
-  }
-  
-  body {
-    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color), var(--accent-color));
-    color: var(--text-color);
-    min-height: 100vh;
-    margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background: var(--background-overlay);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-  }
-  
-  .main-title {
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 30px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
+  --primary-color: #ff4646;
+  --secondary-color: #1a2a6c;
+  --accent-color: #fdbb2d;
+  --text-color: #ffffff;
+  --background-overlay: rgba(255, 255, 255, 0.1);
+}
 
-  .tab {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    margin-bottom: 20px;
-  }
-  
-  .tablinks {
-    flex: 1;
-    max-width: 150px;
-    border: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-  }
-  
-  .tab-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    padding: 12px;
-  }
-  
-  .icon {
-    font-size: 24px;
-  }
-  
-  .tab-label {
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .primary-tab {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-  }
-  
-  .secondary-tab {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-  }
-  
-  .tablinks.active {
-    background: #ff4646;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 70, 70, 0.3);
-  }
-  
-  .control-section {
-    margin: 30px 0;
-    padding: 20px;
-    background: var(--background-overlay);
-    border-radius: 12px;
-  }
-  
-  .control-section h2 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .preset-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin: 20px 0;
-  }
-  
-  .color-picker-group {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .master-color {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  .individual-colors {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    padding: 10px;
-  }
-  
-  .color-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-  }
-  
-  
-  input[type="color"] {
-    width: 50px;
-    height: 50px;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background: none;
-  }
-  
-  .slider-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    padding: 15px;
-  }
+body {
+  background: linear-gradient(
+    135deg,
+    var(--secondary-color),
+    var(--primary-color),
+    var(--accent-color)
+  );
+  color: var(--text-color);
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
 
-  .slider-with-value {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 100%;
-  }
-  
-  input[type="range"] {
-    width: 100%;
-    max-width: 300px;
-  }
-  
-  
-  .color-slider {
-    min-height: 60px;
-    padding: 10px;
-  }
-  
-  input[type="range"] {
-    width: 100%;
-    height: 10px;
-    border-radius: 5px;
-    background: var(--background-overlay);
-    outline: none;
-    -webkit-appearance: none;
-  }
-  
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-  }
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+}
 
-  #models button {
-    min-height: 60px;
-    margin: 5px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    transition: transform 0.2s ease;
-  }
-  
-  #models button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
+.main-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 
-  /* Enhanced Color Selection Buttons */
+.tab {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.tablinks {
+  flex: 1;
+  max-width: 150px;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px;
+}
+
+.icon {
+  font-size: 24px;
+}
+
+.tab-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.primary-tab {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.secondary-tab {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tablinks.active {
+  background: #ff4646;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 70, 70, 0.3);
+}
+
+.control-section {
+  margin: 30px 0;
+  padding: 20px;
+  background: var(--background-overlay);
+  border-radius: 12px;
+}
+
+.control-section h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.color-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.master-color {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.individual-colors {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  padding: 10px;
+}
+
+.color-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.direction-select {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 16px;
+  color: #333;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  appearance: none;
+}
+
+input[type="color"] {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: none;
+}
+
+.slider-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 15px;
+}
+
+.slider-with-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+input[type="range"] {
+  width: 100%;
+  max-width: 300px;
+}
+
+.color-slider {
+  min-height: 60px;
+  padding: 10px;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--background-overlay);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#models button {
+  min-height: 60px;
+  margin: 5px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+#models button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced Color Selection Buttons */
 .color-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -211,6 +225,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.2);
   transition: transform 0.2s ease;
+  font-size: 1.2rem;
 }
 
 /* Restore fancy backgrounds */
@@ -227,7 +242,16 @@
 }
 
 .rainbow {
-  background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+  background: linear-gradient(
+    45deg,
+    red,
+    orange,
+    yellow,
+    green,
+    blue,
+    indigo,
+    violet
+  );
 }
 
 .random {
@@ -296,88 +320,87 @@
   color: white;
   padding: 8px;
 }
-  
-  @media (max-width: 768px) {
-    .container {
-      padding: 15px;
-      margin: 10px;
-    }
-  
-    .main-title {
-      font-size: 1.5rem;
-    }
 
-    .tab {
-      padding: 10px;
-      gap: 6px;
-    }
-  
-    .tablinks {
-      max-width: none;
-    }
-  
-    .tab-content {
-      padding: 8px;
-    }
-  
-    .icon {
-      font-size: 20px;
-    }
-  
-    .tab-label {
-      font-size: 14px;
-    }
-  
-    .secondary-tab {
-      display: none;
-    }
-  
-    .control-section {
-      padding: 15px;
-    }
-  
-    .individual-colors {
-      justify-content: center;
-    }
-  
-    input[type="color"] {
-      width: 40px;
-      height: 40px;
-    }
-  
-    .color-slider label {
-      font-size: 0.9rem;
-    }
-
-    .preset-button {
-      min-height: 60px;
-      font-size: 1rem;
-      padding: 12px;
-    }
-    
-    .color-button {
-      min-height: 50px;
-    }
-
-    #models button {
-      min-height: 80px; /* Even taller on mobile for better touch targets */
-    }
-
-    .color-button {
-      min-height: 70px;
-    }
-    
-    .color-square {
-      min-height: 60px;
-    }
-
-    input[type="range"] {
-      width: calc(100% - 20px); /* Account for padding */
-      max-width: 280px;
-    }
-    
-    .slider-with-value {
-      padding: 0 10px;
-    }
+@media (max-width: 768px) {
+  .container {
+    padding: 0px;
+    margin: 0px;
   }
-  
+
+  .main-title {
+    font-size: 1.5rem;
+  }
+
+  .tab {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .tablinks {
+    max-width: none;
+  }
+
+  .tab-content {
+    padding: 8px;
+  }
+
+  .icon {
+    font-size: 20px;
+  }
+
+  .tab-label {
+    font-size: 14px;
+  }
+
+  .secondary-tab {
+    display: none;
+  }
+
+  .control-section {
+    padding: 15px;
+  }
+
+  .individual-colors {
+    justify-content: center;
+  }
+
+  input[type="color"] {
+    width: 40px;
+    height: 40px;
+  }
+
+  .color-slider label {
+    font-size: 0.9rem;
+  }
+
+  .preset-button {
+    min-height: 60px;
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  .color-button {
+    min-height: 50px;
+  }
+
+  #models button {
+    min-height: 80px; /* Even taller on mobile for better touch targets */
+  }
+
+  .color-button {
+    min-height: 70px;
+  }
+
+  .color-square {
+    min-height: 60px;
+  }
+
+  input[type="range"] {
+    width: calc(100% - 20px); /* Account for padding */
+    max-width: 280px;
+  }
+
+  .slider-with-value {
+    padding: 0 10px;
+  }
+}
