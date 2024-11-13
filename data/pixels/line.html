@@ -31,13 +31,13 @@
       <h1 class="main-title">🎄 Christmas Lights Control 🎄</h1>
       
       <div class="tab">
-        <button data-program="BD11" class="tablinks" onclick="openTab(event, 'LineMode')">
+        <button data-program="BB3,BC2,BD11,BF3" class="tablinks" onclick="openTab(event, 'LineMode')">
           <span class="icon">💫</span> Line Mode
         </button>
-        <button class="tablinks" data-program="BD1" onclick="openTab(event, 'RainMode')">
+        <button class="tablinks" data-program="BB4,BC18,BD1,BG2" onclick="openTab(event, 'RainMode')">
           <span class="icon">🌧️</span> Rain Mode
         </button>
-        <button class="tablinks" data-program="BD3" onclick="openTab(event, 'CometMode')">
+        <button class="tablinks" data-program="BB1,BC17,BD3,BF2,BG7" onclick="openTab(event, 'CometMode')">
           <span class="icon">☄️</span> Comet Mode
         </button>
         <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>
@@ -492,7 +492,7 @@
                 pixels.addColorModelsButtons(models);
         
                 const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
-                const element = document.querySelector('[data-program="BD' + bd.value + '"]');
+                const element = document.querySelector('[data-program*="BD' + bd.value + '"]');
                 element?.click();
               </script>
             </div>

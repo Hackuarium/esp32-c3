@@ -7,6 +7,11 @@ export async function reapplySettings(cachedParameters) {
       .filter((p) => p);
     if (parameters.length === 0) continue;
     const firstParameter = parameters[0];
+
+    if (element.tagName === "SELECT") {
+      element.value = firstParameter.value;
+    }
+
     switch (element.getAttribute("type")) {
       case "radio":
         if (firstParameter.value) {

@@ -187,6 +187,7 @@ export class Pixels {
         firstIndex = 26 + firstIndex * 26 + label.charCodeAt(1) - 65;
       }
       for (let i = 0; i < values.length; i++) {
+        if (!this.parameters[firstIndex + i]) continue;
         this.parameters[firstIndex + i].value = Number(values[i]);
       }
     }
