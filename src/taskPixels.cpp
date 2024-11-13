@@ -129,7 +129,7 @@ void TaskPixels(void* pvParameters) {
         updateFunction(pixels);
         break;
       case 1:
-        updateRain(pixels, state);
+        updateRain(pixels, state, programChanged);
         break;
       case 2:
         updateRGB(pixels);

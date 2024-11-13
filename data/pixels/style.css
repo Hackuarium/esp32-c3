@@ -40,7 +40,7 @@ select {
 }
 
 :root {
-  --primary-color: #ff4646;
+  --primary-color: green;
   --secondary-color: #1a2a6c;
   --accent-color: #fdbb2d;
   --text-color: #ffffff;

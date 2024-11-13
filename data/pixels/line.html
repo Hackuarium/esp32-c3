@@ -28,16 +28,16 @@
 
   <body>
     <div class="container">
-      <h1 class="main-title">🎄 Christmas Lights Control 🎄</h1>
+      <h1 class="main-title">🎄 Christmas Lights 🎄</h1>
       
       <div class="tab">
-        <button data-program="BB3,BC2,BD11,BF3" class="tablinks" onclick="openTab(event, 'LineMode')">
+        <button data-program="BB2,BC2,BD11,BF3" class="tablinks" onclick="openTab(event, 'LineMode')">
           <span class="icon">💫</span> Line Mode
         </button>
         <button class="tablinks" data-program="BB4,BC18,BD1,BG2" onclick="openTab(event, 'RainMode')">
           <span class="icon">🌧️</span> Rain Mode
         </button>
-        <button class="tablinks" data-program="BB1,BC17,BD3,BF2,BG7" onclick="openTab(event, 'CometMode')">
+        <button class="tablinks" data-program="BB1,BC19,BD3,BF2,BG7" onclick="openTab(event, 'CometMode')">
           <span class="icon">☄️</span> Comet Mode
         </button>
         <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>
@@ -53,7 +53,40 @@
           <div class="preset-grid" id="models"></div>
         </section>
 
-        <section class="control-section" data-only-http>
+  
+
+        <section class="control-section">
+          <h2>⚡ Effect Controls</h2>
+          <div class="slider-group">
+            <div class="color-slider" data-only-http>
+              <label>Brightness</label>
+              <div class="slider-with-value">
+                <input data-label="BA" type="range" min="0" max="255" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
+            <div class="color-slider">
+              <label>Animation Speed</label>
+              <div class="slider-with-value" data-only-http>
+                <input data-label="BC" type="range" min="0" max="20" />
+                <span class="slider-value"></span>
+              </div>
+              <div class="slider-with-value" data-only-mqtt>
+                <input data-label="BC" type="range" min="0" max="6" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
+            <div class="color-slider">
+              <label>Color Length</label>
+              <div class="slider-with-value">
+                <input data-label="BB" type="range" min="0" max="7" />
+                <span class="slider-value"></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+              <section class="control-section">
           <h2>🎯 Custom Colors</h2>
           <div class="color-picker-group">
             <div class="master-color">
@@ -93,37 +126,6 @@
               <div class="color-item">
                 <input type="color" data-label="BY" />
                 <span>8</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="control-section">
-          <h2>⚡ Effect Controls</h2>
-          <div class="slider-group">
-            <div class="color-slider" data-only-http>
-              <label>Brightness</label>
-              <div class="slider-with-value">
-                <input data-label="BA" type="range" min="0" max="255" />
-                <span class="slider-value"></span>
-              </div>
-            </div>
-            <div class="color-slider">
-              <label>Animation Speed</label>
-              <div class="slider-with-value" data-only-http>
-                <input data-label="BC" type="range" min="0" max="20" />
-                <span class="slider-value"></span>
-              </div>
-              <div class="slider-with-value" data-only-mqtt>
-                <input data-label="BC" type="range" min="0" max="6" />
-                <span class="slider-value"></span>
-              </div>
-            </div>
-            <div class="color-slider">
-              <label>Color Length</label>
-              <div class="slider-with-value">
-                <input data-label="BB" type="range" min="0" max="7" />
-                <span class="slider-value"></span>
               </div>
             </div>
           </div>
@@ -264,10 +266,10 @@
             <section class="control-section">
               <h2>✨ Preset Effects</h2>
               <div class="preset-grid">
-                <button class="preset-button" onclick="pixels.sendCommand('BB2,20,3,9,4,6,BK255,255,255')">
+                <button class="preset-button" onclick="pixels.sendCommand('BB2,20,3,9,4,6,BK255,255,255,BO5')">
                   <span class="icon">🌠</span> Both Ways
                 </button>
-                <button class="preset-button" onclick="pixels.sendCommand('BB3,18,3,7,5,6,BK0,255,17')">
+                <button class="preset-button" onclick="pixels.sendCommand('BB3,18,3,7,5,6,BK0,255,17,BO1')">
                   <span class="icon">🌲</span> Green Background
                 </button>
               </div>
@@ -492,8 +494,16 @@
                 pixels.addColorModelsButtons(models);
         
                 const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
-                const element = document.querySelector('[data-program*="BD' + bd.value + '"]');
+                console.log(bd.value)
+                const element = document.querySelector('[data-program*="BD' + bd.value + ',"]');
+                console.log({element})
                 element?.click();
+
+                // after 5 minutes we remove the page and add a button to reload it
+                // center the button in the middle of the page
+                setTimeout(() => {
+                  document.body.innerHTML = '<button onclick="location.reload()">Your session as expired, please reload the page a little bit later</button>';
+                }, 60 * 5 * 1000);
               </script>
             </div>
           </body>
