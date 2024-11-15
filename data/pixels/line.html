@@ -457,11 +457,13 @@
         
                   <div class="help-section">
                     <pre class="help-text">
-        CA: NEO_RGB: 6 - NEO_GRB: 82
-        CB: 1 day, 2 night, 3 day+night
-        CC: Sunset offset
-        CD: Sunrise offset
-        CE,CF,CG,CH,CI,CJ,CK,CL:<br/> Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
+CA: NEO_RGB: 6 - NEO_GRB: 82
+CB: 1 day, 2 night, 3 day+night
+CC: Sunset offset
+CD: Sunrise offset
+CE,CF,CG,CH,CI,CJ,CK,CL: Minute event: 
+- &lt;0 no action
+- (quarter &lt;&lt; 8) + intensity 
                     </pre>
                   </div>
                 </section>
@@ -490,6 +492,7 @@
                   [0x0f1, 0x0f0, 0xf00, 0x0f5, 0x0f0, 0xf00, 0xfff, 0xf00],
                   [0xf00, 0xf0f, 0x20f, 0x0af, 0x0fb, 0x6f0, 0xfd0, 0xf70],
                   [0xf00, 0xf0f, 0xf0f, 0x50f, 0x80f, 0x90f, 0xe0f, 0xf0c],
+                  [0x0f1, 0x0f0, 0xf00, 0x0f5, 0x0f0, 0x0f1, 0x01f, 0x4f0],
                 ];
                 pixels.addColorModelsButtons(models);
         

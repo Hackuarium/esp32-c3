@@ -8,8 +8,16 @@
 unsigned int cometCounter = 0;
 
 // We will store in state if it is the head of the comet
-void updateComet(Adafruit_NeoPixel& pixels, uint16_t state[]) {
+void updateComet(Adafruit_NeoPixel& pixels,
+                 uint16_t state[],
+                 uint8_t programChanged) {
   cometCounter++;
+  if (programChanged) {
+    for (int led = 0; led < MAX_LED; led++) {
+      state[led] = 0;
+    }
+  }
+
   if ((cometCounter % (21 - getParameter(PARAM_SPEED))) == 0) {
     // we move the head of the comet
     for (int16_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {

@@ -149,6 +149,11 @@ void copyPixelColor(Adafruit_NeoPixel& pixels, uint16_t from, uint16_t to) {
 }
 
 bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
+  uint32_t bgColor = getBackgroundColor();
+  uint8_t bgR = (bgColor >> 16) & 255;
+  uint8_t bgG = (bgColor >> 8) & 255;
+  uint8_t bgB = (bgColor >> 0) & 255;
+
   uint32_t color = pixels.getPixelColor(led);
   uint8_t r = (color >> 16) & 255;
   uint8_t g = (color >> 8) & 255;
@@ -168,8 +173,17 @@ bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
   } else {
     b = 0;
   }
+  if (r < bgR) {
+    r = bgR;
+  }
+  if (g < bgG) {
+    g = bgG;
+  }
+  if (b < bgB) {
+    b = bgB;
+  }
   pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
-  return r == 0 && g == 0 && b == 0;
+  return r == bgR && g == bgG && b == bgB;
 }
 
 bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led) {

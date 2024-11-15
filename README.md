@@ -109,38 +109,34 @@ CA: 0 (RGB), 1 (BRG)
 CB: bit 0: day, bit 1: night
 CC: Allows to turn on before or after sunset (in minutes)
 CD: Allows to turn off before or after sunrise (in minutes)
-CE: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-CF: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-CG: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
-CH: Minute event. <0 no action, minutes + intensity (0 to 15) _ 2000
+CE,CF,CG,CH,CI,CJ,CK,CL: schedule actions (change of intensity)
+<0 no action, (day minutes / 15) << 8 + intensity
 
 CC-30: 30 minutes before sunset
 CD30: 30 minutes after sunrise
 
-CE: 60*22+2000*2 = 5320 at 10PM reduce the intensity to 2
-CF: 60*7+2000*15 = 30420 at 7AM intensity to max (15)
-
-CE5320,30420,-1,-1
+CE: ((60 / 15 \* 22)<<8) + 16 = 22544 at 10PM reduce the intensity to 16
+CF: ((60 /15 \* 7)<<8) + 255 = 7423 at 7AM intensity to max
 
 Full power in the evening but reduce at 10PM and turn off at 12PM
 Turn on in the morning at 5AM but not too strong
-CB2,-30,30,30960,3320,0,2300
+CB2,-30,30,16639,22544,0,5136
 
-- 30960: at 16h we set brightness to max (15)
-- 3320: at 22h we set brightness to 4
+- 16639: at 16h we set brightness to max
+- 22544: at 22h we set brightness to 16
 - 0: at 0h we set brightness to 0
-- 2300: at 5h we set brightness to 4
+- 5136: at 5h we set brightness to 16
 
 ### Christmas
 
 We don't use sunrise / sunset but fixed time
 
-- 30960: at 16h we set brightness to max (15)
-- 11080: at 18h we set brightness to 5
-- 3320: at 22h we set brightness to 1
+- 16416: at 16h we set brightness to max 32
+- 18464: at 18h we set brightness to 32
+- 22536: at 22h we set brightness to 8
 - 0: at 0h we set brightness to 0
-- 2300: at 5h we set brightness to 1
-- 10420: at 7h we set brightness to 5
-- 540: at 9h we set brightness to 0
+- 5128: at 5h we set brightness to 8
+- 7200: at 7h we set brightness to 32
+- 9216: at 9h we set brightness to 0
 
-CB3,0,0,30960,11080,3320,0,2300,10420,540
+CB3,0,0,16416,18464,22536,0,5128,7200,9216

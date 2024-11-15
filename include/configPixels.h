@@ -99,13 +99,12 @@ extern int16_t parameters[MAX_PARAM];
 // Allows to turn on before or after sunset (in minutes)
 #define PARAM_SUNSET_OFFSET 80   // CC
 #define PARAM_SUNRISE_OFFSET 81  // CD
-// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
+// schedule actions (change of intensity)
+// < 0 no action
+// value: (day minutes / 15) << 8 + intensity
 #define PARAM_ACTION_1 82  // CE
-// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
 #define PARAM_ACTION_2 83  // CF
-// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
 #define PARAM_ACTION_3 84  // CG
-// Minute event. <0 no action, minutes + intensity (0 to 15) * 2000
 #define PARAM_ACTION_4 85  // CH
 #define PARAM_ACTION_5 86  // CI
 #define PARAM_ACTION_6 87  // CJ

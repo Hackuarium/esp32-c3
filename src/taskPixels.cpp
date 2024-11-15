@@ -31,7 +31,8 @@ const uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
 
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
-void resetLine();
+void resetLine(int16_t row, int16_t column);
+void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness);
 void clearActions();
 
 void TaskPixels(void* pvParameters) {
@@ -135,7 +136,7 @@ void TaskPixels(void* pvParameters) {
         updateRGB(pixels);
         break;
       case 3:
-        updateComet(pixels, state);
+        updateComet(pixels, state, programChanged);
         break;
       case 4:
         updateWave(pixels);
@@ -186,12 +187,11 @@ void taskPixels() {
 }
 
 void printPixelsHelp(Print* output) {
-  output->println(F("(pb) Reset parameters for big christmas tree"));
-  output->println(F("(pc) Reset parameters for cube"));
+  output->println(F("(pb) Reset parameters for christmas line"));
+  output->println(F("(pc) Reset parameters for big christmas tree"));
   output->println(F("(pg) Set gif"));
   output->println(F("(pi) Info"));
   output->println(F("(pl) Reset parameters for line"));
-  output->println(F("(pn) Reset parameters for line christmas"));
   output->println(F("(pr) Reset parameters for square 8x8"));
   output->println(F("(ps) Reset parameters for square 16x16"));
 }
@@ -200,34 +200,18 @@ void processPixelsCommand(char command,
                           char* paramValue,
                           Print* output) {  // char and char* ??
   switch (command) {
-    case 'c':
-      setAndSaveParameter(PARAM_BRIGHTNESS, 127);
-      setAndSaveParameter(PARAM_INTENSITY, 2);
-      setAndSaveParameter(PARAM_SPEED, 19);
-      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 4);
-      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 2);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-      setAndSaveParameter(PARAM_NB_ROWS, 1);
-      setAndSaveParameter(PARAM_NB_COLUMNS, 144);
-      setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);
-      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
-      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-      setAndSaveParameter(PARAM_DIRECTION, 1);
-      setAndSaveParameter(PARAM_LED_RED, 127);
-      setAndSaveParameter(PARAM_LED_GREEN, 63);
-      setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 2);  // on during the night
-      // Full power in the evening but reduce at 10PM and
-      // turn off at 12PM Turn on in the morning at 5AM but not too strong
-      setAndSaveParameter(PARAM_SUNSET_OFFSET, -30);
-      setAndSaveParameter(PARAM_SUNRISE_OFFSET, 30);
-      clearActions();
-      setAndSaveParameter(PARAM_ACTION_1, 30960);
-      setAndSaveParameter(PARAM_ACTION_2, 9320);
-      setAndSaveParameter(PARAM_ACTION_3, 0);
-      setAndSaveParameter(PARAM_ACTION_4, 8300);
-
+    case 'b':  // christmass line
+      resetLine(1, 1024);
+      outdoorSchedule(32, 8);
+      setAndSaveParameter(PARAM_BRIGHTNESS, 32);
+      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 32);
+      updateMapping();
+      break;
+    case 'c':  // christmas tree
+      resetLine(20, 50);
+      outdoorSchedule(32, 8);
+      setAndSaveParameter(PARAM_BRIGHTNESS, 32);
+      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 32);
       updateMapping();
       break;
     case 'g':
@@ -237,21 +221,23 @@ void processPixelsCommand(char command,
       printTime(output);
       output->print("Brightness: ");
       output->println(getParameter(PARAM_BRIGHTNESS));
+      output->print("Background brightness: ");
+      output->println(getParameter(PARAM_BACKGROUND_BRIGHTNESS));
       for (uint8_t i = 0; i < sizeof(ACTIONS); i++) {
         int16_t currentActionValue = getParameter(ACTIONS[i]);
-        if (currentActionValue < 0) {
+        if (currentActionValue == -1) {
           continue;
         }
-        int16_t brightness = currentActionValue / 2000;
-        int16_t hourMinute = currentActionValue - brightness * 2000;
+        int16_t brightness = currentActionValue & 0xFF;
+        int16_t quarters = currentActionValue >> 8;
         output->print("Action ");
         output->print(i + 1);
         output->print(" : ");
-        output->printf("%02.0f", floor(hourMinute / 60.0));
+        output->printf("%02i", quarters / 4);
         output->print(":");
-        output->printf("%02.0f", hourMinute % 60);
+        output->printf("%02i", (quarters % 4) * 15);
         output->print(" - ");
-        output->println(brightness * 16);
+        output->println(brightness);
       }
       output->print("Is night: ");
       output->println(isNight());
@@ -319,53 +305,11 @@ void processPixelsCommand(char command,
 
       updateMapping();
       break;
-    case 'b':
-      setAndSaveParameter(PARAM_BRIGHTNESS, 63);
-      setAndSaveParameter(PARAM_INTENSITY, 2);
-      setAndSaveParameter(PARAM_SPEED, 17);
-      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
-      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-      setAndSaveParameter(PARAM_NB_ROWS, 16);
-      setAndSaveParameter(PARAM_NB_COLUMNS, 16);
-      setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
-      setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
-      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-      setAndSaveParameter(PARAM_DIRECTION, 1);
-      setAndSaveParameter(PARAM_LED_RED, 127);
-      setAndSaveParameter(PARAM_LED_GREEN, 63);
-      setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
-      setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
-      setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
-      setAndSaveParameter(PARAM_ACTION_1,
-                          30960);  // at 16h brightness to max (15)
-      setAndSaveParameter(PARAM_ACTION_2,
-                          11080);  // at 18h brightness to 5
-      setAndSaveParameter(PARAM_ACTION_3,
-                          3320);               // at 22h brightness to 1
-      setAndSaveParameter(PARAM_ACTION_4, 0);  // at 0h brightness to 0
-      setAndSaveParameter(PARAM_ACTION_5,
-                          2300);  // at 5h brightness to 1
 
-      setAndSaveParameter(PARAM_ACTION_6,
-                          10420);                // at 7h we set brightness to 5
-      setAndSaveParameter(PARAM_ACTION_7, 540);  // at 9h we set brightness to 0
-      setAndSaveParameter(PARAM_ACTION_8, -1);   // ignore
-
-      updateMapping();
-      break;
-    case 'l':
-      resetLine();
+    case 'l':  // internal line
+      resetLine(1, 500);
       setAndSaveParameter(PARAM_COLOR_LED_MODEL,
                           NEO_GRB);  // CA  NEO_RGB: 6 - NEO_GRB: 82
-      updateMapping();
-      break;
-    case 'n':
-      resetLine();
-      setAndSaveParameter(PARAM_COLOR_LED_MODEL,
-                          NEO_RGB);  // CA  NEO_RGB: 6 - NEO_GRB: 82
       updateMapping();
       break;
     default:
@@ -373,16 +317,44 @@ void processPixelsCommand(char command,
   }
 }
 
-void resetLine() {
+void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness) {
+  clearActions();
+  setAndSaveParameter(PARAM_SCHEDULE, 2);  // on during the night
+  // Full power in the evening but reduce at 10PM and
+  // turn off at 12PM Turn on in the morning at 5AM but not too strong
+  setAndSaveParameter(PARAM_SUNSET_OFFSET, -30);
+  setAndSaveParameter(PARAM_SUNRISE_OFFSET, 30);
+  clearActions();
+  setAndSaveParameter(
+      PARAM_ACTION_1,
+      ((4 * 14) << 8) + highBrightness);  // intensity high, at 14:00 but anyway
+                                          // we only turn on during the night
+  setAndSaveParameter(
+      PARAM_ACTION_2,
+      ((4 * 22) << 8) + lowBrightness);    // intensity low, at 22:00
+  setAndSaveParameter(PARAM_ACTION_3, 0);  // turn off at 00:00
+  setAndSaveParameter(
+      PARAM_ACTION_4,
+      ((4 * 5) << 8) + lowBrightness);  // intensity low, at 5:00
+}
+
+void alwaysOn() {
+  clearActions();
+  setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+  setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
+  setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
+}
+
+void resetLine(int16_t row, int16_t column) {
   setAndSaveParameter(PARAM_BRIGHTNESS, 32);
   setAndSaveParameter(PARAM_INTENSITY, 4);
   setAndSaveParameter(PARAM_SPEED, 20);
   setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
   setAndSaveParameter(PARAM_COLOR_MODEL, 7);
   setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 10);
-  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 2);
-  setAndSaveParameter(PARAM_NB_ROWS, 1);
-  setAndSaveParameter(PARAM_NB_COLUMNS, 1024);
+  setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 64);
+  setAndSaveParameter(PARAM_NB_ROWS, row);
+  setAndSaveParameter(PARAM_NB_COLUMNS, column);
   setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
 
   setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
@@ -390,9 +362,6 @@ void resetLine() {
   setAndSaveParameter(PARAM_LED_RED, 127);
   setAndSaveParameter(PARAM_LED_GREEN, 63);
   setAndSaveParameter(PARAM_LED_BLUE, 0);
-  setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
-  setAndSaveParameter(PARAM_SUNSET_OFFSET, 0);
-  setAndSaveParameter(PARAM_SUNRISE_OFFSET, 0);
   setAndSaveParameter(PARAM_COMMAND_1, 0xf00);
   setAndSaveParameter(PARAM_COMMAND_2, 0xf0f);
   setAndSaveParameter(PARAM_COMMAND_3, 0x20f);
