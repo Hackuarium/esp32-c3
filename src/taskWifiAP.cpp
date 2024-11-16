@@ -9,7 +9,14 @@ char passwordAP[30];
 void TaskWifiAP(void* pvParameters) {
   vTaskDelay(2500);
   getParameter("wifi.ap.ssid", ssidAP);
+  if (strlen(ssidAP) == 0) {
+    strcpy(ssidAP, WiFi.macAddress().c_str());
+  }
+
   getParameter("wifi.ap.pass", passwordAP);
+  if (strlen(passwordAP) == 0) {
+    strcpy(passwordAP, "pass1234");
+  }
 
   Serial.print("Trying to create wifi AP: ");
   Serial.println(ssidAP);

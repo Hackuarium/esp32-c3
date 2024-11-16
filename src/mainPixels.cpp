@@ -32,10 +32,11 @@ void setupPixels() {
   taskSerial();
 
   taskOTA();  // incompatible with Lolin32 ??
-  // taskMDNS();  // incompatible with taskOTA
+              // taskMDNS();  // incompatible with taskOTA
   taskWifi();
-  taskNTPD();
+  // we now start AP automatically if no wifi connection
   // taskWifiAP();
+  taskNTPD();
   taskWebserver();
   taskMQTT();
   taskFetch();
