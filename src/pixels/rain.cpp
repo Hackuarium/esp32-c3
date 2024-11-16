@@ -27,10 +27,6 @@ void updateRain(Adafruit_NeoPixel& pixels,
     };
   }
 
-  if (rainCounter % ((21 - getParameter(PARAM_SPEED))) != 0) {
-    return;
-  }
-
   uint16_t nbEvents = 1;
   if (getParameter(PARAM_INTENSITY) >= 3) {
     nbEvents = pow(4, getParameter(PARAM_INTENSITY) - 3);

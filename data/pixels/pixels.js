@@ -250,17 +250,11 @@ export class Pixels {
   }
 
   async getCurrentSettings() {
-    let parameters = this.parameters.slice(0, 52).map((p) => p.value);
-    const withIntensities =
-      "BA" +
-      parameters.slice(0, 8).join(",") +
-      ",BK" +
-      parameters.slice(10, 13).join(",");
-    const withoutIntensities =
-      "BB" +
-      parameters.slice(1, 7).join(",") +
-      ",BK" +
-      parameters.slice(10, 13).join(",");
+    let parameters = this.parameters.slice(52).map((p) => p.value);
+    const common =
+      ",BK" + parameters.slice(10, 13).join(",") + ",BO" + parameters[14];
+    const withIntensities = "BA" + parameters.slice(0, 8).join(",") + common;
+    const withoutIntensities = "BB" + parameters.slice(1, 7).join(",") + common;
     document.getElementById(
       "result"
     ).value = `With intensities: ${withIntensities}\nWithout intensities: ${withoutIntensities}`;

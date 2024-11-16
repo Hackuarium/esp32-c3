@@ -182,17 +182,21 @@ bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
   if (b < bgB) {
     b = bgB;
   }
-  pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
+  if (increment > 0) {
+    pixels.setPixelColor(led, Adafruit_NeoPixel::Color(r, g, b));
+  }
   return r == bgR && g == bgG && b == bgB;
 }
 
 bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led) {
+  uint8_t threshold = 3;
   uint8_t increment = 0;
-  if (getParameter(PARAM_COLOR_DECREASE_SPEED) >= 2) {
-    increment = pow(2, getParameter(PARAM_COLOR_DECREASE_SPEED) - 2);
+
+  int16_t decreaseSpeed = getParameter(PARAM_COLOR_DECREASE_SPEED);
+  if (decreaseSpeed >= threshold) {
+    increment = pow(2, decreaseSpeed - threshold);
   } else {
-    increment =
-        random(0, pow(2, 2 - getParameter(PARAM_COLOR_DECREASE_SPEED))) == 0;
+    increment = random(0, pow(2, threshold - decreaseSpeed)) == 0;
   }
   return decreaseColor(pixels, led, increment);
 }
