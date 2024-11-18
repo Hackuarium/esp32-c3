@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
 #define THR_PIXELS 1
-#define FRONIUS 1
 
 #define MAX_LED 1024
 
@@ -117,6 +116,8 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_METEO_SLOT_4 93  // CP
 #define PARAM_METEO_SLOT_5 94  // CQ
 #define PARAM_METEO_SLOT_6 95  // CR
+
+#define PARAM_WIFI_MODE 96  // CS - <=0: STA, 1: AP, 2: STA 30s then AP
 
 #define SLOT_METEO_TEMPERATURE 0     // temperature / rain
 #define SLOT_METEO_WEATHER_ICON 1    // weather icon

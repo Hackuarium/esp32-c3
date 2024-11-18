@@ -3,6 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="icon" type="image/png" href="../icon/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="../icon/favicon.svg" />
+<link rel="shortcut icon" href="../icon/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="../icon/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="2025" />
+<link rel="manifest" href="../icon/site.webmanifest" />
+
     <link href="style.css" rel="stylesheet" />
     <title>Christmas Lights Control</title>
     <script>
@@ -19,7 +27,7 @@
         document.getElementById(tabName).style.display = "block";
         evt.currentTarget.className += " active";
 
-        if (command) {
+        if (command && pixels.isMQTT()) {
           pixels.sendCommand(command);
         }
       }
@@ -37,7 +45,7 @@
         <button class="tablinks" data-program="BB4,BC18,BD1,BG2" onclick="openTab(event, 'RainMode')">
           <span class="icon">🌧️</span> Rain Mode
         </button>
-        <button class="tablinks" data-program="BB1,BC19,BD3,BF2,BG7" onclick="openTab(event, 'CometMode')">
+        <button class="tablinks" data-program="BB1,BC19,BD3,BF2,BG7,BO5" onclick="openTab(event, 'CometMode')">
           <span class="icon">☄️</span> Comet Mode
         </button>
         <button class="tablinks" onclick="openTab(event, 'Disco')" data-only-http>
@@ -135,10 +143,10 @@
         <section class="control-section">
           <h2>🌟 Preset Effects</h2>
           <div class="preset-grid">
-            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,7,10,3,BK0,128,9,BO2')">
+            <button class="preset-button" onclick="pixels.sendCommand('BB2,17,1,7,10,1,BK0,128,9,BO2')">
               <span class="icon">🎄</span> Green Christmas
             </button>
-            <button class="preset-button" onclick="pixels.sendCommand('BB2,17,1,7,3,0,BK255,255,255,BO2')">
+            <button class="preset-button" onclick="pixels.sendCommand('BB2,17,1,7,2,0,BK255,255,255,BO2')">
               <span class="icon">❄️</span> White Christmas
             </button>
             <button class="preset-button" onclick="pixels.sendCommand('BB1,17,1,17,1,0,BK0,17,255,BO2')">
@@ -146,6 +154,12 @@
             </button>
             <button class="preset-button" onclick="pixels.sendCommand('BB5,20,1,0,10,6,BK255,255,255')">
               <span class="icon">⚡</span> White Flash
+            </button>
+            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,7,2,2,BK0,0,0,BO2')">
+              <span class="icon">☔️</span> Color rain
+            </button>
+             <button class="preset-button" onclick="pixels.sendCommand('BB3,17,1,8,2,1,BK0,0,0,BO2')">
+              <span class="icon">️🎨</span> Painting  
             </button>
           </div>
         </section>
@@ -259,10 +273,10 @@
             <section class="control-section">
               <h2>✨ Preset Effects</h2>
               <div class="preset-grid">
-                <button class="preset-button" onclick="pixels.sendCommand('BB2,20,3,9,4,6,BK255,255,255,BO5')">
-                  <span class="icon">🌠</span> Both Ways
+                <button class="preset-button" onclick="pixels.sendCommand('BB3,20,3,9,4,8,BK0,0,0,BO5')">
+                  <span class="icon">🌠</span>Crossing small 
                 </button>
-                <button class="preset-button" onclick="pixels.sendCommand('BB3,18,3,7,5,6,BK0,255,17,BO1')">
+                <button class="preset-button" onclick="pixels.sendCommand('BB0,19,3,17,5,5,BK0,255,17,BO1')">
                   <span class="icon">🌲</span> Green Background
                 </button>
               </div>
@@ -386,19 +400,19 @@
                 <section class="control-section">
                   <h2>🎵 Disco Effects</h2>
                   <div class="preset-grid">
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,7,10,8,0,1,800,127,63,0,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB6,18,1,7,4,10,BK127,63,0,BO1')">
                       <span class="icon">⚡</span> Rain Fast
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,7,10,7,0,1,800,127,63,0,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB5,18,1,7,3,8,BK127,63,0,BO1')">
                       <span class="icon">💫</span> Rain Medium
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,0,1,7,10,3,0,1,800,127,63,0,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB4,18,1,7,3,3,BK127,63,0,BO1')">
                       <span class="icon">🌧️</span> Rain Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">🌈</span> Color Line Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,0,1,800,127,63,0,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">↕️</span> Line Up Down
                     </button>
                     <button class="preset-button" onclick="pixels.sendCommand('BB2,20,11,0,10,6,0,1,800,255,255,255,0,1')">
@@ -413,7 +427,7 @@
                     <button class="preset-button" onclick="pixels.sendCommand('BB7,16,1,0,10,6,0,1,800,255,255,255,0,1')">
                       <span class="icon">🌟</span> Strobe Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BA63,1,1,11,1,1,0,8,1,800,0,17,255,0,1')">
+                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">🌈</span> Rainbow
                     </button>
                   </div>
@@ -473,6 +487,7 @@ CD: Sunrise offset
 CE,CF,CG,CH,CI,CJ,CK,CL: Minute event: 
 - &lt;0 no action
 - (quarter &lt;&lt; 8) + intensity 
+CS: Wifi mode - 0: STA, 1: AP, 2: STA 30s then AP
                     </pre>
                   </div>
                 </section>
@@ -506,9 +521,7 @@ CE,CF,CG,CH,CI,CJ,CK,CL: Minute event:
                 pixels.addColorModelsButtons(models);
         
                 const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
-                console.log(bd.value)
                 const element = document.querySelector('[data-program*="BD' + bd.value + ',"]');
-                console.log({element})
                 element?.click();
 
                 // after 5 minutes we remove the page and add a button to reload it

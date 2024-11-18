@@ -203,15 +203,13 @@ void processPixelsCommand(char command,
     case 'b':  // christmass line
       resetLine(1, 1024);
       outdoorSchedule(32, 8);
-      setAndSaveParameter(PARAM_BRIGHTNESS, 32);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 32);
+      setAndSaveParameter(PARAM_WIFI_MODE, 2);
       updateMapping();
       break;
     case 'c':  // christmas tree
       resetLine(20, 50);
       outdoorSchedule(32, 8);
-      setAndSaveParameter(PARAM_BRIGHTNESS, 32);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 32);
+      setAndSaveParameter(PARAM_WIFI_MODE, 2);
       updateMapping();
       break;
     case 'g':
@@ -253,56 +251,25 @@ void processPixelsCommand(char command,
       output->println(getParameter(PARAM_SUNRISE_OFFSET));
       break;
     case 'r':  // square 8x8
-      setAndSaveParameter(PARAM_BRIGHTNESS, 5);
-      setAndSaveParameter(PARAM_INTENSITY, 2);
-      setAndSaveParameter(PARAM_SPEED, 17);
-      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
-      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-      setAndSaveParameter(PARAM_NB_ROWS, 8);
-      setAndSaveParameter(PARAM_NB_COLUMNS, 8);
+      resetLine(8, 8);
       setAndSaveParameter(PARAM_LAYOUT_MODEL, 0);
       setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
-      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-      setAndSaveParameter(PARAM_DIRECTION, 1);
-      setAndSaveParameter(PARAM_LED_RED, 127);
-      setAndSaveParameter(PARAM_LED_GREEN, 63);
-      setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
       clearActions();
-
       updateMapping();
       break;
     case 's':  // square 16x16
-      setAndSaveParameter(PARAM_BRIGHTNESS, 5);
-      setAndSaveParameter(PARAM_INTENSITY, 2);
-      setAndSaveParameter(PARAM_SPEED, 17);
-      setAndSaveParameter(PARAM_CURRENT_PROGRAM, 1);
-      setAndSaveParameter(PARAM_COLOR_MODEL, 7);
-      setAndSaveParameter(PARAM_COLOR_CHANGE_SPEED, 3);
-      setAndSaveParameter(PARAM_BACKGROUND_BRIGHTNESS, 0);
-      setAndSaveParameter(PARAM_NB_ROWS, 16);
-      setAndSaveParameter(PARAM_NB_COLUMNS, 16);
+      resetLine(16, 16);
       setAndSaveParameter(PARAM_LAYOUT_MODEL, 2);
       setAndSaveParameter(PARAM_COLOR_LED_MODEL, NEO_GRB);
-      setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
-      setAndSaveParameter(PARAM_DIRECTION, 1);
-      setAndSaveParameter(PARAM_LED_RED, 127);
-      setAndSaveParameter(PARAM_LED_GREEN, 63);
-      setAndSaveParameter(PARAM_LED_BLUE, 0);
-      setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
-
       setAndSaveParameter(PARAM_NB_PLAYERS, 1);
       setAndSaveParameter(PARAM_WIN_LIMIT, 20);
-      clearActions();
       setAndSaveParameter(PARAM_METEO_SLOT_1, SLOT_METEO_WEATHER_ICON);
       setAndSaveParameter(PARAM_METEO_SLOT_2, SLOT_METEO_TEMPERATURE);
       setAndSaveParameter(PARAM_METEO_SLOT_3, SLOT_METEO_TEMPERATURE);
       setAndSaveParameter(PARAM_METEO_SLOT_4, SLOT_METEO_FRONIUS);
       setAndSaveParameter(PARAM_METEO_SLOT_5, SLOT_METEO_TEMPERATURE);
       setAndSaveParameter(PARAM_METEO_SLOT_6, SLOT_METEO_TEMPERATURE);
-
+      clearActions();
       updateMapping();
       break;
 
@@ -319,7 +286,7 @@ void processPixelsCommand(char command,
 
 void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness) {
   clearActions();
-  setAndSaveParameter(PARAM_SCHEDULE, 2);  // on during the night
+  setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on for debugging
   // Full power in the evening but reduce at 10PM and
   // turn off at 12PM Turn on in the morning at 5AM but not too strong
   setAndSaveParameter(PARAM_SUNSET_OFFSET, -30);
@@ -356,7 +323,8 @@ void resetLine(int16_t row, int16_t column) {
   setAndSaveParameter(PARAM_NB_ROWS, row);
   setAndSaveParameter(PARAM_NB_COLUMNS, column);
   setAndSaveParameter(PARAM_LAYOUT_MODEL, 1);
-
+  setAndSaveParameter(PARAM_COLOR_LED_MODEL,
+                      NEO_RGB);  // NEO_RGB 6 - NEO_GRB 82
   setAndSaveParameter(PARAM_COLOR_DECREASE_SPEED, 2);
   setAndSaveParameter(PARAM_DIRECTION, 1);
   setAndSaveParameter(PARAM_LED_RED, 127);
@@ -370,6 +338,8 @@ void resetLine(int16_t row, int16_t column) {
   setAndSaveParameter(PARAM_COMMAND_6, 0x6f0);
   setAndSaveParameter(PARAM_COMMAND_7, 0xfd0);
   setAndSaveParameter(PARAM_COMMAND_8, 0xf70);
+  setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
+  setAndSaveParameter(PARAM_WIFI_MODE, 0);
   clearActions();
 }
 

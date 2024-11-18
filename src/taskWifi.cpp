@@ -3,6 +3,10 @@
 
 #include "esp_wpa2.h"
 
+// if we can not connect during 30s we will start the AP
+
+void taskWifiAP();
+
 char ssid[30];
 char password[30];
 // the wifi also requires username and password
@@ -17,13 +21,26 @@ void retrieveWifiParameters() {
 }
 
 void TaskWifi(void* pvParameters) {
+  int16_t wifiTimeout = -1;
+
+  while (getParameter(PARAM_WIFI_MODE) == 1) {
+    vTaskDelay(1000);
+  }
+
+  if (getParameter(PARAM_WIFI_MODE) == 2) {
+    wifiTimeout = 30;
+  }
+
   vTaskDelay(2500);
+
+  unsigned long start = millis();
 
   retrieveWifiParameters();
 
   if (strlen(ssid) < 2 || strlen(password) < 2) {
     Serial.println("No wifi ssid or password defined");
-    while (strlen(ssid) < 2 || strlen(password) < 2) {
+    while ((strlen(ssid) < 2 || strlen(password) < 2) && wifiTimeout > 0 &&
+           (millis() - start) < wifiTimeout * 1000) {
       vTaskDelay(1000);
       retrieveWifiParameters();
     }
@@ -71,10 +88,11 @@ void TaskWifi(void* pvParameters) {
     wifi_Enterprise_type = true;
   }
 
-  while (true) {
-    vTaskDelay(1000);
-    byte counter = 0;
-    while (WiFi.status() != WL_CONNECTED && counter++ < 10) {
+  uint8_t counter;
+  while ((wifiTimeout <= 0 || (millis() - start) < wifiTimeout * 1000) &&
+         counter++ < 30) {
+    vTaskDelay(2000);
+    if (WiFi.status() != WL_CONNECTED) {
       setParameter(PARAM_WIFI_RSSI, -1);
       Serial.println("WIFI not connected, trying to connect");
 
@@ -84,8 +102,6 @@ void TaskWifi(void* pvParameters) {
         WiFi.begin(ssid, password);
       }
 
-      // WiFi.reconnect();
-      vTaskDelay(2000);
       if (WiFi.status() == WL_CONNECTED) {
         Serial.println("WIFI connected");
       }
@@ -95,8 +111,20 @@ void TaskWifi(void* pvParameters) {
     } else {
       clearParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI);
       setParameter(PARAM_WIFI_RSSI, WiFi.RSSI());
+      counter = 0;
+      wifiTimeout = -1;  // we will never start AP anymore if we are connected
     }
   }
+
+  if (wifiTimeout > 0) {
+    Serial.println("Could not connect to wifi, starting AP");
+    WiFi.disconnect(true);
+    setParameter(PARAM_WIFI_MODE, 1);
+    while (true) {
+      vTaskDelay(10000);
+    }
+  }
+  Serial.println("Wifi process crashed");
 }
 
 void taskWifi() {

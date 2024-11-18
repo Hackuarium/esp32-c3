@@ -24,6 +24,10 @@ export class Pixels {
     document.head.appendChild(style);
   }
 
+  isMQTT() {
+    return this.mqttServers.length > 0;
+  }
+
   async getParameters() {
     await this.state;
     return this.parameters;

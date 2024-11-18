@@ -8,6 +8,11 @@ char passwordAP[30];
 
 void TaskWifiAP(void* pvParameters) {
   vTaskDelay(2500);
+
+  while (getParameter(PARAM_WIFI_MODE) != 1) {
+    vTaskDelay(1000);
+  }
+
   getParameter("wifi.ap.ssid", ssidAP);
   if (strlen(ssidAP) == 0) {
     strcpy(ssidAP, WiFi.macAddress().c_str());

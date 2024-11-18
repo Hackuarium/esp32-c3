@@ -26,20 +26,21 @@ void setupPixels() {
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();
-  // taskTest();
   taskPixels();
 
   taskSerial();
 
   taskOTA();  // incompatible with Lolin32 ??
-              // taskMDNS();  // incompatible with taskOTA
+              // taskMDNS();  // incompatible with taskOTA !
   taskWifi();
-  // we now start AP automatically if no wifi connection
-  // taskWifiAP();
+  taskWifiAP();
   taskNTPD();
   taskWebserver();
   taskMQTT();
+
+#if FETCH_FRONIUS == 1 || FETCH_WEATHER == 1
   taskFetch();
+#endif
 
 #ifdef PARAM_INT_TEMPERATURE_B
   taskInternalTemperature();
