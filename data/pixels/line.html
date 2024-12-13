@@ -538,7 +538,7 @@ CS: Wifi mode - 0: STA, 1: AP, 2: STA 30s then AP
                 ];
                 pixels.addColorModelsButtons(models);
         
-                const bd = parameters.find((p) => p.code === "BD") || { value: 1 };
+                const bd = parameters.find((p) => p.code === "BD") || { value: 1 }; // PARAM_CURRENT_PROGRAM
                 const element = document.querySelector('[data-program*="BD' + bd.value + ',"]');
                 element?.click();
 
