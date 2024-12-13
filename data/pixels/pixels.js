@@ -2,6 +2,7 @@ import { reapplySettings, color12ToHex } from "./reapplySettings.js";
 
 export class Pixels {
   constructor() {
+    this.throttle = 1000;
     this.mqttServers = [];
     this.mqttTopics = [];
     this.servers = [];
@@ -47,7 +48,7 @@ export class Pixels {
       }
     }
     if (this.servers.length === 0) {
-      this.servers.push("");
+      this.servers.push("/");
     }
   }
 
@@ -57,7 +58,7 @@ export class Pixels {
   }
 
   async fetchAllParameters() {
-    if (!this.servers?.[0]) return;
+    if (this.servers?.length === 0) return;
     const response = await fetch(this.servers[0] + "command" + "?value=uc");
     let string = (await response.text()).slice(8); // first 8 symbols is epoch
     for (let i = 0; i < string.length / 4; i++) {
@@ -91,7 +92,7 @@ export class Pixels {
       element.onchange = (event) => {
         const value = event.target.value;
         const label = event.target.getAttribute("data-label");
-        this.sendCommand(label + value);
+        this.sendSlowlyCommand(label + value);
       };
     }
     // deal with the color pickers
@@ -123,7 +124,7 @@ export class Pixels {
       element.oninput = (event) => {
         const value = event.target.value;
         const label = event.target.getAttribute("data-label");
-        this.sendCommand(label + value);
+        this.sendSlowlyCommand(label + value);
       };
     }
   }
@@ -226,7 +227,7 @@ export class Pixels {
         "linear-gradient(to right, " + colors + ")"
       );
       button.onmousedown = async () => {
-        await this.sendCommand(
+        await this.sendSlowlyCommand(
           "BP" +
             model.slice(0, 4).join(",") +
             ",BV" +
@@ -277,7 +278,7 @@ function download(data) {
 }
 
 async function updateGIFList() {
-  const results = await sendCommand("fd");
+  const results = await sendSlowlyCommand("fd");
   const lines = results
     .split("\n")
     .filter((line) => line.includes(".gif") && !line.includes("weather"));
@@ -297,7 +298,7 @@ async function updateGIFList() {
 }
 
 function setGIF(gif) {
-  sendCommand("pg" + gif);
+  sendSlowlyCommand("pg" + gif);
   console.log({ gif });
 }
 
@@ -318,8 +319,8 @@ async function getSchedule(pixels) {
     if (value < 0) {
       lines.push(label + ": No action");
     } else {
-      const intensity = Math.floor(value / 2000);
-      const minutes = value % 2000;
+      const intensity = value & 255;
+      const minutes = (value >> 8) * 15;
       const hours = Math.floor(minutes / 60);
       const minutesLeft = minutes % 60;
       lines.push(
@@ -334,7 +335,7 @@ async function setServo1(status) {
   const settings = await getParameters();
   const off = settings[19];
   const on = settings[20];
-  sendCommand("I" + (status ? on : off));
+  sendSlowlyCommand("I" + (status ? on : off));
 }
 
 async function demoFunction(functionStr) {

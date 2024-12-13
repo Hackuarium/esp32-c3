@@ -27,8 +27,8 @@
         document.getElementById(tabName).style.display = "block";
         evt.currentTarget.className += " active";
 
-        if (command && pixels.isMQTT()) {
-          pixels.sendCommand(command);
+        if (command) {
+          pixels.sendSlowlyCommand(command);
         }
       }
     </script>
@@ -143,22 +143,22 @@
         <section class="control-section">
           <h2>🌟 Preset Effects</h2>
           <div class="preset-grid">
-            <button class="preset-button" onclick="pixels.sendCommand('BB2,17,1,7,10,1,BK0,128,9,BO2')">
+            <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB2,17,1,7,10,1,BK0,128,9,BO2')">
               <span class="icon">🎄</span> Green Christmas
             </button>
-            <button class="preset-button" onclick="pixels.sendCommand('BB2,17,1,7,2,0,BK255,255,255,BO2')">
+            <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB2,17,1,7,2,0,BK255,255,255,BO2')">
               <span class="icon">❄️</span> White Christmas
             </button>
-            <button class="preset-button" onclick="pixels.sendCommand('BB1,17,1,17,1,0,BK0,17,255,BO2')">
+            <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB1,17,1,17,1,0,BK0,17,255,BO2')">
               <span class="icon">💫</span> Blue Magic
             </button>
-            <button class="preset-button" onclick="pixels.sendCommand('BB5,20,1,0,10,6,BK255,255,255')">
+            <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB5,20,1,0,10,6,BK255,255,255')">
               <span class="icon">⚡</span> White Flash
             </button>
-            <button class="preset-button" onclick="pixels.sendCommand('BB4,17,1,7,2,2,BK0,0,0,BO2')">
+            <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB4,17,1,7,2,2,BK0,0,0,BO2')">
               <span class="icon">☔️</span> Color rain
             </button>
-             <button class="preset-button" onclick="pixels.sendCommand('BB3,17,1,8,2,1,BK0,0,0,BO2')">
+             <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB3,17,1,8,2,1,BK0,0,0,BO2')">
               <span class="icon">️🎨</span> Painting  
             </button>
           </div>
@@ -189,18 +189,18 @@
             </select>
           </div>
           <div class="color-controls" data-only-mqtt>
-            <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
-            <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
-            <button class="color-button random-violetish" onclick="pixels.sendCommand('BE6')">Violetish</button>
-            <button class="color-button rainbow" onclick="pixels.sendCommand('BE7')">Rainbow</button>
-            <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
-            <button class="color-button red" onclick="pixels.sendCommand('BE17')">Red</button>
-            <button class="color-button green" onclick="pixels.sendCommand('BE18')">Green</button>
-            <button class="color-button yellow" onclick="pixels.sendCommand('BE19')">Yellow</button>
-            <button class="color-button blue" onclick="pixels.sendCommand('BE20')">Blue</button>
-            <button class="color-button violet" onclick="pixels.sendCommand('BE21')">Violet</button>
-            <button class="color-button cyan" onclick="pixels.sendCommand('BE22')">Cyan</button>
-            <button class="color-button white" onclick="pixels.sendCommand('BE23')">White</button>
+            <button class="color-button random-orangish" onclick="pixels.sendSlowlyCommand('BE2')">Orangish</button>
+            <button class="color-button random-greenish" onclick="pixels.sendSlowlyCommand('BE4')">Greenish</button>
+            <button class="color-button random-violetish" onclick="pixels.sendSlowlyCommand('BE6')">Violetish</button>
+            <button class="color-button rainbow" onclick="pixels.sendSlowlyCommand('BE7')">Rainbow</button>
+            <button class="color-button random" onclick="pixels.sendSlowlyCommand('BE9')">Random</button>
+            <button class="color-button red" onclick="pixels.sendSlowlyCommand('BE17')">Red</button>
+            <button class="color-button green" onclick="pixels.sendSlowlyCommand('BE18')">Green</button>
+            <button class="color-button yellow" onclick="pixels.sendSlowlyCommand('BE19')">Yellow</button>
+            <button class="color-button blue" onclick="pixels.sendSlowlyCommand('BE20')">Blue</button>
+            <button class="color-button violet" onclick="pixels.sendSlowlyCommand('BE21')">Violet</button>
+            <button class="color-button cyan" onclick="pixels.sendSlowlyCommand('BE22')">Cyan</button>
+            <button class="color-button white" onclick="pixels.sendSlowlyCommand('BE23')">White</button>
           </div>
         </section>
         <section class="control-section">
@@ -245,14 +245,14 @@
               <div class="background-control">
                 <h3>Background Color</h3>
                 <div class="color-squares" data-only-mqtt>
-                  <button class="color-square black" onclick="pixels.sendCommand('BK0,0,0,0')"></button>
-                  <button class="color-square red" onclick="pixels.sendCommand('BK255,0,0')"></button>
-                  <button class="color-square green" onclick="pixels.sendCommand('BK0,255,0')"></button>
-                  <button class="color-square blue" onclick="pixels.sendCommand('BK0,0,255')"></button>
-                  <button class="color-square yellow" onclick="pixels.sendCommand('BK255,255,0')"></button>
-                  <button class="color-square violet" onclick="pixels.sendCommand('BK255,0,255')"></button>
-                  <button class="color-square cyan" onclick="pixels.sendCommand('BK0,255,255')"></button>
-                  <button class="color-square white" onclick="pixels.sendCommand('BK255,255,255')"></button>
+                  <button class="color-square black" onclick="pixels.sendSlowlyCommand('BK0,0,0,0')"></button>
+                  <button class="color-square red" onclick="pixels.sendSlowlyCommand('BK255,0,0')"></button>
+                  <button class="color-square green" onclick="pixels.sendSlowlyCommand('BK0,255,0')"></button>
+                  <button class="color-square blue" onclick="pixels.sendSlowlyCommand('BK0,0,255')"></button>
+                  <button class="color-square yellow" onclick="pixels.sendSlowlyCommand('BK255,255,0')"></button>
+                  <button class="color-square violet" onclick="pixels.sendSlowlyCommand('BK255,0,255')"></button>
+                  <button class="color-square cyan" onclick="pixels.sendSlowlyCommand('BK0,255,255')"></button>
+                  <button class="color-square white" onclick="pixels.sendSlowlyCommand('BK255,255,255')"></button>
                 </div>
                  <div data-only-http>
                   <input type="color" data-rgb="true" data-label="BK,BL,BM" class="background-picker" />
@@ -273,10 +273,10 @@
             <section class="control-section">
               <h2>✨ Preset Effects</h2>
               <div class="preset-grid">
-                <button class="preset-button" onclick="pixels.sendCommand('BB3,20,3,9,4,8,BK0,0,0,BO5')">
+                <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB3,20,3,9,4,8,BK0,0,0,BO5')">
                   <span class="icon">🌠</span>Crossing small 
                 </button>
-                <button class="preset-button" onclick="pixels.sendCommand('BB0,19,3,17,5,5,BK0,255,17,BO1')">
+                <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB0,19,3,17,5,5,BK0,255,17,BO1')">
                   <span class="icon">🌲</span> Green Background
                 </button>
               </div>
@@ -307,18 +307,18 @@
                 </select>
               </div>
               <div class="color-controls" data-only-mqtt>
-                <button class="color-button random-orangish" onclick="pixels.sendCommand('BE2')">Orangish</button>
-                <button class="color-button random-greenish" onclick="pixels.sendCommand('BE4')">Greenish</button>
-                <button class="color-button random-violetish" onclick="pixels.sendCommand('BE6')">Violetish</button>
-                <button class="color-button rainbow" onclick="pixels.sendCommand('BE7')">Rainbow</button>
-                <button class="color-button random" onclick="pixels.sendCommand('BE9')">Random</button>
-                <button class="color-button red" onclick="pixels.sendCommand('BE17')">Red</button>
-                <button class="color-button green" onclick="pixels.sendCommand('BE18')">Green</button>
-                <button class="color-button yellow" onclick="pixels.sendCommand('BE19')">Yellow</button>
-                <button class="color-button blue" onclick="pixels.sendCommand('BE20')">Blue</button>
-                <button class="color-button violet" onclick="pixels.sendCommand('BE21')">Violet</button>
-                <button class="color-button cyan" onclick="pixels.sendCommand('BE22')">Cyan</button>
-                <button class="color-button white" onclick="pixels.sendCommand('BE23')">White</button>
+                <button class="color-button random-orangish" onclick="pixels.sendSlowlyCommand('BE2')">Orangish</button>
+                <button class="color-button random-greenish" onclick="pixels.sendSlowlyCommand('BE4')">Greenish</button>
+                <button class="color-button random-violetish" onclick="pixels.sendSlowlyCommand('BE6')">Violetish</button>
+                <button class="color-button rainbow" onclick="pixels.sendSlowlyCommand('BE7')">Rainbow</button>
+                <button class="color-button random" onclick="pixels.sendSlowlyCommand('BE9')">Random</button>
+                <button class="color-button red" onclick="pixels.sendSlowlyCommand('BE17')">Red</button>
+                <button class="color-button green" onclick="pixels.sendSlowlyCommand('BE18')">Green</button>
+                <button class="color-button yellow" onclick="pixels.sendSlowlyCommand('BE19')">Yellow</button>
+                <button class="color-button blue" onclick="pixels.sendSlowlyCommand('BE20')">Blue</button>
+                <button class="color-button violet" onclick="pixels.sendSlowlyCommand('BE21')">Violet</button>
+                <button class="color-button cyan" onclick="pixels.sendSlowlyCommand('BE22')">Cyan</button>
+                <button class="color-button white" onclick="pixels.sendSlowlyCommand('BE23')">White</button>
               </div>
             </section>
     
@@ -381,14 +381,14 @@
                 <div class="background-control">
                 <h3>Background Color</h3>
                 <div class="color-squares" data-only-mqtt>
-                  <button class="color-square black" onclick="pixels.sendCommand('BK0,0,0,0')"></button>
-                  <button class="color-square red" onclick="pixels.sendCommand('BK255,0,0')"></button>
-                  <button class="color-square green" onclick="pixels.sendCommand('BK0,255,0')"></button>
-                  <button class="color-square blue" onclick="pixels.sendCommand('BK0,0,255')"></button>
-                  <button class="color-square yellow" onclick="pixels.sendCommand('BK255,255,0')"></button>
-                  <button class="color-square violet" onclick="pixels.sendCommand('BK255,0,255')"></button>
-                  <button class="color-square cyan" onclick="pixels.sendCommand('BK0,255,255')"></button>
-                  <button class="color-square white" onclick="pixels.sendCommand('BK255,255,255')"></button>
+                  <button class="color-square black" onclick="pixels.sendSlowlyCommand('BK0,0,0,0')"></button>
+                  <button class="color-square red" onclick="pixels.sendSlowlyCommand('BK255,0,0')"></button>
+                  <button class="color-square green" onclick="pixels.sendSlowlyCommand('BK0,255,0')"></button>
+                  <button class="color-square blue" onclick="pixels.sendSlowlyCommand('BK0,0,255')"></button>
+                  <button class="color-square yellow" onclick="pixels.sendSlowlyCommand('BK255,255,0')"></button>
+                  <button class="color-square violet" onclick="pixels.sendSlowlyCommand('BK255,0,255')"></button>
+                  <button class="color-square cyan" onclick="pixels.sendSlowlyCommand('BK0,255,255')"></button>
+                  <button class="color-square white" onclick="pixels.sendSlowlyCommand('BK255,255,255')"></button>
                 </div>
                  <div data-only-http>
                   <input type="color" data-rgb="true" data-label="BK,BL,BM" class="background-picker" />
@@ -400,34 +400,34 @@
                 <section class="control-section">
                   <h2>🎵 Disco Effects</h2>
                   <div class="preset-grid">
-                    <button class="preset-button" onclick="pixels.sendCommand('BB6,18,1,7,4,10,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB6,18,1,7,4,10,BK127,63,0,BO1')">
                       <span class="icon">⚡</span> Rain Fast
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB5,18,1,7,3,8,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB5,18,1,7,3,8,BK127,63,0,BO1')">
                       <span class="icon">💫</span> Rain Medium
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB4,18,1,7,3,3,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB4,18,1,7,3,3,BK127,63,0,BO1')">
                       <span class="icon">🌧️</span> Rain Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">🌈</span> Color Line Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB4,20,11,7,10,7,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB4,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">↕️</span> Line Up Down
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB2,20,11,0,10,6,0,1,800,255,255,255,0,1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB2,20,11,0,10,6,0,1,800,255,255,255,0,1')">
                       <span class="icon">🎨</span> Color Line Fast
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,1,0,10,9,0,1,800,255,255,255,0,1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB7,20,1,0,10,9,0,1,800,255,255,255,0,1')">
                       <span class="icon">⚡</span> Strobe Fast
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,19,1,0,10,8,0,1,800,255,255,255,0,1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB7,19,1,0,10,8,0,1,800,255,255,255,0,1')">
                       <span class="icon">✨</span> Strobe Medium
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,16,1,0,10,6,0,1,800,255,255,255,0,1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB7,16,1,0,10,6,0,1,800,255,255,255,0,1')">
                       <span class="icon">🌟</span> Strobe Slow
                     </button>
-                    <button class="preset-button" onclick="pixels.sendCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
+                    <button class="preset-button" onclick="pixels.sendSlowlyCommand('BB7,20,11,7,10,7,BK127,63,0,BO1')">
                       <span class="icon">🌈</span> Rainbow
                     </button>
                   </div>
@@ -450,10 +450,10 @@
                   </div>
         
                   <div class="button-grid">
-                    <button class="control-button" onmousedown="pixels.sendCommand('h')">
+                    <button class="control-button" onmousedown="pixels.sendSlowlyCommand('h')">
                       <span class="icon">❓</span> Help
                     </button>
-                    <button class="control-button" onmousedown="pixels.sendCommand('s')">
+                    <button class="control-button" onmousedown="pixels.sendSlowlyCommand('s')">
                       <span class="icon">⚙️</span> Settings
                     </button>
                     <button class="control-button" onmousedown="pixels.getCurrentSettings()">
@@ -471,7 +471,7 @@
                     <h3>🔧 Custom Command</h3>
                     <form class="input-row">
                       <input type="text" class="command-input" name="command" placeholder="Enter command..." />
-                      <button type="submit" class="submit-button" onclick="event.preventDefault(); pixels.sendCommand(this.form.command.value);">
+                      <button type="submit" class="submit-button" onclick="event.preventDefault(); pixels.sendSlowlyCommand(this.form.command.value);">
                         Send Command
                       </button>
                     </form>
@@ -489,10 +489,28 @@ CE,CF,CG,CH,CI,CJ,CK,CL: Minute event:
 - (quarter &lt;&lt; 8) + intensity 
 CS: Wifi mode - 0: STA, 1: AP, 2: STA 30s then AP
                     </pre>
+                    <div class="command-section">
+                    <h3>🧮 Schedule calculator</h3>
+                    <form class="input-row">
+                      <input type="text" class="command-input" id="quarter" onchange="calculateSchedule()" placeholder="Quarter of the day" />
+                      <input type="text" class="command-input" id="intensity" onchange="calculateSchedule()" placeholder="Intensity" />
+                      <input type="text" class="command-input" id="schedule" placeholder="Result" readonly />
+                    </form>
+                  </div>
+
                   </div>
                 </section>
               </div>
-        
+       
+<script>
+  function calculateSchedule() {
+    const quarter = parseInt(document.getElementById("quarter").value);
+    const intensity = parseInt(document.getElementById("intensity").value);
+    const schedule = (quarter << 8) + intensity;
+    document.getElementById("schedule").value = schedule;
+  }
+</script>              
+
               <script type="module">
                 import { Pixels } from "./pixels.js";
                 const pixels = new Pixels();

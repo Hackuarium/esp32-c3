@@ -67,7 +67,7 @@ esp_err_t httpEventHandler(esp_http_client_event_t* evt) {
             memcpy(evt->user_data + output_len, evt->data, evt->data_len);
           }
         } else {
-          Serial.println('Need to define user_data');
+          Serial.println("Need to define user_data");
           return ESP_FAIL;
         }
         output_len += evt->data_len;

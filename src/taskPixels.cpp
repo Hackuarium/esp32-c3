@@ -294,7 +294,7 @@ void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness) {
   clearActions();
   setAndSaveParameter(
       PARAM_ACTION_1,
-      ((4 * 14) << 8) + highBrightness);  // intensity high, at 14:00 but anyway
+      ((4 * 16) << 8) + highBrightness);  // intensity high, at 16:00 but anyway
                                           // we only turn on during the night
   setAndSaveParameter(
       PARAM_ACTION_2,
@@ -303,6 +303,11 @@ void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness) {
   setAndSaveParameter(
       PARAM_ACTION_4,
       ((4 * 5) << 8) + lowBrightness);  // intensity low, at 5:00
+  setAndSaveParameter(
+      PARAM_ACTION_5,
+      ((4 * 7 + 2) << 8) + highBrightness);  // intensity high, at 7:30 = CI7712
+  setAndSaveParameter(PARAM_ACTION_6,
+                      ((4 * 9) << 8) + 0);  // intensity off, at 9:00 = CJ9216
 }
 
 void alwaysOn() {

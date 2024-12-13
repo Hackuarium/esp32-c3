@@ -82,20 +82,20 @@ void resetSnake(Adafruit_NeoPixel& pixels) {
       1, {0, 0}, 1, Adafruit_NeoPixel::Color(255, 0, 0), PARAM_COMMAND_1, 0,
       0, {0},    0};
   players[0].leds[0] = getLedIndex(0, 0);
-  players[1] = {
-      2,
-      {getParameter(PARAM_NB_ROWS) - 1, getParameter(PARAM_NB_COLUMNS) - 1},
-      1,
-      Adafruit_NeoPixel::Color(0, 0, 255),
-      PARAM_COMMAND_2,
-      0,
-      0,
-      {0},
-      0};
+  players[1] = {2,
+                {(uint8_t)(getParameter(PARAM_NB_ROWS) - 1),
+                 (uint8_t)(getParameter(PARAM_NB_COLUMNS) - 1)},
+                1,
+                Adafruit_NeoPixel::Color(0, 0, 255),
+                PARAM_COMMAND_2,
+                0,
+                0,
+                {0},
+                0};
   players[1].leds[0] = getLedIndex(getParameter(PARAM_NB_ROWS) - 1,
                                    getParameter(PARAM_NB_COLUMNS) - 1);
   players[2] = {3,
-                {getParameter(PARAM_NB_COLUMNS) - 1, 0},
+                {(uint8_t)(getParameter(PARAM_NB_COLUMNS) - 1), 0},
                 1,
                 Adafruit_NeoPixel::Color(0, 255, 0),
                 PARAM_COMMAND_3,
@@ -106,7 +106,7 @@ void resetSnake(Adafruit_NeoPixel& pixels) {
   players[2].leds[0] = getLedIndex(getParameter(PARAM_NB_ROWS) - 1, 0);
 
   players[3] = {4,
-                {0, getParameter(PARAM_NB_COLUMNS) - 1},
+                {0, (uint8_t)(getParameter(PARAM_NB_COLUMNS) - 1)},
                 1,
                 Adafruit_NeoPixel::Color(255, 0, 255),
                 PARAM_COMMAND_4,
@@ -114,7 +114,7 @@ void resetSnake(Adafruit_NeoPixel& pixels) {
                 0,
                 {0},
                 0};
-  players[3].leds[0] = getLedIndex(0, getParameter(PARAM_NB_COLUMNS) - 1);
+  players[3].leds[0] = getLedIndex(0, (uint8_t)((PARAM_NB_COLUMNS)-1));
 
   snakeCounter = 0;
   setParameter(PARAM_COMMAND_1, 2);
