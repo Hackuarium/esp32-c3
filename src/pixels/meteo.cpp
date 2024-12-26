@@ -318,9 +318,18 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   }
   float_t minTemperature = forecast[4];
   for (int i = 8; i < 36; i = i + 4) {
+    // Serial.println(forecast[i]);
     if (forecast[i] < minTemperature)
       minTemperature = forecast[i];
   }
+
+  /*
+    Serial.print(minTemperature);
+    Serial.print(" ");
+    Serial.print(maxTemperature);
+    Serial.print(" ");
+    Serial.println(temperature);
+    */
 
   for (int i = 4; i < 36; i = i + 4) {
     float_t temperature = forecast[i];
@@ -330,7 +339,7 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
     float_t dim = (i - 4) / 4 == currentSlot ? 1 : 0.2;
     // TEMPERATURE
 
-    if (minTemperature < 0) {  // currentTemperature under 10
+    if (minTemperature < 0) {
       int temperatureIntensity = abs((int8_t)(temperature / 2));
       for (uint8_t j = 0; j <= temperatureIntensity; j++) {
         if (temperature >= 0) {

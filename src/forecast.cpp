@@ -3,7 +3,6 @@
 // https://github.com/espressif/esp-idf/blob/5c1044d84d625219eafa18c24758d9f0e4006b2c/examples/protocols/esp_http_client/main/esp_http_client_example.c
 
 #include <WiFi.h>
-#include "./charToFloat.h"
 #include "config.h"
 #include "http.h"
 
@@ -44,10 +43,10 @@ void updateForecast() {
         }
         sunriseMin = getMinutes(sunrise);
       } else if (position < 36) {
-        forecast[position] = charToFloat(token);
+        forecast[position] = atof(token);
         position++;
       } else if (position > 37 && position < 40) {
-        currentWeather[position - 38] = charToFloat(token);
+        currentWeather[position - 38] = atof(token);
         position++;
       }
       token = strtok(NULL, ",");

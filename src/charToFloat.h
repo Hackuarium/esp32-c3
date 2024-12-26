@@ -1,2 +1,0 @@
-
-float charToFloat(char* string);
