@@ -11,6 +11,16 @@ float charToFloat(char* string) {
   double a = 0.0;
   int e = 0;
   int c;
+  int sign = 1;  // Assume positive by default
+
+  // Check for optional sign at the beginning
+  if (*string == '-') {
+    sign = -1;
+    string++;
+  } else if (*string == '+') {
+    string++;
+  }
+
   while ((c = *string++) != '\0' && isdigit(c)) {
     a = a * 10.0 + (c - '0');
   }
@@ -28,5 +38,5 @@ float charToFloat(char* string) {
     a *= 0.1;
     e++;
   }
-  return a;
+  return (float)(a * sign);
 }
