@@ -243,8 +243,7 @@ void processPixelsCommand(char command,
       output->println(getParameterBit(PARAM_SCHEDULE, 0));
       output->print("On during the night: ");
       output->println(getParameterBit(PARAM_SCHEDULE, 1));
-      printSunrise(output);
-      printSunset(output);
+      printForecast(output);
       output->print("Sunset offset: ");
       output->println(getParameter(PARAM_SUNSET_OFFSET));
       output->print("Sunrise offset: ");

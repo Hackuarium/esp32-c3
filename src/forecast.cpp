@@ -1,91 +1,118 @@
 
-// need to use native code:
-// https://github.com/espressif/esp-idf/blob/5c1044d84d625219eafa18c24758d9f0e4006b2c/examples/protocols/esp_http_client/main/esp_http_client_example.c
 
+#include "forecast.h"
+#include <ArduinoJson.h>
 #include <WiFi.h>
 #include "config.h"
 #include "http.h"
 
-static float_t forecast[36] = {0};
-static float_t currentWeather[2] = {NAN};  // temperature + humidity
-static char sunrise[6] = {0};
-static char sunset[6] = {0};
-static int16_t sunriseMin = 0;
-static int16_t sunsetMin = 0;
+StaticJsonDocument<1000> forecastObject;
 
-int16_t getMinutes(char* text);
+Forecast forecast = {.temperature = {0},
+                     .precipitation = {0},
+                     .windSpeed = {0},
+                     .windDirection = {0},
+                     .weather = {0},
+                     .sunrise = "00:00",
+                     .sunset = "00:00",
+                     .sunriseInMin = 0,
+                     .sunsetInMin = 0,
+                     .nextIcon = 0};
+
+DeserializationError errorJSONForecast;
 
 /*
   Update the weather forecast
 */
 void updateForecast() {
-  static char* token;
   char* responseForecast =
-      fetch("http://weather-proxy.cheminfo.org/forecast24");
+      fetch("http://weather-proxy.cheminfo.org/v2/forecast24");
 
-  if (strlen(responseForecast) > 0) {
-    currentWeather[2] = {NAN};
-    // we will parse the data
-    token = strtok(responseForecast, ",");
-    uint8_t position = 0;
-
-    while (token != NULL) {
-      if (position == 37) {
-        position++;
-        for (int i = 0; i < 5; i++) {
-          sunset[i] = token[i];
-        }
-        sunsetMin = getMinutes(sunset);
-      } else if (position == 36) {
-        position++;
-        for (int i = 0; i < 5; i++) {
-          sunrise[i] = token[i];
-        }
-        sunriseMin = getMinutes(sunrise);
-      } else if (position < 36) {
-        forecast[position] = atof(token);
-        position++;
-      } else if (position > 37 && position < 40) {
-        currentWeather[position - 38] = atof(token);
-        position++;
+  if (strlen(responseForecast) == 0) {
+    Serial.println("No data from fronius");
+  } else {
+    errorJSONForecast = deserializeJson(forecastObject, responseForecast);
+    if (errorJSONForecast) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(errorJSONForecast.c_str());
+    } else {
+      forecast.current.temperature =
+          (int16_t)forecastObject["current"]["temperature"];
+      forecast.current.precipitation =
+          (float)forecastObject["current"]["precipitation"];
+      forecast.current.windSpeed =
+          (int16_t)forecastObject["current"]["windSpeed"];
+      forecast.current.windDirection =
+          (int16_t)forecastObject["current"]["windDirection"];
+      forecast.current.weather = (int8_t)forecastObject["current"]["weather"];
+      for (int i = 0; i < 8; i++) {
+        forecast.temperature[i] = (int16_t)forecastObject["temperature"][i];
+        forecast.precipitation[i] = (float)forecastObject["precipitation"][i];
+        forecast.windSpeed[i] = (int16_t)forecastObject["windSpeed"][i];
+        forecast.windDirection[i] = (int16_t)forecastObject["windDirection"][i];
+        forecast.weather[i] = (int16_t)forecastObject["weather"][i];
       }
-      token = strtok(NULL, ",");
+      strcpy(forecast.sunrise, forecastObject["sunrise"]);
+      strcpy(forecast.sunset, forecastObject["sunset"]);
+      forecast.sunriseInMin = getMinutes(forecast.sunrise);
+      forecast.sunsetInMin = getMinutes(forecast.sunset);
+      forecast.nextIcon = (int16_t)forecastObject["nextIcon"];
     }
   }
 }
 
-void printSunrise(Print* output) {
+void printForecast(Print* output) {
+  output->print("Temperature: ");
+  output->println(forecast.current.temperature, 0);
+  output->print("Precipitation: ");
+  output->println(forecast.current.precipitation);
+  output->print("Wind speed: ");
+  output->println(forecast.current.windSpeed, 0);
+  output->print("Wind direction: ");
+  output->println(forecast.current.windDirection, 0);
+  output->print("Weather icon: ");
+  output->println(forecast.current.weather);
+  output->println("Next 24 hours per slot of 3h:");
+  output->print("- temperature: ");
+  for (int i = 0; i < 8; i++) {
+    output->print(forecast.temperature[i]);
+    if (i < 7) {
+      output->print(" ");
+    }
+  }
+  output->println();
+  output->print("- precipitation: ");
+  for (int i = 0; i < 8; i++) {
+    output->print(forecast.precipitation[i]);
+    if (i < 7) {
+      output->print(" ");
+    }
+  }
+  output->println();
+  output->print("- wind speed: ");
+  for (int i = 0; i < 8; i++) {
+    output->print(forecast.windSpeed[i], 0);
+    if (i < 7) {
+      output->print(" ");
+    }
+  }
+  output->println();
+  output->print("- wind direction: ");
+  for (int i = 0; i < 8; i++) {
+    output->print(forecast.windDirection[i]);
+    if (i < 7) {
+      output->print(" ");
+    }
+  }
+  output->println();
   output->print("Sunrise: ");
-  output->println(sunrise);
-}
-
-void printSunset(Print* output) {
+  output->println(forecast.sunrise);
   output->print("Sunset: ");
-  output->println(sunset);
+  output->println(forecast.sunset);
 }
 
-float_t* getForecast() {
-  return forecast;
-}
-
-float_t* getCurrentWeather() {
-  return currentWeather;
-}
-
-char* getSunrise() {
-  return sunrise;
-}
-
-int16_t getSunriseInMin() {
-  return sunriseMin;
-}
-
-int16_t getSunsetInMin() {
-  return sunsetMin;
-}
-
-char* getSunset() {
-  return sunset;
+Forecast* getForecast() {
+  return &forecast;
 }
 
 int16_t getMinutes(char* text) {

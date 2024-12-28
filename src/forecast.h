@@ -1,14 +1,28 @@
 #include "config.h"
 
-float_t* getForecast();
-float_t* getCurrentWeather();
+struct Current {
+  int16_t temperature;
+  float precipitation;
+  int16_t windSpeed;
+  int16_t windDirection;
+  int16_t weather;
+};
 
-char* getSunrise();
-char* getSunset();
+struct Forecast {
+  Current current;
+  int16_t temperature[8];
+  float precipitation[8];
+  int16_t windSpeed[8];
+  int16_t windDirection[8];
+  int16_t weather[8];
+  char sunrise[6];
+  char sunset[6];
+  int16_t sunriseInMin;
+  int16_t sunsetInMin;
+  int16_t nextIcon;
+};
 
-void printSunrise(Print* output);
-void printSunset(Print* output);
-
-int16_t getSunriseInMin();
-int16_t getSunsetInMin();
+Forecast* getForecast();
+void printForecast(Print* output);
 void updateForecast();
+int16_t getMinutes(char* text);

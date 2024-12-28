@@ -218,14 +218,15 @@ void currentDisplay(Adafruit_NeoPixel& pixels) {
     paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0,
                 Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
   }
+  // we retrieve the forecast and an instance of Forecast
+  Forecast* forecast = getForecast();
 
-  float_t* currentWeather = getCurrentWeather();
-
-  if (isnan(currentWeather[0])) {
+  if (isnan(forecast->current.temperature)) {
     fullMeteoDisplay(pixels);
     return;
   }
-  int intTemperature = round(currentWeather[0]);
+
+  int intTemperature = forecast->current.temperature;
   String temperature =
       (intTemperature >= 0 ? "+" : "") + String(intTemperature);
 
@@ -235,20 +236,23 @@ void currentDisplay(Adafruit_NeoPixel& pixels) {
                 Adafruit_NeoPixel::Color(0xd9, 0x13, 0x8a));
   }
 
-  int intHumidity = round(currentWeather[1]);
-  String humidity = String(intHumidity) + "%";
-  for (uint8_t i = 0; i < humidity.length(); ++i) {
-    uint8_t ascii = (uint8_t)humidity.charAt(i);
-    paintSymbol(pixels, ascii, 5 + i * 4, 11,
-                Adafruit_NeoPixel::Color(0x12, 0xa4, 0xd9));
-  }
+  /*
+    int intHumidity = round(currentWeather[1]);
+    String humidity = String(intHumidity) + "%";
+    for (uint8_t i = 0; i < humidity.length(); ++i) {
+      uint8_t ascii = (uint8_t)humidity.charAt(i);
+      paintSymbol(pixels, ascii, 5 + i * 4, 11,
+                  Adafruit_NeoPixel::Color(0x12, 0xa4, 0xd9));
+    }
+    */
 }
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels) {
   pixels.clear();
+  Forecast* forecast = getForecast();
   uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
   {
-    char* sunrise = getSunrise();
+    char* sunrise = forecast->sunrise;
     // hours
     for (uint8_t i = 0; i < 2; ++i) {
       uint8_t ascii = (uint8_t)sunrise[i];
@@ -261,7 +265,7 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
     }
   }
   {
-    char* sunset = getSunset();
+    char* sunset = forecast->sunset;
     // hours
     for (uint8_t i = 0; i < 2; ++i) {
       uint8_t ascii = (uint8_t)sunset[i];
@@ -278,8 +282,8 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
 char gifPath[50];
 
 void iconDisplay(Adafruit_NeoPixel& pixels) {
-  float_t* forecast = getForecast();
-  sprintf(gifPath, "/gifs/weather/%d.gif", (int)forecast[2]);
+  Forecast* forecast = getForecast();
+  sprintf(gifPath, "/gifs/weather/%d.gif", forecast->nextIcon);
   setGIF(gifPath);
 
   updateGif(pixels);
@@ -288,10 +292,10 @@ void iconDisplay(Adafruit_NeoPixel& pixels) {
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   pixels.clear();
   // what about the current forecast
-  float_t* forecast = getForecast();
+  Forecast* forecast = getForecast();
   getHourMinute(hourMinute);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
-  int intTemperature = round(forecast[0]);
+  int intTemperature = forecast->current.temperature;
   String temperature =
       (intTemperature >= 0 ? "+" : "") + String(intTemperature);
 
@@ -311,16 +315,15 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
     paintSymbol(pixels, ascii, i * 4, 6);
   }
 
-  float_t maxTemperature = forecast[4];
-  for (int i = 8; i < 36; i = i + 4) {
-    if (forecast[i] > maxTemperature)
-      maxTemperature = forecast[i];
+  float_t maxTemperature = forecast->temperature[0];
+  for (int i = 0; i < 8; i++) {
+    if (forecast->temperature[i] > maxTemperature)
+      maxTemperature = forecast->temperature[i];
   }
-  float_t minTemperature = forecast[4];
-  for (int i = 8; i < 36; i = i + 4) {
-    // Serial.println(forecast[i]);
-    if (forecast[i] < minTemperature)
-      minTemperature = forecast[i];
+  float_t minTemperature = forecast->temperature[0];
+  for (int i = 0; i < 8; i++) {
+    if (forecast->temperature[i] < minTemperature)
+      minTemperature = forecast->temperature[i];
   }
 
   /*
@@ -331,40 +334,42 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
     Serial.println(temperature);
     */
 
-  for (int i = 4; i < 36; i = i + 4) {
-    float_t temperature = forecast[i];
-    float_t rain = forecast[i + 1];
-    uint16_t weather = forecast[i + 2];
-    // int8_t wind = forecast[i + 3];
-    float_t dim = (i - 4) / 4 == currentSlot ? 1 : 0.2;
-    // TEMPERATURE
+  for (int i = 0; i < 8; i++) {
+    float_t temperature = forecast->temperature[i];
+    float_t rain = forecast->precipitation[i];
+    float_t opacity = i == currentSlot ? 1 : 0.2;
+    uint16_t weather = forecast->weather[i];
 
     if (minTemperature < 0) {
       int temperatureIntensity = abs((int8_t)(temperature / 2));
       for (uint8_t j = 0; j <= temperatureIntensity; j++) {
         if (temperature >= 0) {
-          uint16_t led = getLedIndex(11 - j, i / 4 + 7);
-          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255 * dim, 0, 0));
+          uint16_t led = getLedIndex(11 - j, i + 8);
+          pixels.setPixelColor(led,
+                               Adafruit_NeoPixel::Color(255 * opacity, 0, 0));
         } else {
-          uint16_t led = getLedIndex(12 + j, i / 4 + 7);
-          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255 * dim));
+          uint16_t led = getLedIndex(12 + j, i + 8);
+          pixels.setPixelColor(led,
+                               Adafruit_NeoPixel::Color(0, 0, 255 * opacity));
         }
       }
     } else {  // 10 degree only positive
       uint8_t tens = (uint8_t)(minTemperature / 10);
       uint8_t twos = ((uint8_t)temperature - tens * 10) / 2;
       for (uint8_t j = 0; j < tens; j++) {
-        uint16_t led = getLedIndex(15 - j, i / 4 + 7);
-        pixels.setPixelColor(led,
-                             Adafruit_NeoPixel::Color(255 * dim, 0, 255 * dim));
+        uint16_t led = getLedIndex(15 - j, i + 8);
+        pixels.setPixelColor(
+            led, Adafruit_NeoPixel::Color(255 * opacity, 0, 255 * opacity));
       }
       for (uint8_t j = 0; j < twos; j++) {
         uint16_t led = getLedIndex(15 - j - tens, i / 4 + 7);
         if (j < 5) {
-          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255 * dim, 0, 0));
+          pixels.setPixelColor(led,
+                               Adafruit_NeoPixel::Color(255 * opacity, 0, 0));
         } else {
           pixels.setPixelColor(
-              led, Adafruit_NeoPixel::Color(255 * dim, 63 * dim, 63 * dim));
+              led, Adafruit_NeoPixel::Color(255 * opacity, 63 * opacity,
+                                            63 * opacity));
         }
       }
     }
@@ -386,38 +391,42 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
       rainIntensity = 5;
 
     for (uint8_t j = 0; j < rainIntensity; j++) {
-      uint16_t led = getLedIndex(14 - j, i / 4 - 1);
+      uint16_t led = getLedIndex(14 - j, i);
       if (weather & RAIN_MASK) {
-        pixels.setPixelColor(led,
-                             Adafruit_NeoPixel::Color(0, 192 * dim, 255 * dim));
+        pixels.setPixelColor(
+            led, Adafruit_NeoPixel::Color(0, 192 * opacity, 255 * opacity));
       }
       if (weather & SNOW_MASK && (!firstHalf || (!(weather & RAIN_MASK)))) {
         pixels.setPixelColor(
-            led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 255 * dim));
+            led, Adafruit_NeoPixel::Color(255 * opacity, 255 * opacity,
+                                          255 * opacity));
       }
       if ((weather & LIGHTNING_MASK) && firstTenth) {
         pixels.setPixelColor(
-            led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));  // yellow
+            led, Adafruit_NeoPixel::Color(255 * opacity, 255 * opacity,
+                                          0));  // yellow
       }
     }
 
     // GENERAL INFO
 
     if (weather & SUN_MASK) {
-      uint16_t led = getLedIndex(15, i / 4 - 1);
-      pixels.setPixelColor(led,
-                           Adafruit_NeoPixel::Color(255 * dim, 140 * dim, 0));
+      uint16_t led = getLedIndex(15, i);
+      pixels.setPixelColor(
+          led, Adafruit_NeoPixel::Color(255 * opacity, 140 * opacity, 0));
     }
     if (((weather & (FOG_MASK | CLOUD_MASK)) && firstHalf) ||
         (weather & SUN_MASK) == 0) {
-      uint16_t led = getLedIndex(15, i / 4 - 1);
+      uint16_t led = getLedIndex(15, i);
       pixels.setPixelColor(
-          led, Adafruit_NeoPixel::Color(127 * dim, 127 * dim, 127 * dim));
+          led, Adafruit_NeoPixel::Color(127 * opacity, 127 * opacity,
+                                        127 * opacity));
     }
     if ((weather & LIGHTNING_MASK) && firstTenth) {
-      uint16_t led = getLedIndex(15, i / 4 - 1);
+      uint16_t led = getLedIndex(15, i);
       pixels.setPixelColor(
-          led, Adafruit_NeoPixel::Color(255 * dim, 255 * dim, 0));  // yellow
+          led,
+          Adafruit_NeoPixel::Color(255 * opacity, 255 * opacity, 0));  // yellow
     }
   }
 }
@@ -438,11 +447,11 @@ void compact(Adafruit_NeoPixel& pixels) {
     }
   }
 
-  // what about the current forecast
-  float_t* forecast = getForecast();
+  Forecast* forecast = getForecast();
+
   getHourMinute(hourMinute);
-  String temperature =
-      (forecast[0] >= 0 ? "+" : "") + String((int)round(forecast[0]));
+  String temperature = (forecast->current.temperature >= 0 ? "+" : "") +
+                       String(forecast->current.temperature);
 
   switch (slot) {
     case 0:
@@ -469,11 +478,10 @@ void compact(Adafruit_NeoPixel& pixels) {
       break;
   }
 
-  for (int i = 4; i < 36; i = i + 4) {
-    float_t temperature = forecast[i];
-    float_t rain = forecast[i + 1];
-    uint16_t weather = forecast[i + 2];
-    // int8_t wind = forecast[i + 3];
+  for (int i = 0; i < 8; i++) {
+    float_t temperature = forecast->temperature[i];
+    float_t rain = forecast->precipitation[i];
+    uint16_t weather = forecast->weather[i];
 
     if (slot == 0) {  // TEMPERATURE
       int temperatureIntensity = abs((uint8_t)(temperature / 5));
