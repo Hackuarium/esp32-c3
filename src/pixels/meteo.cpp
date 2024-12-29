@@ -101,38 +101,6 @@ void currentDisplay(Adafruit_NeoPixel& pixels) {
     */
 }
 
-void sunriseDisplay(Adafruit_NeoPixel& pixels) {
-  pixels.clear();
-  Forecast* forecast = getForecast();
-  uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
-  {
-    char* sunrise = forecast->sunrise;
-    // hours
-    for (uint8_t i = 0; i < 2; ++i) {
-      uint8_t ascii = (uint8_t)sunrise[i];
-      paintSymbol(pixels, ascii, i * 4, 4, color);
-    }
-    // minutes
-    for (uint8_t i = 3; i < 5; ++i) {
-      uint8_t ascii = (uint8_t)sunrise[i];
-      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 4, color);
-    }
-  }
-  {
-    char* sunset = forecast->sunset;
-    // hours
-    for (uint8_t i = 0; i < 2; ++i) {
-      uint8_t ascii = (uint8_t)sunset[i];
-      paintSymbol(pixels, ascii, i * 4, 11, color);
-    }
-    // minutes
-    for (uint8_t i = 3; i < 5; ++i) {
-      uint8_t ascii = (uint8_t)sunset[i];
-      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 11, color);
-    }
-  }
-}
-
 char gifPath[50];
 
 void iconDisplay(Adafruit_NeoPixel& pixels) {
