@@ -1,3 +1,10 @@
 #include <Adafruit_NeoPixel.h>
 
+#define SUN_MASK 0b0000000001000000
+#define FOG_MASK 0b0000000000001000
+#define CLOUD_MASK 0b0000000000111111
+#define RAIN_MASK 0b0000000000000001
+#define SNOW_MASK 0b0000000000000010
+#define LIGHTNING_MASK 0b0000000000100000
+
 void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter);

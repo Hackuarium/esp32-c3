@@ -1,5 +1,7 @@
 {
   "files.associations": {
+    "*.erd": "json",
+    "*.vuerd": "json",
     "random": "cpp",
     "functional": "cpp",
     "cmath": "cpp",
@@ -22,7 +24,8 @@
     "tinyexpr.h": "c",
     "stdlib.h": "c",
     "typeinfo": "cpp",
-    "cstddef": "cpp"
+    "cstddef": "cpp",
+    "new": "cpp"
   },
   "liveServer.settings.port": 5501,
   "cmake.sourceDirectory": "/Users/lpatiny/git/hackuarium/esp32-c3/.pio/libdeps/lolin_c3_mini/Adafruit BusIO",

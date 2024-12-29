@@ -6,16 +6,10 @@
 #include "forecast.h"
 #include "fronius.h"
 #include "gif.h"
+#include "meteo.h"
 #include "params.h"
 #include "pixels.h"
 #include "taskNTPD.h"
-
-#define SUN_MASK 0b0000000001000000
-#define FOG_MASK 0b0000000000001000
-#define CLOUD_MASK 0b0000000000111111
-#define RAIN_MASK 0b0000000000000001
-#define SNOW_MASK 0b0000000000000010
-#define LIGHTNING_MASK 0b0000000000100000
 
 const uint8_t SLOT_METEO[6] = {PARAM_METEO_SLOT_1, PARAM_METEO_SLOT_2,
                                PARAM_METEO_SLOT_3, PARAM_METEO_SLOT_4,
@@ -25,10 +19,12 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
 void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
+void windDisplay(Adafruit_NeoPixel& pixels);
 void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter);
 void compact(Adafruit_NeoPixel& pixels);
 
-char* hourMinute = new char[6];
+char* meteoTempChars = new char[6];
+char* windDirectionChars = new char[3];
 
 void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
   // Display the time
@@ -46,13 +42,14 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
     case SLOT_METEO_WEATHER_ICON:  // weather icon
       iconDisplay(pixels);
       break;
-#ifdef FRONIUS
     case SLOT_METEO_FRONIUS:
       froniusDisplay(pixels, counter);
       break;
-#endif
     case SLOT_METEO_SUNRISE_SUNSET:
       sunriseDisplay(pixels);
+      break;
+    case SLOT_METEO_WIND:
+      windDisplay(pixels);
       break;
     default:
       // froniusDisplay(pixels, counter);
@@ -204,17 +201,17 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
 }
 
 void currentDisplay(Adafruit_NeoPixel& pixels) {
-  getDayMonth(hourMinute);
+  getDayMonth(meteoTempChars);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   // day
   for (uint8_t i = 0; i < 2; ++i) {
-    uint8_t ascii = (uint8_t)hourMinute[i];
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
     paintSymbol(pixels, ascii, i * 4, 0,
                 Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
   }
   // month
   for (uint8_t i = 3; i < 5; ++i) {
-    uint8_t ascii = (uint8_t)hourMinute[i];
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
     paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0,
                 Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
   }
@@ -289,11 +286,99 @@ void iconDisplay(Adafruit_NeoPixel& pixels) {
   updateGif(pixels);
 }
 
+void windDisplay(Adafruit_NeoPixel& pixels) {
+  pixels.clear();
+  Forecast* forecast = getForecast();
+  uint32_t color = Adafruit_NeoPixel::Color(0, 255, 255);
+  uint8_t currentSlot = (uint8_t)(getHour() / 3);
+  // display current wind speed as text
+  int16_t windSpeed = forecast->current.windSpeed;
+  itoa(windSpeed, meteoTempChars, 10);
+  uint8_t length = 0;
+  while (meteoTempChars[length] != '\0') {
+    length++;
+  }
+
+  for (uint8_t i = 0; i < length; ++i) {
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
+    paintSymbol(pixels, ascii, 17 - (length - i) * 4, 0);
+  }
+
+  // display the wind direction as text stored in current.windDirectionText
+  length = 0;
+  while (forecast->current.windDirectionText[length] != '\0') {
+    length++;
+  }
+  for (uint8_t i = 0; i < length; ++i) {
+    uint8_t ascii = (uint8_t)forecast->current.windDirectionText[i];
+    paintSymbol(pixels, ascii, 17 - (length - i) * 4, 6);
+  }
+
+  // display a little bar graph for the wind speed
+  for (uint8_t i = 0; i < 8; ++i) {
+    float_t opacity = i == currentSlot ? 1 : 0.2;
+    int16_t windSpeed = forecast->windSpeed[i];
+    if (windSpeed == 0)
+      windSpeed = 1;
+
+    for (uint8_t j = 0; j < forecast->windSpeedLog2[i]; j++) {
+      pixels.setPixelColor(getLedIndex(15 - j, i),
+                           Adafruit_NeoPixel::Color(0, 255 * opacity, 0));
+    }
+  }
+
+  // display the big arrow starting at 4,4
+  pixels.setPixelColor(getLedIndex(4, 4),
+                       Adafruit_NeoPixel::Color(0, 255, 255));
+  uint8_t currentRow = 4;
+  uint8_t currentColumn = 4;
+  for (uint8_t i = 0; i < forecast->current.windSpeedLog2; i++) {
+    currentRow += forecast->current.windDirectionRow;
+    currentColumn += forecast->current.windDirectionColumn;
+    pixels.setPixelColor(getLedIndex(currentRow, currentColumn),
+                         Adafruit_NeoPixel::Color(0, 63, 63));
+  }
+
+  // finally we display some little 2x2 squares for wind direction prediction
+  uint8_t slot = currentSlot;
+  for (uint8_t row = 11; row <= 14; row += 3) {
+    for (uint8_t column = 8; column <= 14; column += 3) {
+      uint8_t headRow = row;
+      uint8_t headColumn = column;
+      uint8_t tailRow = row;
+      uint8_t tailColumn = column;
+
+      slot = (slot + 1) % 8;
+      uint8_t windDirection07 = forecast->windDirection07[slot];
+      int8_t windDirectionRow = getWindRowDirection(windDirection07);
+      int8_t windDirectionColumn = getWindColumnDirection(windDirection07);
+
+      if (windDirectionRow >= 0) {
+        tailRow += windDirectionRow;
+      } else {
+        headRow += 1;
+      }
+      if (windDirectionColumn >= 0) {
+        tailColumn += windDirectionColumn;
+      } else {
+        headColumn += 1;
+      }
+      pixels.setPixelColor(getLedIndex(headRow, headColumn),
+                           Adafruit_NeoPixel::Color(0, 255, 255));
+      pixels.setPixelColor(getLedIndex(tailRow, tailColumn),
+                           Adafruit_NeoPixel::Color(0, 63, 63));
+      // pixels.setPixelColor(
+      //    getLedIndex(row + windDirectionRow, column + windDirectionColumn),
+      //   Adafruit_NeoPixel::Color(0, 0, 255));
+    }
+  }
+}
+
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   pixels.clear();
   // what about the current forecast
   Forecast* forecast = getForecast();
-  getHourMinute(hourMinute);
+  getHourMinute(meteoTempChars);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   int intTemperature = forecast->current.temperature;
   String temperature =
@@ -301,12 +386,12 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
 
   // hours
   for (uint8_t i = 0; i < 2; ++i) {
-    uint8_t ascii = (uint8_t)hourMinute[i];
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
     paintSymbol(pixels, ascii, i * 4, 0);
   }
   // minutes
   for (uint8_t i = 3; i < 5; ++i) {
-    uint8_t ascii = (uint8_t)hourMinute[i];
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
     paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0);
   }
 
@@ -427,102 +512,6 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
       pixels.setPixelColor(
           led,
           Adafruit_NeoPixel::Color(255 * opacity, 255 * opacity, 0));  // yellow
-    }
-  }
-}
-
-void compact(Adafruit_NeoPixel& pixels) {
-  uint8_t slot = floor((getSeconds() % 20) / 5);
-
-  if (false) {
-    // Display the seconds
-    uint8_t seconds = getSeconds() * 17 / 60;
-    for (uint8_t i = 0; i < 16; i++) {
-      uint16_t led = getLedIndex(6, i);
-      if (i < seconds) {
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 255));
-      } else {
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 0));
-      }
-    }
-  }
-
-  Forecast* forecast = getForecast();
-
-  getHourMinute(hourMinute);
-  String temperature = (forecast->current.temperature >= 0 ? "+" : "") +
-                       String(forecast->current.temperature);
-
-  switch (slot) {
-    case 0:
-      // hours
-      for (uint8_t i = 0; i < 2; ++i) {
-        uint8_t ascii = (uint8_t)hourMinute[i];
-        paintSymbol(pixels, ascii, i * 4, 0);
-      }
-      break;
-    case 1:
-      // minutes
-      for (uint8_t i = 0; i < 2; ++i) {
-        uint8_t ascii = (uint8_t)hourMinute[i + 3];
-        paintSymbol(pixels, ascii, i * 4, 0);
-      }
-      break;
-    case 2:
-    case 3:
-      // display current temperature
-      for (uint8_t i = 0; i < temperature.length(); ++i) {
-        uint8_t ascii = (uint8_t)temperature.charAt(i);
-        paintSymbol(pixels, ascii, i * 4, 0);
-      }
-      break;
-  }
-
-  for (int i = 0; i < 8; i++) {
-    float_t temperature = forecast->temperature[i];
-    float_t rain = forecast->precipitation[i];
-    uint16_t weather = forecast->weather[i];
-
-    if (slot == 0) {  // TEMPERATURE
-      int temperatureIntensity = abs((uint8_t)(temperature / 5));
-      for (uint8_t j = 0; j <= temperatureIntensity; j++) {
-        uint16_t led = getLedIndex(7 - j, i / 4 - 1);
-        if (temperature >= 0) {
-          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 0, 0));
-        } else {
-          pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255));
-        }
-      }
-    } else if (slot == 1) {  // RAIN
-      int rainIntensity = rain < 0.1 ? 1 : floor(log10(rain) + 3);
-      for (uint8_t j = 0; j < rainIntensity; j++) {
-        uint16_t led = getLedIndex(7 - j, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 255, 0));
-      }
-    } else {  // GENERAL INFO
-      bool firstHalf = (millis() % 1000) < 500;
-      bool firstTenth = (millis() % 1000) < 100;
-      if (weather & SUN_MASK) {
-        uint16_t led = getLedIndex(7, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 140, 0));
-      }
-      if (((weather & (FOG_MASK | CLOUD_MASK)) && firstHalf) ||
-          (weather & SUN_MASK) == 0) {
-        uint16_t led = getLedIndex(7, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(127, 127, 127));
-      }
-      if (weather & RAIN_MASK && firstHalf) {
-        uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(0, 0, 255));
-      }
-      if (weather & SNOW_MASK && !firstHalf) {
-        uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 255));
-      }
-      if ((weather & LIGHTNING_MASK) && firstTenth) {
-        uint16_t led = getLedIndex(6, i / 4 - 1);
-        pixels.setPixelColor(led, Adafruit_NeoPixel::Color(255, 255, 0));
-      }
     }
   }
 }
