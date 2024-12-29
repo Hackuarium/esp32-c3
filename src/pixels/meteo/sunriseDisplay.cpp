@@ -6,32 +6,79 @@
 #include "config.h"
 #include "forecast.h"
 #include "taskNTPD.h"
+
 void moonDisplay(Adafruit_NeoPixel& pixels) {
   const int size = 16;  // Size of the matrix
-  const int radius = size / 2;
-  static int counter = 0;  // 0 to 31
-  counter++;
+  const float radius = (size - 1) / 2;
 
-  uint16_t phase = (uint16_t)round(counter / 4) % 31;
+  Forecast* forecast = getForecast();
 
-  int16_t shadowXShift = phase - 15;
+  uint16_t phase = floor(forecast->lunarAge);
+
+  if (phase > 14)
+    phase++;
+
+  int8_t left_inside = 0;
+  int8_t left_outside = 0;
+  int8_t right_inside = 0;
+  int8_t right_outside = 0;
+
+  static int8_t shadow = 15;
+  static int8_t light = 127;
+
+  float quarter = (float)(phase % 8) / 7;
+  float xRadius = 0;
+  if (phase <= 7) {
+    left_inside = shadow;
+    left_outside = shadow;
+    right_inside = shadow;
+    right_outside = light;
+    xRadius = radius * (1 - quarter);
+  } else if (phase <= 15) {
+    left_inside = light;
+    left_outside = shadow;
+    right_inside = light;
+    right_outside = light;
+    xRadius = radius * quarter;
+  } else if (phase <= 23) {
+    left_inside = light;
+    left_outside = light;
+    right_inside = light;
+    right_outside = shadow;
+    xRadius = radius * (1 - quarter);
+  } else {
+    left_inside = shadow;
+    left_outside = light;
+    right_inside = shadow;
+    right_outside = shadow;
+    xRadius = radius * quarter;
+  }
+
   // Generate a circular moon
   for (int y = 0; y < size; ++y) {
     for (int x = 0; x < size; ++x) {
-      int dx = x - radius;
-      int dy = y - radius;
-      if (dx * dx + dy * dy <= radius * radius) {
+      float dx = x - radius;
+      float dy = y - radius;
+      if (dx * dx + dy * dy <= radius * radius * 1.05) {
         uint16_t led = getLedIndex(y, x);
-        // we calculate if the pixel is in the shadow or not
-        int xRadius = abs((size - phase) / 2);
-        int dxShadow = x - xRadius;
-        int dyShadow = y - radius;
-        if (dxShadow * dxShadow / (xRadius * xRadius) +
-                dyShadow * dyShadow / (radius * radius) <=
-            1) {
-          pixels.setPixelColor(led, pixels.Color(31, 31, 31));
-        } else {
-          pixels.setPixelColor(led, pixels.Color(255, 255, 255));
+
+        if (dx * dx / (xRadius * xRadius) + dy * dy / (radius * radius * 1.1) <=
+            1) {             // inside the ellipse
+          if (x < radius) {  // left
+            pixels.setPixelColor(
+                led, pixels.Color(left_inside, left_inside, left_inside));
+          } else {  // right
+            pixels.setPixelColor(
+                led, pixels.Color(right_inside, right_inside, right_inside));
+          }
+        } else {             // outside the ellipse
+          if (x < radius) {  // left
+            pixels.setPixelColor(
+                led, pixels.Color(left_outside, left_outside, left_outside));
+          } else {  // right
+            pixels.setPixelColor(
+                led, pixels.Color(right_outside, right_outside, right_outside));
+          }
         }
       }
     }
@@ -42,21 +89,19 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
   pixels.clear();
 
   moonDisplay(pixels);
-  return;
-
   Forecast* forecast = getForecast();
-  uint32_t color = Adafruit_NeoPixel::Color(255, 127, 0);
+  uint32_t color = Adafruit_NeoPixel::Color(255, 63, 0);
   {
     char* sunrise = forecast->sunrise;
     // hours
     for (uint8_t i = 0; i < 2; ++i) {
       uint8_t ascii = (uint8_t)sunrise[i];
-      paintSymbol(pixels, ascii, i * 4, 4, color);
+      paintSymbol(pixels, ascii, i * 4, 2, color);
     }
     // minutes
     for (uint8_t i = 3; i < 5; ++i) {
       uint8_t ascii = (uint8_t)sunrise[i];
-      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 4, color);
+      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 2, color);
     }
   }
   {
@@ -64,12 +109,12 @@ void sunriseDisplay(Adafruit_NeoPixel& pixels) {
     // hours
     for (uint8_t i = 0; i < 2; ++i) {
       uint8_t ascii = (uint8_t)sunset[i];
-      paintSymbol(pixels, ascii, i * 4, 11, color);
+      paintSymbol(pixels, ascii, i * 4, 9, color);
     }
     // minutes
     for (uint8_t i = 3; i < 5; ++i) {
       uint8_t ascii = (uint8_t)sunset[i];
-      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 11, color);
+      paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 9, color);
     }
   }
 }

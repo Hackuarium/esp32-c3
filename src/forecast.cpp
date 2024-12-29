@@ -73,6 +73,7 @@ void updateForecast() {
       forecast.sunriseInMin = getMinutes(forecast.sunrise);
       forecast.sunsetInMin = getMinutes(forecast.sunset);
       forecast.nextIcon = (int16_t)forecastObject["nextIcon"];
+      forecast.lunarAge = (float)forecastObject["lunarAge"];
     }
   }
 }
@@ -88,6 +89,8 @@ void printForecast(Print* output) {
   output->println(forecast.current.windDirection, 0);
   output->print("Weather icon: ");
   output->println(forecast.current.weather);
+  output->print("Lunar age: ");
+  output->println(forecast.lunarAge);
   output->println("Next 24 hours per slot of 3h:");
   output->print("- temperature: ");
   for (int i = 0; i < 8; i++) {

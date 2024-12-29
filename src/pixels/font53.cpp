@@ -86,7 +86,7 @@ void paintSymbol(Adafruit_NeoPixel& pixels,
     if (bitRead(symbol, 15 - bit)) {
       pixels.setPixelColor(led, color);
     } else {
-      pixels.setPixelColor(led, 0);
+      //      pixels.setPixelColor(led, 0);
     }
   }
 }

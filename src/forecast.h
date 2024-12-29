@@ -24,6 +24,7 @@ struct Forecast {
   int16_t weather[8];
   char sunrise[6];
   char sunset[6];
+  float lunarAge;
   int16_t sunriseInMin;
   int16_t sunsetInMin;
   int16_t nextIcon;
