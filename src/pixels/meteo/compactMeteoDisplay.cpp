@@ -6,7 +6,7 @@
 #include "forecast.h"
 #include "taskNTPD.h"
 
-void compact(Adafruit_NeoPixel& pixels) {
+void compactMeteoDisplay(Adafruit_NeoPixel& pixels) {
   static char* meteoTempChars = new char[6];
   uint8_t slot = floor((getSeconds() % 20) / 5);
 
