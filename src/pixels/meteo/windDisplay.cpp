@@ -48,6 +48,15 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
     }
   }
 
+  // display a blue background with 4 crossing lines around 4,4
+  for (uint8_t i = 0; i <= 8; i++) {
+    pixels.setPixelColor(getLedIndex(4, i), Adafruit_NeoPixel::Color(32, 0, 0));
+    pixels.setPixelColor(getLedIndex(i, 4), Adafruit_NeoPixel::Color(32, 0, 0));
+    pixels.setPixelColor(getLedIndex(i, i), Adafruit_NeoPixel::Color(32, 0, 0));
+    pixels.setPixelColor(getLedIndex(8 - i, i),
+                         Adafruit_NeoPixel::Color(32, 0, 0));
+  }
+
   // display the big arrow starting at 4,4
   pixels.setPixelColor(getLedIndex(4, 4),
                        Adafruit_NeoPixel::Color(0, 255, 255));
