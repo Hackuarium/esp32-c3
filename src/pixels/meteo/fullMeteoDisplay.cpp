@@ -80,7 +80,7 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
             led, Adafruit_NeoPixel::Color(255 * opacity, 0, 255 * opacity));
       }
       for (uint8_t j = 0; j < twos; j++) {
-        uint16_t led = getLedIndex(15 - j - tens, i / 4 + 7);
+        uint16_t led = getLedIndex(15 - j - tens, i + 7);
         if (j < 5) {
           pixels.setPixelColor(led,
                                Adafruit_NeoPixel::Color(255 * opacity, 0, 0));
