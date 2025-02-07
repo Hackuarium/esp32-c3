@@ -124,3 +124,4 @@ extern int16_t parameters[MAX_PARAM];
 #define SLOT_METEO_FRONIUS 2         // fronius
 #define SLOT_METEO_SUNRISE_SUNSET 3  // sunrise / sunset
 #define SLOT_METEO_WIND 4            // wind
+#define SLOT_METEO_DATE 5            // date

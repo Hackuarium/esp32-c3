@@ -16,6 +16,7 @@ const uint8_t SLOT_METEO[6] = {PARAM_METEO_SLOT_1, PARAM_METEO_SLOT_2,
                                PARAM_METEO_SLOT_5, PARAM_METEO_SLOT_6};
 
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
+void dateDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
 void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
@@ -51,6 +52,56 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
     case SLOT_METEO_WIND:
       windDisplay(pixels);
       break;
+    case SLOT_METEO_DATE:
+      dateDisplay(pixels);
+      break;
+    default:
+      // froniusDisplay(pixels, counter);
+      fullMeteoDisplay(pixels);
+  }
+}
+
+void currentDisplay(Adafruit_NeoPixel& pixels) {
+  getDayMonth(meteoTempChars);
+  uint8_t currentSlot = (uint8_t)(getHour() / 3);
+  // day
+  for (uint8_t i = 0; i < 2; ++i) {
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
+    paintSymbol(pixels, ascii, i * 4, 0,
+                Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
+  }
+  // month
+  for (uint8_t i = 3; i < 5; ++i) {
+    uint8_t ascii = (uint8_t)meteoTempChars[i];
+    paintSymbol(pixels, ascii, (i - 1) * 4 + 1, 0,
+                Adafruit_NeoPixel::Color(0xe2, 0xd8, 0x10));
+  }
+  // we retrieve the forecast and an instance of Forecast
+  Forecast* forecast = getForecast();
+
+  if (isnan(forecast->current.temperature)) {
+    fullMeteoDisplay(pixels);
+    return;
+  }
+
+  int intTemperature = forecast->current.temperature;
+  String temperature =
+      (intTemperature >= 0 ? "+" : "") + String(intTemperature);
+
+  for (uint8_t i = 0; i < temperature.length(); ++i) {
+    uint8_t ascii = (uint8_t)temperature.charAt(i);
+    paintSymbol(pixels, ascii, i * 4, 6,
+                Adafruit_NeoPixel::Color(0xd9, 0x13, 0x8a));
+  }
+
+  /*
+    int intHumidity = round(currentWeather[1]);
+    String humidity = String(intHumidity) + "%";
+    for (uint8_t i = 0; i < humidity.length(); ++i) {
+      uint8_t ascii = (uint8_t)humidity.charAt(i);
+      paintSymbol(pixels, ascii, 5 + i * 4, 11,
+                  Adafruit_NeoPixel::Color(0x12, 0xa4, 0xd9));
+    }
     default:
       // froniusDisplay(pixels, counter);
       fullMeteoDisplay(pixels);

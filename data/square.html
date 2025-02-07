@@ -205,10 +205,16 @@
     <button class="text-2xl bg-blue-600 w-full text-white" onmousedown="sendCommand('D5')">Meteo</button>
     Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
 
-    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,0,0,0')">Only meteo</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,1,0,0')">Meteo + weather icon</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM3,0,0,1,0,0')">Meteo + weather icon + sunrise</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM2,0,0,1,0,0')">Meteo + weather icon + fronius</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,0,0,0')">Meteo</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM1,1,1,1,1,1')">Icon</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM2,2,2,2,2,2')">Fronius</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM3,3,3,3,3,3')">Sunrise / Sunset</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM4,4,4,4,4,4')">Wind</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM5,5,5,5,5,5')">Date</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,1,0,0')">Meteo + icon</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM3,0,0,1,0,0')">Meteo + icon + sunrise</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM2,0,0,1,0,0')">Meteo + icon + fronius</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM0,1,2,0,4,0')">Meteo + icon + fronius + wind</button>
   </div>
 
   <div>

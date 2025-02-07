@@ -8,9 +8,10 @@
 #include "moonDisplay.h"
 #include "taskNTPD.h"
 
-void sunriseDisplay(Adafruit_NeoPixel& pixels) {
+void dateDisplay(Adafruit_NeoPixel& pixels) {
   pixels.clear();
   moonDisplay(pixels);
+
   Forecast* forecast = getForecast();
   uint32_t color = Adafruit_NeoPixel::Color(255, 63, 0);
   {

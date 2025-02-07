@@ -9,7 +9,7 @@
 uint8_t getWindDirection07(uint16_t windDirection);
 void setWindDirectionText(uint8_t windDirection, char* windDirectionText);
 
-StaticJsonDocument<1000> forecastObject;
+StaticJsonDocument<1500> forecastObject;
 
 Forecast forecast = {.temperature = {0},
                      .precipitation = {0},
@@ -48,6 +48,8 @@ void updateForecast() {
       forecast.current.windSpeedLog2 = floor(log2(forecast.current.windSpeed));
       forecast.current.windDirection =
           (int16_t)forecastObject["current"]["windDirection"];
+      forecast.current.gustSpeed =
+          round((float_t)forecastObject["current"]["gustSpeed"]);
       forecast.current.windDirection07 =
           getWindDirection07(forecast.current.windDirection);
       forecast.current.windDirectionColumn =
@@ -62,6 +64,7 @@ void updateForecast() {
         forecast.temperature[i] = (int16_t)forecastObject["temperature"][i];
         forecast.precipitation[i] = (float)forecastObject["precipitation"][i];
         forecast.windSpeed[i] = (int16_t)forecastObject["windSpeed"][i];
+        forecast.gustSpeed[i] = (int16_t)forecastObject["gustSpeed"][i];
         forecast.windSpeedLog2[i] = floor(log2(forecast.windSpeed[i]));
         forecast.windDirection[i] = (int16_t)forecastObject["windDirection"][i];
         forecast.windDirection07[i] =

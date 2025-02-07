@@ -4,6 +4,7 @@ struct Current {
   int16_t temperature;
   float precipitation;
   int16_t windSpeed;
+  int16_t gustSpeed;
   int8_t windSpeedLog2;
   int16_t windDirection;
   uint8_t windDirection07;
@@ -18,6 +19,7 @@ struct Forecast {
   int16_t temperature[8];
   float precipitation[8];
   int16_t windSpeed[8];
+  int16_t gustSpeed[8];
   uint8_t windSpeedLog2[8];
   int16_t windDirection[8];
   uint8_t windDirection07[8];
