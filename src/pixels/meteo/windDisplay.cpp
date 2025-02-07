@@ -22,7 +22,7 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
   for (uint8_t i = 0; i < length; ++i) {
     uint8_t ascii = (uint8_t)meteoTempChars[i];
     paintSymbol(pixels, ascii, 17 - (length - i) * 4, 0,
-                Adafruit_NeoPixel::Color(0, 255, 0));
+                Adafruit_NeoPixel::Color(192, 96, 0));
   }
 
   int16_t gustSpeed = forecast->current.gustSpeed;
@@ -44,8 +44,9 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
     uint8_t windHeight = floor(forecast->windSpeed[i] / 5);
     uint8_t gustHeight = floor(forecast->gustSpeed[i] / 5);
     for (uint8_t j = 0; j < windHeight; j++) {
-      pixels.setPixelColor(getLedIndex(15 - j, i),
-                           Adafruit_NeoPixel::Color(0, 255 * opacity, 0));
+      pixels.setPixelColor(
+          getLedIndex(15 - j, i),
+          Adafruit_NeoPixel::Color(192 * opacity, 96 * opacity, 0));
     }
     // need to add the gust speed
     for (uint8_t j = windHeight; j < gustHeight; j++) {
