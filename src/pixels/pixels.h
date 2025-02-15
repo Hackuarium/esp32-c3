@@ -6,6 +6,14 @@ typedef struct position_t {
   int16_t column;
 } position_t;
 
+typedef struct {
+  uint16_t h;
+  uint8_t s;
+  uint8_t v;
+} HSV;
+
+void decreaseIntensity(Adafruit_NeoPixel& pixels, uint8_t factor);
+HSV rgbToHSV360(int r, int g, int b);
 uint32_t getColor();
 uint32_t getColor(uint8_t hsbChangeSpeed);
 uint32_t getColor(uint8_t colorModel, uint8_t hsbChangeSpeed);

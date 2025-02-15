@@ -126,9 +126,11 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_METEO_SLOT_TIME_5 101  // CX
 #define PARAM_METEO_SLOT_TIME_6 102  // CY
 
-#define SLOT_METEO_TEMPERATURE 0     // temperature / rain
-#define SLOT_METEO_WEATHER_ICON 1    // weather icon
-#define SLOT_METEO_FRONIUS 2         // fronius
-#define SLOT_METEO_SUNRISE_SUNSET 3  // sunrise / sunset
-#define SLOT_METEO_WIND 4            // wind
-#define SLOT_METEO_DATE 5            // date
+#define SLOT_METEO_TEMPERATURE 0  // temperature / rain
+#define SLOT_METEO_WIND 1         // wind
+#define SLOT_METEO_FRONIUS 2      // fronius
+
+#define SLOT_METEO_WEATHER_ICON 8     // weather icon
+#define SLOT_METEO_MOON_ICON 16       // moon icon
+#define SLOT_METEO_DATE 32            // date
+#define SLOT_METEO_SUNRISE_SUNSET 64  // sunrise / sunset

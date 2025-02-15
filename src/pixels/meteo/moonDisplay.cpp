@@ -23,8 +23,8 @@ void moonDisplay(Adafruit_NeoPixel& pixels) {
   int8_t right_inside = 0;
   int8_t right_outside = 0;
 
-  static int8_t shadow = 15;
-  static int8_t light = 127;
+  static int8_t shadow = 16;
+  static int8_t light = 64;
 
   float quarter = (float)(phase % 8) / 7;
   float xRadius = 0;

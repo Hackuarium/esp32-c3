@@ -5,13 +5,9 @@
 #include "../pixels.h"
 #include "config.h"
 #include "forecast.h"
-#include "moonDisplay.h"
 #include "taskNTPD.h"
 
 void dateDisplay(Adafruit_NeoPixel& pixels) {
-  pixels.clear();
-  moonDisplay(pixels);
-
   Forecast* forecast = getForecast();
   uint32_t color = Adafruit_NeoPixel::Color(0, 255, 0);
   {

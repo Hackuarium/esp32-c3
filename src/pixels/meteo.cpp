@@ -11,6 +11,8 @@
 #include "pixels.h"
 #include "taskNTPD.h"
 
+void moonDisplay(Adafruit_NeoPixel& pixels);
+
 const uint8_t SLOT_METEO[6] = {PARAM_METEO_SLOT_1, PARAM_METEO_SLOT_2,
                                PARAM_METEO_SLOT_3, PARAM_METEO_SLOT_4,
                                PARAM_METEO_SLOT_5, PARAM_METEO_SLOT_6};
@@ -33,6 +35,7 @@ char* windDirectionChars = new char[3];
 
 long meteoLastEvent = millis();
 uint8_t meteoCurrentSlot = 0;
+uint16_t previousTask = -1;
 
 void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
   // Display the time
@@ -49,26 +52,35 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
   }
 
   uint16_t task = getParameter(SLOT_METEO[meteoCurrentSlot]);
+  if (task != previousTask) {
+    pixels.clear();
+    previousTask = task;
+  }
 
   switch (task) {
-    case SLOT_METEO_WEATHER_ICON:  // weather icon
-      iconDisplay(pixels);
+    case SLOT_METEO_TEMPERATURE:
+      fullMeteoDisplay(pixels);
       break;
     case SLOT_METEO_FRONIUS:
       froniusDisplay(pixels, counter);
       break;
-    case SLOT_METEO_SUNRISE_SUNSET:
-      sunriseDisplay(pixels);
-      break;
     case SLOT_METEO_WIND:
       windDisplay(pixels);
       break;
-    case SLOT_METEO_DATE:
-      dateDisplay(pixels);
-      break;
-    default:
-      // froniusDisplay(pixels, counter);
-      fullMeteoDisplay(pixels);
+    default: {
+      if (task & SLOT_METEO_WEATHER_ICON) {
+        iconDisplay(pixels);
+      } else if (task & SLOT_METEO_MOON_ICON) {
+        moonDisplay(pixels);
+      } else {
+        pixels.clear();
+      }
+      if (task & SLOT_METEO_SUNRISE_SUNSET) {
+        sunriseDisplay(pixels);
+      } else if (task & SLOT_METEO_DATE) {
+        dateDisplay(pixels);
+      }
+    }
   }
 }
 

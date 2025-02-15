@@ -206,15 +206,18 @@
     Brightness: <input data-label="A" type="range" oninput="sendSlowlyCommand('A'+value)" min="0" max="255"></input><br>
 
     <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,0,0,0')">Meteo</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM1,1,1,1,1,1')">Icon</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM8,8,8,8,8,8')">Icon</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM16,16,16,16,16,16')">Moon</button>
     <button class="border-2 border-black" onmousedown="sendCommand('CM2,2,2,2,2,2')">Fronius</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM3,3,3,3,3,3')">Sunrise / Sunset</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM4,4,4,4,4,4')">Wind</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM5,5,5,5,5,5')">Date</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,1,0,0')">Meteo + icon</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM3,0,0,1,0,0')">Meteo + icon + sunrise</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM2,0,0,1,0,0')">Meteo + icon + fronius</button>
-    <button class="border-2 border-black" onmousedown="sendCommand('CM0,1,2,0,4,0')">Meteo + icon + fronius + wind</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM64,64,64,64,64,64')">Sunrise / Sunset</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM1,1,1,1,1,1')">Wind</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM32,32,32,32,32,32')">Date</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM40,40,40,40,40,40')">Icon + Date</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM80,80,80,80,80,80,CT2,2,2,2,2,2')">Moon + Sunrise</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM0,0,0,8,0,0,CT5,5,5,5,5,5')">Meteo + icon</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM64,0,0,8,0,0,CT5,5,5,5,5,5')">Meteo + icon + sunrise</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM2,0,0,8,0,0,CT5,5,5,5,5,5')">Meteo + icon + fronius</button>
+    <button class="border-2 border-black" onmousedown="sendCommand('CM0,8,2,0,1,0,CT5,5,5,5,5,5')">Meteo + icon + fronius + wind</button>
   </div>
 
   <div>
@@ -384,8 +387,15 @@ CC: Sunset offset
 CD: Sunrise offset
 CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 200
 CM,CN,CO,CP,CQ,CR: Meteo panel
+- SLOT_METEO_TEMPERATURE 0
+- SLOT_METEO_WIND 1
+- SLOT_METEO_FRONIUS 2
+Bitwise combination of a background and a text
+- SLOT_METEO_WEATHER_ICON 8 
+- SLOT_METEO_MOON_ICON 16
+- SLOT_METEO_DATE 32
+- SLOT_METEO_SUNRISE_SUNSET 64
 CT,CU,CV,CW,CX,CY: Meteo panel time
-
 </pre>
   </div>
 </body>

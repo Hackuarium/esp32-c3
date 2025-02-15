@@ -128,6 +128,32 @@ uint32_t getHSV360(uint16_t h, uint8_t s, uint8_t v) {
   return Adafruit_NeoPixel::ColorHSV(h * (65535 / 360), s, v);
 }
 
+HSV rgbToHSV360(uint32_t color) {
+  float rf = ((color >> 16) & 255) / 255.0f;
+  float gf = ((color >> 8) & 255) / 255.0f;
+  float bf = ((color >> 0) & 255) / 255.0f;
+  float max = (rf > gf) ? ((rf > bf) ? rf : bf) : ((gf > bf) ? gf : bf);
+  float min = (rf < gf) ? ((rf < bf) ? rf : bf) : ((gf < bf) ? gf : bf);
+  float h, s, v = max;
+  float d = max - min;
+  s = (max == 0) ? 0 : (d / max);
+
+  if (max == min) {
+    h = 0;  // achromatic
+  } else {
+    if (max == rf) {
+      h = (gf - bf) / d + (gf < bf ? 6 : 0);
+    } else if (max == gf) {
+      h = (bf - rf) / d + 2;
+    } else {
+      h = (rf - gf) / d + 4;
+    }
+    h *= 60;
+  }
+  HSV hsv = {(int)(h), (int)(s * 255), (int)(v * 255)};
+  return hsv;
+}
+
 void setColor(Adafruit_NeoPixel& pixels, uint16_t led) {
   pixels.setPixelColor(led, getColor());
 }
@@ -146,6 +172,16 @@ void copyPixelColor(Adafruit_NeoPixel& pixels, uint16_t from, uint16_t to) {
   data[to * 3] = data[from * 3];
   data[to * 3 + 1] = data[from * 3 + 1];
   data[to * 3 + 2] = data[from * 3 + 2];
+}
+
+/*
+Decrease the intensity in the hsv model to keep the color*/
+void decreaseIntensity(Adafruit_NeoPixel& pixels, uint8_t factor) {
+  for (uint16_t i = 0; i < pixels.numPixels(); i++) {
+    // get color in RGB
+    HSV hsv = rgbToHSV360(pixels.getPixelColor(i));
+    pixels.setPixelColor(i, getHSV360(hsv.h, hsv.s, (float)hsv.v / factor));
+  }
 }
 
 bool decreaseColor(Adafruit_NeoPixel& pixels, uint16_t led, uint8_t increment) {
