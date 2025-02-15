@@ -20,7 +20,8 @@ Forecast forecast = {.temperature = {0},
                      .sunset = "00:00",
                      .sunriseInMin = 0,
                      .sunsetInMin = 0,
-                     .nextIcon = 0};
+                     .nextIcon = 0,
+                     .dayMonth = "00-00"};
 
 DeserializationError errorJSONForecast;
 
@@ -77,6 +78,7 @@ void updateForecast() {
       forecast.sunsetInMin = getMinutes(forecast.sunset);
       forecast.nextIcon = (int16_t)forecastObject["nextIcon"];
       forecast.lunarAge = (float)forecastObject["lunarAge"];
+      strcpy(forecast.dayMonth, forecastObject["dayMonth"]);
     }
   }
 }

@@ -119,6 +119,13 @@ extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_WIFI_MODE 96  // CS - <=0: STA, 1: AP, 2: STA 30s then AP
 
+#define PARAM_METEO_SLOT_TIME_1 97   // CT
+#define PARAM_METEO_SLOT_TIME_2 98   // CU
+#define PARAM_METEO_SLOT_TIME_3 99   // CV
+#define PARAM_METEO_SLOT_TIME_4 100  // CW
+#define PARAM_METEO_SLOT_TIME_5 101  // CX
+#define PARAM_METEO_SLOT_TIME_6 102  // CY
+
 #define SLOT_METEO_TEMPERATURE 0     // temperature / rain
 #define SLOT_METEO_WEATHER_ICON 1    // weather icon
 #define SLOT_METEO_FRONIUS 2         // fronius

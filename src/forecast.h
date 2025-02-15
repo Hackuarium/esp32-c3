@@ -30,6 +30,7 @@ struct Forecast {
   int16_t sunriseInMin;
   int16_t sunsetInMin;
   int16_t nextIcon;
+  char dayMonth[6];
 };
 
 Forecast* getForecast();

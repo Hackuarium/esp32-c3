@@ -15,6 +15,10 @@ const uint8_t SLOT_METEO[6] = {PARAM_METEO_SLOT_1, PARAM_METEO_SLOT_2,
                                PARAM_METEO_SLOT_3, PARAM_METEO_SLOT_4,
                                PARAM_METEO_SLOT_5, PARAM_METEO_SLOT_6};
 
+const uint8_t SLOT_METEO_TIME[6] = {
+    PARAM_METEO_SLOT_TIME_1, PARAM_METEO_SLOT_TIME_2, PARAM_METEO_SLOT_TIME_3,
+    PARAM_METEO_SLOT_TIME_4, PARAM_METEO_SLOT_TIME_5, PARAM_METEO_SLOT_TIME_6};
+
 void sunriseDisplay(Adafruit_NeoPixel& pixels);
 void dateDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
@@ -27,6 +31,9 @@ void compactMeteoDisplay(Adafruit_NeoPixel& pixels);
 char* meteoTempChars = new char[6];
 char* windDirectionChars = new char[3];
 
+long meteoLastEvent = millis();
+uint8_t meteoCurrentSlot = 0;
+
 void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
   // Display the time
 
@@ -35,10 +42,14 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
     return;
   }
 
-  uint8_t slot = floor((getSeconds() % 30) / 5);
-  uint16_t task = getParameter(SLOT_METEO[slot]);
-  uint8_t intensity = (getSeconds() % 30) - slot * 5;
-  // there are 6 slots
+  if ((millis() - meteoLastEvent) >
+      (getParameter(SLOT_METEO_TIME[meteoCurrentSlot]) * 1000)) {
+    meteoLastEvent = millis();
+    meteoCurrentSlot = (meteoCurrentSlot + 1) % 6;
+  }
+
+  uint16_t task = getParameter(SLOT_METEO[meteoCurrentSlot]);
+
   switch (task) {
     case SLOT_METEO_WEATHER_ICON:  // weather icon
       iconDisplay(pixels);
