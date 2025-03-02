@@ -28,7 +28,7 @@ char* fetch(char* url) {
   httpConfig.url = url;
   // Serial.print("Fetching: ");
   // Serial.println(httpConfig.url);
-  httpBuffer[1000] = {0};
+  httpBuffer[MAX_HTTP_BUFFER] = {0};
   httpClientHandle = esp_http_client_init(&httpConfig);
   httpError = esp_http_client_perform(httpClientHandle);
   if (httpError == ESP_OK) {
@@ -59,19 +59,19 @@ esp_err_t httpEventHandler(esp_http_client_event_t* evt) {
        * also be used in case chunked encoding is used.
        */
       // Serial.println("Received data");
-      if (!esp_http_client_is_chunked_response(evt->client)) {
-        // If user_data buffer is configured, copy the response into the
-        // buffer
-        if (evt->user_data) {
-          if (output_len + evt->data_len < MAX_HTTP_BUFFER) {
-            memcpy(evt->user_data + output_len, evt->data, evt->data_len);
-          }
-        } else {
-          Serial.println("Need to define user_data");
-          return ESP_FAIL;
+      //    if (!esp_http_client_is_chunked_response(evt->client)) {
+      //  If user_data buffer is configured, copy the response into the
+      //  buffer
+      if (evt->user_data) {
+        if (output_len + evt->data_len < MAX_HTTP_BUFFER) {
+          memcpy(evt->user_data + output_len, evt->data, evt->data_len);
         }
-        output_len += evt->data_len;
+      } else {
+        Serial.println("Need to define user_data");
+        return ESP_FAIL;
       }
+      output_len += evt->data_len;
+      //  }
 
       break;
     case HTTP_EVENT_ON_FINISH:
