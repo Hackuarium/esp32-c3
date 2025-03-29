@@ -25,7 +25,8 @@
     "stdlib.h": "c",
     "typeinfo": "cpp",
     "cstddef": "cpp",
-    "new": "cpp"
+    "new": "cpp",
+    "config9outputs.h": "c"
   },
   "liveServer.settings.port": 5501,
   "cmake.sourceDirectory": "/Users/lpatiny/git/hackuarium/esp32-c3/.pio/libdeps/lolin_c3_mini/Adafruit BusIO",

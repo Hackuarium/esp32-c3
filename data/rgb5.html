@@ -24,8 +24,8 @@
 
     <div class="flex flex-wrap" id="models">
     </div>
-    Brightness: <input data-label="Z" type="range" oninput="sendSlowlyCommand('Z'+value)" min="0" max="100"></input><br>
-    Speed: <input data-label="Y" type="range" oninput="sendSlowlyCommand('Y'+this.value)" min="0" max="100"></input><br>
+    Brightness: <input data-label="Z" type="range" oninput="sendSlowlyCommand('Z'+value)" min="0" max="255"></input><br>
+    Speed: <input data-label="Y" type="range" oninput="sendSlowlyCommand('Y'+this.value)" min="0" max="10"></input><br>
 
     <div>
       <span style="width: 50px">&nbsp;Change all colors at once:</span>
@@ -81,6 +81,14 @@
       </form>
 
       <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
+
+          <pre>
+      CB: 1 day, 2 night, 3 day+night
+      CC: Sunset offset
+      CD: Sunrise offset
+      CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
+     </pre>
+
     </div>
 </body>
 
@@ -114,7 +122,27 @@
     [0xf00, 0xf0f, 0x20f, 0x0af, 0x0fb, 0x6f0, 0xfd0, 0xf70],
     [0xf00, 0xf0f, 0xf0f, 0x50f, 0x80f, 0x90f, 0xe0f, 0xf0c],
   ];
-  addColorModelsButtonsRGB(models, { channels: ["A"] })
+  addColorModelsButtonsRGBWWW(models, { channels: ["A"] })
+
+  function addColorModelsButtonsRGBWWW(models) {
+  const modelsElement = document.getElementById("models");
+  if (!models || !modelsElement) return;
+  for (const model of models) {
+    const colors = model.map((color) => color12ToHex(color)).join(",");
+    const button = document.createElement("button");
+    button.setAttribute("class", "text-xl w-1/4 h-8 text-white");
+    button.style.setProperty(
+      "background-image",
+      "linear-gradient(to right, " + colors + ")"
+    );
+    button.onmousedown = async () => {
+      await sendCommand("A" + model.join(",") + ',0,0,0,0,0,0,0,0' );
+      await reloadSettings();
+    };
+    modelsElement.append(button);
+  }
+}
+
 </script>
 
 </html>

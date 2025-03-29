@@ -66,6 +66,9 @@ void printHelp(Print* output) {
 #ifdef THR_WIRE_MASTER
   output->println(F("(i)2c"));
 #endif
+#ifdef THR_SCHEDULE
+  output->println(F("Schedule (i)nfo"));
+#endif
 #ifdef THR_EEPROM_LOGGER
   output->println(F("(l)og"));
 #endif

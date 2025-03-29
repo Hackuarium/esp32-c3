@@ -2,6 +2,7 @@
 #include "./WifiUtilities.h"
 #include "./taskOneWire.h"
 #include "./taskPixels.h"
+#include "./taskSchedule.h"
 #include "./taskWire.h"
 #include "FS.h"
 #include "config.h"
@@ -172,6 +173,11 @@ void printResult(char* data, Print* output) {
 #ifdef THR_WIRE_MASTER
     case 'i':
       processWireCommand(data[1], paramValue, output);
+      break;
+#endif
+#ifdef THR_SCHEDULE
+    case 'i':
+      printAllScheduleInfo(output);
       break;
 #endif
 #ifdef THR_EEPROM_LOGGER

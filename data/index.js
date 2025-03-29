@@ -6,18 +6,21 @@ let servers = [];
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams) {
   if (urlParams.get("servers")) {
-    servers = urlParams.get("servers").split(",")
+    servers = urlParams.get("servers").split(",");
   }
   if (urlParams.get("mqttTopics")) {
-    mqttTopics = urlParams.get("mqttTopics").split(",")
+    mqttTopics = urlParams.get("mqttTopics").split(",");
   }
   if (urlParams.get("mqttServers")) {
-    mqttServers = urlParams.get("mqttServers").split(',');
+    mqttServers = urlParams.get("mqttServers").split(",");
   }
 }
 if (servers.length === 0) {
-  servers.push('')
+  servers.push("");
+} else {
+  servers = servers.map((server) => "http://" + server + "/");
 }
+
 let timerId = undefined;
 let lastEvent = Date.now();
 let throttle = 200;
@@ -36,81 +39,84 @@ async function sendSlowlyCommand(command, value) {
 
 // if there is some mqttServers we need to add in the class name 'onlyHTTP' with the property display: none
 // to hide the mqtt part
-const style = document.createElement('style');
+const style = document.createElement("style");
 if (mqttServers.length > 0) {
-  style.innerHTML = '[data-only-http] {display: none}'
+  style.innerHTML = "[data-only-http] {display: none}";
 } else {
-  style.innerHTML = '[data-only-mqtt] {display: none}'
+  style.innerHTML = "[data-only-mqtt] {display: none}";
 }
 document.head.appendChild(style);
 
-
-
-
-
-
-
 function download(data) {
-  const blob = new Blob([data], { type: 'text/csv' });
-  const elem = window.document.createElement('a');
+  const blob = new Blob([data], { type: "text/csv" });
+  const elem = window.document.createElement("a");
   elem.href = window.URL.createObjectURL(blob);
-  elem.download = Date.now() + '.csv';
+  elem.download = Date.now() + ".csv";
   document.body.appendChild(elem);
   elem.click();
   document.body.removeChild(elem);
 }
 
 async function updateGIFList() {
-  const results = await sendCommand('fd');
-  const lines = results.split('\n').filter(line => line.includes('.gif') && !line.includes('weather'))
-  const gifs = lines.map(line => {
-    const fields = line.trim().split(' ');
+  const results = await sendCommand("fd");
+  const lines = results
+    .split("\n")
+    .filter((line) => line.includes(".gif") && !line.includes("weather"));
+  const gifs = lines.map((line) => {
+    const fields = line.trim().split(" ");
     return {
       size: fields[0],
       filename: fields[1],
-      name: fields[1].replace(/.*\//, ''),
-    }
-  })
-  const buttons = gifs.map(gif => `<button value="${gif.filename}">${gif.name}</button>`).join('')
-  document.getElementById('gifButtons').innerHTML = buttons
-  setGIF(gifs[0].filename)
+      name: fields[1].replace(/.*\//, ""),
+    };
+  });
+  const buttons = gifs
+    .map((gif) => `<button value="${gif.filename}">${gif.name}</button>`)
+    .join("");
+  document.getElementById("gifButtons").innerHTML = buttons;
+  setGIF(gifs[0].filename);
 }
 
 function setGIF(gif) {
-  sendCommand('pg' + gif)
-  console.log({ gif })
+  sendCommand("pg" + gif);
+  console.log({ gif });
 }
 
 async function getSchedule() {
   // first parameter is CA
   const parameters = (await getAllParameters()).slice(78);
   const lines = [];
-  const dayNight = { 1: 'Day', 2: 'Night', 3: 'Day and Night' }
-  lines.push("On during: " + (dayNight[parameters[1]] ? dayNight[parameters[1]] : 'Never'));
-  lines.push("Sunset offset: " + parameters[2] + ' minutes');
-  lines.push("Sunrise offset: " + parameters[3] + ' minutes');
+  const dayNight = { 1: "Day", 2: "Night", 3: "Day and Night" };
+  lines.push(
+    "On during: " +
+      (dayNight[parameters[1]] ? dayNight[parameters[1]] : "Never")
+  );
+  lines.push("Sunset offset: " + parameters[2] + " minutes");
+  lines.push("Sunrise offset: " + parameters[3] + " minutes");
   for (let i = 4; i < 12; i++) {
     const value = parameters[i];
-    const label = 'C' + String.fromCharCode(i + 65);
-    console.log(value)
+    const label = "C" + String.fromCharCode(i + 65);
+    console.log(value);
     if (value < 0) {
-      lines.push(label + ': No action')
+      lines.push(label + ": No action");
     } else {
       const intensity = Math.floor(value / 2000);
       const minutes = value % 2000;
       const hours = Math.floor(minutes / 60);
       const minutesLeft = minutes % 60;
-      lines.push(label + `: At ${hours}h${minutesLeft}m, intensity ${intensity}`);
+      lines.push(
+        label + `: At ${hours}h${minutesLeft}m, intensity ${intensity}`
+      );
     }
   }
-  document.getElementById("result").value = lines.join('\n');
+  document.getElementById("result").value = lines.join("\n");
 }
 
 async function setServo1(status) {
   const settings = await getParameters();
-  const off = settings[19]
-  const on = settings[20]
-  sendCommand('I' + (status ? on : off))
+  const off = settings[19];
+  const on = settings[20];
+  sendCommand("I" + (status ? on : off));
 }
 
 function parseParametersString(string) {
@@ -120,7 +126,6 @@ function parseParametersString(string) {
   }
   return parameters;
 }
-
 
 async function getAllParameters() {
   const response = await fetch(servers[0] + "command" + "?value=uc");
@@ -143,9 +148,19 @@ async function getParameters() {
 
 async function getCurrentSettings() {
   let parameters = await getParameters();
-  const withIntensities = "A" + parameters.slice(0, 8).join(",") + ",K" + parameters.slice(10, 13).join(",");
-  const withoutIntensities = "B" + parameters.slice(1, 7).join(",") + ",K" + parameters.slice(10, 13).join(",");
-  document.getElementById("result").value = `With intensities: ${withIntensities}\nWithout intensities: ${withoutIntensities}`;
+  const withIntensities =
+    "A" +
+    parameters.slice(0, 8).join(",") +
+    ",K" +
+    parameters.slice(10, 13).join(",");
+  const withoutIntensities =
+    "B" +
+    parameters.slice(1, 7).join(",") +
+    ",K" +
+    parameters.slice(10, 13).join(",");
+  document.getElementById(
+    "result"
+  ).value = `With intensities: ${withIntensities}\nWithout intensities: ${withoutIntensities}`;
   return withIntensities;
 }
 
@@ -177,8 +192,8 @@ async function sendCommand(command, value, options = {}) {
   }
   if (command.match(/^[A-Z][0-9]+/)) {
     // split before uppercase without capture
-    const parts = command.split(/(?=[A-Z])/).map(part => prefix + part);
-    command = parts.join('');
+    const parts = command.split(/(?=[A-Z])/).map((part) => prefix + part);
+    command = parts.join("");
   }
 
   const results = [];
@@ -190,7 +205,11 @@ async function sendCommand(command, value, options = {}) {
         for (let topic of mqttTopics) {
           try {
             let response = await fetch(
-              mqttServer + "?topic=" + encodeURIComponent(topic) + "&message=" + encodeURIComponent(command)
+              mqttServer +
+                "?topic=" +
+                encodeURIComponent(topic) +
+                "&message=" +
+                encodeURIComponent(command)
             );
             results.push(await response.text());
           } catch (e) {
@@ -231,7 +250,10 @@ async function sendFunction() {
   document.getElementById("result").value = results.join("\n");
 }
 async function reloadSettings() {
-  let result = await sendCommand("uc", undefined, { logResult: false, reload: false });
+  let result = await sendCommand("uc", undefined, {
+    logResult: false,
+    reload: false,
+  });
   // TODO we could check the checkDigit ...
   if (prefix) {
     const shift = (prefix.charCodeAt(0) - 64) * 26 * 4 + 8;
@@ -309,7 +331,12 @@ function addColorModelsButtons(models) {
       "linear-gradient(to right, " + colors + ")"
     );
     button.onmousedown = async () => {
-      await sendCommand("D11,P" + model.slice(0, 4).join(",") + ',V' + model.slice(4, 8).join(","));
+      await sendCommand(
+        "D11,P" +
+          model.slice(0, 4).join(",") +
+          ",V" +
+          model.slice(4, 8).join(",")
+      );
       await reloadSettings();
     };
     modelsElement.append(button);

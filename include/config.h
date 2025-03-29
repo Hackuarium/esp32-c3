@@ -4,8 +4,6 @@
 #define KIND_HANDRAIL 4
 #define KIND_EXAMPLE 99
 
-#define BOARD_TYPE KIND_PIXELS
-
 #if BOARD_TYPE == KIND_ROCKET
 #include "./configRocket.h"
 #elif BOARD_TYPE == KIND_PIXELS

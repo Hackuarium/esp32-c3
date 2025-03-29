@@ -1,5 +1,5 @@
 #include "config.h"
-#ifdef MAX_LED
+#ifdef PARAM_ACTION_1
 
 #include "params.h"
 #include "taskNTPD.h"

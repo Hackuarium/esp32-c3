@@ -2,7 +2,9 @@
 
 #ifdef PARAM_RED1
 
+#include <Arduino.h>
 #include "./params.h"
+#include "isNight.h"
 
 uint8_t COLORS_OUT1[8] = {
     PARAM_OUT1_COLOR1, PARAM_OUT1_COLOR2, PARAM_OUT1_COLOR3, PARAM_OUT1_COLOR4,
@@ -40,17 +42,46 @@ void updateOutColors(uint8_t colors[8],
   float_t g2 = (color2 & 0x0f0) >> 0;
   float_t b2 = (color2 & 0x00f) << 4;
 
-  /**
-    Serial.print(red);
-    Serial.print(" ");
-    Serial.println((int)(r1 * percent1 + r2 * percent2));
-    */
+  float_t brightness = 0;
+  if ((!isNight() && getParameterBit(PARAM_SCHEDULE, 0)) ||
+      (isNight() && getParameterBit(PARAM_SCHEDULE, 1))) {
+    brightness = getParameter(PARAM_BRIGHTNESS) / 255.0;
+  }
 
-  float_t brightness = getParameter(PARAM_BRIGHTNESS) / 100.0;
+  // we need a smooth transition
+  int maxStep =
+      getParameter(PARAM_COLOR_TRANSITION_NB_STEPS) > 0
+          ? max(1, (int)((float)getParameter(PARAM_BRIGHTNESS) /
+                         (float)getParameter(PARAM_COLOR_TRANSITION_NB_STEPS)))
+          : 255;
 
-  setParameter(red, (int)((r1 * percent1 + r2 * percent2) * brightness));
-  setParameter(green, (int)((g1 * percent1 + g2 * percent2) * brightness));
-  setParameter(blue, (int)((b1 * percent1 + b2 * percent2) * brightness));
+  int newR = (r1 * percent1 + r2 * percent2) * brightness;
+  int newG = (g1 * percent1 + g2 * percent2) * brightness;
+  int newB = (b1 * percent1 + b2 * percent2) * brightness;
+
+  uint16_t oldR = max(min(getParameter(red), (int16_t)255), (int16_t)0);
+  uint16_t oldG = max(min(getParameter(green), (int16_t)255), (int16_t)0);
+  uint16_t oldB = max(min(getParameter(blue), (int16_t)255), (int16_t)0);
+
+  if (newR > oldR) {
+    newR = min(newR, oldR + maxStep);
+  } else {
+    newR = max(newR, oldR - maxStep);
+  }
+  if (newG > oldG) {
+    newG = min(newG, oldG + maxStep);
+  } else {
+    newG = max(newG, oldG - maxStep);
+  }
+  if (newB > oldB) {
+    newB = min(newB, oldB + maxStep);
+  } else {
+    newB = max(newB, oldB - maxStep);
+  }
+
+  setParameter(red, newR);
+  setParameter(green, newG);
+  setParameter(blue, newB);
 }
 
 void updateColors() {

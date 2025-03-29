@@ -1,6 +1,11 @@
 #include <Arduino.h>
 
-#define MAX_PARAM 52
+#define TASK_FETCH 1  // need to fetch sunrise sunset
+#define FETCH_WEATHER 1
+
+#define THR_SCHEDULE 1
+
+#define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_RED1 0    // A
@@ -17,9 +22,6 @@ extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_INPUT_1 10  // K
 #define PARAM_INPUT_2 11  // L
-
-#define PARAM_TIMER 12          // M
-#define PARAM_CURRENT_TIMER 13  // N
 
 #define PARAM_UPTIME_H 20           // U
 #define PARAM_STATUS 21             // V
@@ -58,6 +60,28 @@ extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_SPEED 50       // AY
 #define PARAM_BRIGHTNESS 51  // AZ
+
+#define PARAM_SCHEDULE 79  // CB - 1 day, 2 night, 3 day+night
+// Allows to turn on before or after sunset (in minutes)
+#define PARAM_SUNSET_OFFSET 80   // CC
+#define PARAM_SUNRISE_OFFSET 81  // CD
+// schedule actions (change of intensity)
+// < 0 no action
+// value: (day minutes / 15) << 8 + intensity
+#define PARAM_ACTION_1 82  // CE
+#define PARAM_ACTION_2 83  // CF
+#define PARAM_ACTION_3 84  // CG
+#define PARAM_ACTION_4 85  // CH
+#define PARAM_ACTION_5 86  // CI
+#define PARAM_ACTION_6 87  // CJ
+#define PARAM_ACTION_7 88  // CK
+#define PARAM_ACTION_8 89  // CL
+
+#define PARAM_COLOR_TRANSITION_NB_STEPS \
+  90  // CM - we would prefer smooth transitions, define as number of steps for
+      // transition but the change is at least 1 per cycle (so 25 per second)
+
+#define PARAM_WIFI_MODE 96  // CS - <=0: STA, 1: AP, 2: STA 30s then AP
 
 #define PARAM_STATUS_FLAG_NO_WIFI 0
 #define PARAM_STATUS_FLAG_NO_MQTT 1
