@@ -316,6 +316,8 @@ void resetLine(int16_t row, int16_t column) {
   setAndSaveParameter(PARAM_COMMAND_8, 0xf70);
   setAndSaveParameter(PARAM_SCHEDULE, 3);  // always on
   setAndSaveParameter(PARAM_WIFI_MODE, 0);
+  setAndSaveParameter(PARAM_COLOR_TRANSITION_NB_STEPS,
+                      0);  // need to change this value for smooth changes
   clearActions();
 }
 
