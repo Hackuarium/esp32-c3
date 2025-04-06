@@ -130,9 +130,10 @@ extern int16_t parameters[MAX_PARAM];
   103  // CZ - we would prefer smooth transitions, define as number of steps for
        // transition but the change is at least 1 per cycle (so 25 per second)
 
-#define SLOT_METEO_TEMPERATURE 0  // temperature / rain
-#define SLOT_METEO_WIND 1         // wind
-#define SLOT_METEO_FRONIUS 2      // fronius
+#define SLOT_METEO_TEMPERATURE 0    // temperature / rain
+#define SLOT_METEO_WIND 1           // wind
+#define SLOT_METEO_FRONIUS 2        // fronius
+#define SLOT_METEO_WIND_NAUTICAL 3  // wind with unit in nautical miles
 
 #define SLOT_METEO_WEATHER_ICON 8     // weather icon
 #define SLOT_METEO_MOON_ICON 16       // moon icon

@@ -26,7 +26,7 @@ void dateDisplay(Adafruit_NeoPixel& pixels);
 void currentDisplay(Adafruit_NeoPixel& pixels);
 void iconDisplay(Adafruit_NeoPixel& pixels);
 void fullMeteoDisplay(Adafruit_NeoPixel& pixels);
-void windDisplay(Adafruit_NeoPixel& pixels);
+void windDisplay(Adafruit_NeoPixel& pixels, boolean nautical);
 void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter);
 void compactMeteoDisplay(Adafruit_NeoPixel& pixels);
 
@@ -65,7 +65,10 @@ void updateMeteo(Adafruit_NeoPixel& pixels, uint16_t counter) {
       froniusDisplay(pixels, counter);
       break;
     case SLOT_METEO_WIND:
-      windDisplay(pixels);
+      windDisplay(pixels, false);
+      break;
+    case SLOT_METEO_WIND_NAUTICAL:
+      windDisplay(pixels, true);
       break;
     default: {
       if (task & SLOT_METEO_WEATHER_ICON) {

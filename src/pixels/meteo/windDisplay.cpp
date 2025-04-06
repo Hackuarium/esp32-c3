@@ -6,14 +6,15 @@
 #include "forecast.h"
 #include "taskNTPD.h"
 
-void windDisplay(Adafruit_NeoPixel& pixels) {
+void windDisplay(Adafruit_NeoPixel& pixels, boolean nautical) {
+  float factor = nautical ? 0.539956803 : 1;
   static char* meteoTempChars = new char[6];
   pixels.clear();
   Forecast* forecast = getForecast();
   uint32_t color = Adafruit_NeoPixel::Color(0, 255, 255);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
   // display current wind speed as text
-  int16_t windSpeed = forecast->current.windSpeed;
+  int16_t windSpeed = forecast->current.windSpeed * factor;
   itoa(windSpeed, meteoTempChars, 10);
   uint8_t length = 0;
   while (meteoTempChars[length] != '\0') {
@@ -24,8 +25,8 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
     paintSymbol(pixels, ascii, 17 - (length - i) * 4, 0,
                 Adafruit_NeoPixel::Color(192, 96, 0));
   }
-
-  int16_t gustSpeed = forecast->current.gustSpeed;
+  // display current gustSpeed as text
+  int16_t gustSpeed = forecast->current.gustSpeed * factor;
   itoa(gustSpeed, meteoTempChars, 10);
   length = 0;
   while (meteoTempChars[length] != '\0') {
@@ -41,8 +42,8 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
   for (uint8_t i = 0; i < 8; ++i) {
     float_t opacity = i == currentSlot ? 1 : 0.2;
 
-    uint8_t windHeight = floor(forecast->windSpeed[i] / 5);
-    uint8_t gustHeight = floor(forecast->gustSpeed[i] / 5);
+    uint8_t windHeight = floor(forecast->windSpeed[i] * factor / 5);
+    uint8_t gustHeight = floor(forecast->gustSpeed[i] * factor / 5);
     for (uint8_t j = 0; j < windHeight; j++) {
       pixels.setPixelColor(
           getLedIndex(15 - j, i),
@@ -70,11 +71,22 @@ void windDisplay(Adafruit_NeoPixel& pixels) {
   //                      Adafruit_NeoPixel::Color(0, 255, 255));
   uint8_t currentRow = 4;
   uint8_t currentColumn = 4;
-  for (uint8_t i = 0; i < 4; i++) {
-    currentRow += forecast->current.windDirectionRow;
-    currentColumn += forecast->current.windDirectionColumn;
+  for (uint8_t i = 0; i < 5; i++) {
     pixels.setPixelColor(getLedIndex(currentRow, currentColumn),
                          Adafruit_NeoPixel::Color(0, 63, 63));
+    currentRow += forecast->current.windDirectionRow;
+    currentColumn += forecast->current.windDirectionColumn;
+  }
+  // the little tail of the arrow
+  if (nautical) {
+    currentRow = 4;
+    currentColumn = 4;
+    for (uint8_t i = 0; i < 2; i++) {
+      currentRow -= forecast->current.windDirectionRow;
+      currentColumn -= forecast->current.windDirectionColumn;
+      pixels.setPixelColor(getLedIndex(currentRow, currentColumn),
+                           Adafruit_NeoPixel::Color(0, 63, 63));
+    }
   }
 
   // finally we display some little 2x2 squares for wind direction prediction
