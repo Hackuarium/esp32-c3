@@ -385,7 +385,8 @@ CA: NEO_RGB: 6 - NEO_GRB: 82
 CB: 1 day, 2 night, 3 day+night
 CC: Sunset offset
 CD: Sunrise offset
-CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 200
+CE,CF,CG,CH,CI,CJ,CK,CL: schedule actions (change of intensity)
+  &lt;0 no action, (day minutes / 15) &lt;&lt; 8 + intensity
 CM,CN,CO,CP,CQ,CR: Meteo panel
 - SLOT_METEO_TEMPERATURE 0
 - SLOT_METEO_WIND 1

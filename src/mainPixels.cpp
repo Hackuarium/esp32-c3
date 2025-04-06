@@ -33,10 +33,14 @@ void setupPixels() {
   taskOTA();  // incompatible with Lolin32 ??
               // taskMDNS();  // incompatible with taskOTA !
   taskWifi();
+#ifdef TASK_WIFIAP
   taskWifiAP();
+#endif
   taskNTPD();
   taskWebserver();
+#ifdef TASK_MQTT
   taskMQTT();
+#endif
 
 #if FETCH_FRONIUS == 1 || FETCH_WEATHER == 1
   taskFetch();

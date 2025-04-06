@@ -83,10 +83,12 @@
       <textarea class="border-2 border-black" id="result" rows="10" cols="40"> </textarea>
 
           <pre>
-      CB: 1 day, 2 night, 3 day+night
-      CC: Sunset offset
-      CD: Sunrise offset
-      CE,CF,CG,CH,CI,CJ,CK,CL: Minute event. &lt;0 no action, minutes + intensity (0 to 15) * 2000
+CB: 1 day, 2 night, 3 day+night
+CC: Sunset offset
+CD: Sunrise offset
+CE,CF,CG,CH,CI,CJ,CK,CL: schedule actions (change of intensity)
+  &lt;0 no action, (day minutes / 15) &lt;&lt; 8 + intensity
+Example for auto night mode: CB2,-30,30,16639,22544,0,5136
      </pre>
 
     </div>
