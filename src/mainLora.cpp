@@ -1,5 +1,5 @@
 #include "config.h"
-#if BOARD_TYPE == KIND_HANDRAIL
+#if BOARD_TYPE == KIND_LORA
 #include "params.h"
 
 void deepSleep(int seconds);
@@ -13,6 +13,10 @@ void taskTest();
 void taskWifi();
 void taskWifiAP();
 void taskOTA();
+void taskLoraSend();
+void taskMQTT();
+void taskLora();
+
 void taskMDNS();
 void taskInternalTemperature();
 void taskWebserver();
@@ -21,31 +25,23 @@ void taskInput();
 void taskRestart();
 void taskTimer();
 
-void setupHandrail() {
-  setParameter(PARAM_STATUS, 0);
-
+void setupLora() {
   setupParameters();
-  // taskTest();
-
   taskSerial();
-
-  taskInput();
-  task9Outputs();
-  taskRestart();
-  taskOTA();
-  // taskMDNS();  // incompatible with taskOTA
-  // taskWifi();
-  taskWifiAP();
-  taskWebserver();
-  taskTimer();
+  /// taskWebserver();
   taskNTPD();
-  taskInternalTemperature();
 
-  vTaskDelay(30 * 1000);  // waiting 30s before normal operation
+  taskLoraSend();
+  taskOTA();
+  // taskWifi();
+  taskMQTT();
+  taskOneWire();
+  //  taskWifiAP();
+  taskBlink();
 }
 
-void loopHandrail() {
-  vTaskDelay(100);
+void loopLora() {
+  vTaskDelay(100000);
 }
 
 void resetParameters() {

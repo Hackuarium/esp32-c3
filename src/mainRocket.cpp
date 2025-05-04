@@ -30,7 +30,6 @@ void taskWebserver();
 void taskWire();
 
 void setupRocket() {
-  Serial.begin(115200);  // only for debug purpose
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();

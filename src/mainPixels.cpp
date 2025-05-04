@@ -22,7 +22,6 @@ void taskInternalTemperature();
 void taskWebserver();
 
 void setupPixels() {
-  Serial.begin(115200);  // only for debug purpose
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();

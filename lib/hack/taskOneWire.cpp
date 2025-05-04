@@ -5,8 +5,8 @@
 
 #ifdef THR_ONEWIRE
 
-byte oneWirePorts[] = THR_ONEWIRE;
-byte oneWireParameters[] = {PARAM_TEMPERATURE, PARAM_INT_TEMPERATURE_A};
+byte oneWirePorts[] = {THR_ONEWIRE};
+byte oneWireParameters[] = {PARAM_TEMPERATURE, PARAM_TEMPERATURE};
 
 OneWire* oneWires[sizeof(oneWirePorts)];
 

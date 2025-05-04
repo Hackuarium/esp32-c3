@@ -26,7 +26,15 @@
     "typeinfo": "cpp",
     "cstddef": "cpp",
     "new": "cpp",
-    "config9outputs.h": "c"
+    "config9outputs.h": "c",
+    "deque": "cpp",
+    "list": "cpp",
+    "string": "cpp",
+    "unordered_map": "cpp",
+    "unordered_set": "cpp",
+    "vector": "cpp",
+    "string_view": "cpp",
+    "initializer_list": "cpp"
   },
   "liveServer.settings.port": 5501,
   "cmake.sourceDirectory": "/Users/lpatiny/git/hackuarium/esp32-c3/.pio/libdeps/lolin_c3_mini/Adafruit BusIO",

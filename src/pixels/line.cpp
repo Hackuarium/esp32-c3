@@ -12,24 +12,28 @@ uint8_t COLORS[8] = {PARAM_COMMAND_1, PARAM_COMMAND_2, PARAM_COMMAND_3,
 
 unsigned int lineCounter = 0;
 
-uint32_t getPixelColor(uint16_t led, uint32_t currentColor);
+uint32_t getPixelColor(uint16_t led,
+                       uint32_t currentColor,
+                       uint16_t pixelWidth);
 
 void updateLine(Adafruit_NeoPixel& pixels) {
+  uint16_t pixelWidth = pow(2, getParameter(PARAM_INTENSITY) + 4);
   int16_t speed = getParameter(PARAM_SPEED);
-  lineCounter += speed > 10 ? speed * 2 : speed;
+  lineCounter = (lineCounter + speed > 10 ? speed * 2 : speed) % pixelWidth;
 
   for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
     for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS);
          column++) {
       uint16_t led = row * getParameter(PARAM_NB_COLUMNS) + column;
       uint32_t currentColor = pixels.getPixelColor(led);
-      pixels.setPixelColor(led, getPixelColor(led, currentColor));
+      pixels.setPixelColor(led, getPixelColor(led, currentColor, pixelWidth));
     }
   }
 }
 
-uint32_t getPixelColor(uint16_t led, uint32_t currentColor) {
-  uint16_t pixelWidth = pow(2, getParameter(PARAM_INTENSITY) + 4);
+uint32_t getPixelColor(uint16_t led,
+                       uint32_t currentColor,
+                       uint16_t pixelWidth) {
   double_t floatColor1Index = (double_t)(led + lineCounter) / pixelWidth;
   uint16_t color1Index = floor(floatColor1Index);
   uint16_t color2Index = color1Index + 1;

@@ -14,6 +14,8 @@
 #include "./config9Outputs.h"
 #elif BOARD_TYPE == KIND_HANDRAIL
 #include "./configHandrail.h"
+#elif BOARD_TYPE == KIND_LORA
+#include "./configLora.h"
 #else
 #error "Unknown board type"
 #endif

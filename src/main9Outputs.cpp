@@ -25,7 +25,6 @@ void taskSchedule();
 
 // UPDATE using /rgb5.html
 void setup9Outputs() {
-  Serial.begin(115200);  // only for debug purpose
   setParameter(PARAM_STATUS, 0);
 
   setupParameters();

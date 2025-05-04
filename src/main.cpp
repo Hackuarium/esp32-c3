@@ -12,6 +12,8 @@ void setup9Outputs();
 void loop9Outputs();
 void setupHandrail();
 void loopHandrail();
+void setupLora();
+void loopLora();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -25,11 +27,13 @@ void setup() {
   setup9Outputs();
 #elif BOARD_TYPE == KIND_HANDRAIL
   setupHandrail();
+#elif BOARD_TYPE == KIND_LORA
+  setupLora();
 #else
   setupExample();
 #endif
 
-  vTaskDelay(30 * 1000);  // waiting 30s before normal operation
+  vTaskDelay(10 * 1000);  // waiting 30s before normal operation
 }
 
 void loop() {
@@ -41,6 +45,8 @@ void loop() {
   loop9Outputs();
 #elif BOARD_TYPE == KIND_HANDRAIL
   loopHandrail();
+#elif BOARD_TYPE == KIND_LORA
+  loopLora();
 #else
   loopExample();
 #endif
