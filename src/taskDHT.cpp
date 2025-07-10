@@ -1,5 +1,5 @@
 #include "config.h"
-#ifdef PARAM_INT_TEMPERATURE
+#ifdef DHT22PIN
 
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
@@ -8,7 +8,7 @@
 
 void TaskDHT22(void* pvParameters) {
   // DHT sensor is connected to GPIO10
-  DHT dht(PARAM_INT_TEMPERATURE, DHT22);
+  DHT dht(DHT22PIN, DHT22);
   vTaskDelay(100);
   (void)pvParameters;
   while (true) {

@@ -7,6 +7,7 @@ void taskBlink();
 void taskSerial();
 void taskNTPD();
 void taskPixels();
+void taskAnalogInput();
 void taskOutput();
 void taskOneWire();
 void taskTest();
@@ -15,6 +16,7 @@ void taskWifiAP();
 void taskOTA();
 void taskLoraSend();
 void taskMQTT();
+void taskDHT22();
 void taskLora();
 
 void taskMDNS();
@@ -31,10 +33,12 @@ void setupLora() {
   /// taskWebserver();
   taskNTPD();
 
-  taskLoraSend();
+  // taskLoraSend();
   taskOTA();
+  taskAnalogInput();
   // taskWifi();
   taskMQTT();
+  // taskDHT22();
   taskOneWire();
   //  taskWifiAP();
   taskBlink();

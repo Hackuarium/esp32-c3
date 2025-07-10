@@ -218,7 +218,9 @@ void processPixelsCommand(char command,
       output->println(getParameter(PARAM_BRIGHTNESS));
       output->print("Background brightness: ");
       output->println(getParameter(PARAM_BACKGROUND_BRIGHTNESS));
+#ifdef THR_SCHEDULE
       printSchedule(output);
+#endif
       printForecast(output);
       break;
     case 'r':  // square 8x8

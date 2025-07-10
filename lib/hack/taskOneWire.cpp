@@ -6,7 +6,7 @@
 #ifdef THR_ONEWIRE
 
 byte oneWirePorts[] = {THR_ONEWIRE};
-byte oneWireParameters[] = {PARAM_TEMPERATURE, PARAM_TEMPERATURE};
+byte oneWireParameters[] = {PARAM_TEMPERATURE};
 
 OneWire* oneWires[sizeof(oneWirePorts)];
 
@@ -32,6 +32,7 @@ void TaskOneWire(void* pvParameters) {
       oneWire = *oneWires[i];
       if (!oneWire.search(oneWireAddress)) {
         oneWire.reset_search();
+        Serial.println("No more OneWire devices on port ");
         continue;
       }
 
@@ -56,6 +57,8 @@ void TaskOneWire(void* pvParameters) {
 
       celsius = (float)raw / 16.0;
 
+      Serial.print("OneWire on port ");
+      Serial.println(celsius);
       setParameter(oneWireParameters[i], celsius * 100);
     }
   }

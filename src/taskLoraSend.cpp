@@ -1,27 +1,21 @@
-#include <SPI.h>
 #include "config.h"
 #include "params.h"
 #include "taskLoraConfig.h"
 
-#define SCK 5    // GPIO5  -- SX1278's SCK
-#define MISO 19  // GPIO19 -- SX1278's MISnO
-#define MOSI 27  // GPIO27 -- SX1278's MOSI
-#define SS 18    // GPIO18 -- SX1278's CS
-#define RST 14   // GPIO14 -- SX1278's RESET
-#define DI0 26   // GPIO26 -- SX1278's IRQ(Interrupt Request)
 #define BAND 868E6
+
+void deepSleep(int seconds);
 
 void TaskLoraSend(void* pvParameters) {
   vTaskDelay(5 * 1000);
   Serial.println(F("Initialise the radio"));
   int16_t state = radio.begin();
   debug(state != RADIOLIB_ERR_NONE, F("Initialise radio failed"), state, true);
-
-  // Setup the OTAA session information
   state = node.beginABP(devAddr, NULL, NULL, nwkSKey, appSKey);
   debug(state != RADIOLIB_ERR_NONE, F("Initialise node failed"), state, true);
 
   node.activateABP();
+
   debug(state != RADIOLIB_ERR_NONE, F("Activate ABP failed"), state, true);
 
   Serial.println(F("Ready!\n"));
@@ -56,7 +50,9 @@ void TaskLoraSend(void* pvParameters) {
     Serial.print(F("Next uplink in "));
     Serial.print(uplinkIntervalSeconds);
     Serial.println(F(" seconds\n"));
-    vTaskDelay(10 * 1000);
+
+    // deepSleep(30);
+    vTaskDelay(5 * 1000);
   }
 }
 

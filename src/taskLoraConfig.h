@@ -135,16 +135,4 @@ void debug(bool failed,
   }
 }
 
-// helper function to display a byte array
-void arrayDump(uint8_t* buffer, uint16_t len) {
-  for (uint16_t c = 0; c < len; c++) {
-    char b = buffer[c];
-    if (b < 0x10) {
-      Serial.print('0');
-    }
-    Serial.print(b, HEX);
-  }
-  Serial.println();
-}
-
 #endif

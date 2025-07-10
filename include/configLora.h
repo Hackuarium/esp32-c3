@@ -3,7 +3,7 @@
 // #define WIRE_SDA 3
 // #define WIRE_SCL 4
 // #define THR_WIRE_MASTER 1
-#define THR_ONEWIRE 0  // connected on GPIO 0
+#define THR_ONEWIRE 8  // connected on GPIO 8
 
 extern SemaphoreHandle_t xSemaphoreWire;
 
@@ -12,6 +12,8 @@ extern SemaphoreHandle_t xSemaphoreWire;
 
 #define MAX_PARAM 104
 extern int16_t parameters[MAX_PARAM];
+
+#define DHT22PIN 9
 
 #define PARAM_TEMPERATURE 0  // A
 #define PARAM_HUMIDITY 1     // B
