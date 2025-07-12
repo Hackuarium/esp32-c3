@@ -7,7 +7,6 @@
 #include "params.h"
 
 void TaskDHT22(void* pvParameters) {
-  // DHT sensor is connected to GPIO10
   DHT dht(DHT22PIN, DHT22);
   vTaskDelay(100);
   (void)pvParameters;

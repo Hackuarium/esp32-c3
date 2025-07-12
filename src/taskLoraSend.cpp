@@ -30,11 +30,12 @@ void TaskLoraSend(void* pvParameters) {
     uint16_t value2 = radio.random(2000);
 
     // Build payload byte array
-    uint8_t uplinkPayload[3];
-    uplinkPayload[0] = value1;
-    uplinkPayload[1] =
-        highByte(value2);  // See notes for high/lowByte functions
-    uplinkPayload[2] = lowByte(value2);
+    uint8_t uplinkPayload[12];
+    for (int i = 0; i < 6; i++) {
+      int16_t value = getParameter(i);
+      uplinkPayload[i * 2] = highByte(value);
+      uplinkPayload[i * 2 + 1] = lowByte(value);
+    }
 
     int state = node.sendReceive(uplinkPayload, sizeof(uplinkPayload));
     debug(state < RADIOLIB_ERR_NONE, F("Error in sendReceive"), state, false);
@@ -42,17 +43,16 @@ void TaskLoraSend(void* pvParameters) {
     // Check if a downlink was received
     // (state 0 = no downlink, state 1/2 = downlink in window Rx1/Rx2)
     if (state > 0) {
-      Serial.println(F("Received a downlink"));
+      //  Serial.println(F("Received a downlink"));
     } else {
-      Serial.println(F("No downlink received"));
+      //  Serial.println(F("No downlink received"));
     }
 
-    Serial.print(F("Next uplink in "));
-    Serial.print(uplinkIntervalSeconds);
-    Serial.println(F(" seconds\n"));
+    // Serial.print(F("Next uplink in "));
+    // Serial.print(uplinkIntervalSeconds);
+    // Serial.println(F(" seconds\n"));
 
-    // deepSleep(30);
-    vTaskDelay(5 * 1000);
+    vTaskDelay(uplinkIntervalSeconds * 1000);
   }
 }
 

@@ -57,8 +57,8 @@ void TaskOneWire(void* pvParameters) {
 
       celsius = (float)raw / 16.0;
 
-      Serial.print("OneWire on port ");
-      Serial.println(celsius);
+      // Serial.print("OneWire on port ");
+      // Serial.println(celsius);
       setParameter(oneWireParameters[i], celsius * 100);
     }
   }

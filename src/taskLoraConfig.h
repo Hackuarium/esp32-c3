@@ -17,7 +17,7 @@ Radio radio = new RadioModule();
 */
 
 // how often to send an uplink - consider legal & FUP constraints - see notes
-const uint32_t uplinkIntervalSeconds = 5UL * 60UL;  // minutes x seconds
+const uint32_t uplinkIntervalSeconds = 30;
 
 #define RADIOLIB_LORAWAN_DEV_ADDR 0x260B400B
 
@@ -25,6 +25,7 @@ const uint32_t uplinkIntervalSeconds = 5UL * 60UL;  // minutes x seconds
 #define RADIOLIB_LORAWAN_APP_KEY                                          \
   0x03, 0x49, 0xD4, 0xC7, 0xE0, 0x8E, 0x86, 0xAD, 0xA4, 0x21, 0xBE, 0xAB, \
       0x13, 0x93, 0x09, 0x92
+
 #define RADIOLIB_LORAWAN_NWK_KEY                                          \
   0x62, 0x92, 0x58, 0xDE, 0x95, 0x4A, 0x30, 0x21, 0xCC, 0xA2, 0x61, 0xCC, \
       0x84, 0xEA, 0xE4, 0x53,

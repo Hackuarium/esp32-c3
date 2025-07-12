@@ -2,13 +2,26 @@
 
 #include "./params.h"
 
+struct AnalogInput {
+  uint8_t pin;
+  int16_t parameter;
+  float factor;
+};
+
+static const AnalogInput analogInputs[] = {ANALOG_INPUTS};
+
 void TaskAnalogInput(void* pvParameters) {
-  // code to analog read A07D0 and A1/D1on ESP32-S3
+  for (const auto& input : analogInputs) {
+    // maybe this is only valid on ESP32-S3
+    analogSetPinAttenuation(input.pin, ADC_11db);
+  }
 
   while (true) {
     vTaskDelay(40);  // 25 times per seconds
-    setParameter(PARAM_BATTERY, analogRead(D0));
-    setParameter(PARAM_CHARGING, analogRead(D1));
+    for (const auto& input : analogInputs) {
+      int16_t value = analogRead(input.pin);
+      setParameter(input.parameter, value * input.factor / 4096 * 3100);
+    }
   }
 }
 

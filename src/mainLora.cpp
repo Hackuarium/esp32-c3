@@ -17,7 +17,6 @@ void taskOTA();
 void taskLoraSend();
 void taskMQTT();
 void taskDHT22();
-void taskLora();
 
 void taskMDNS();
 void taskInternalTemperature();
@@ -33,14 +32,14 @@ void setupLora() {
   /// taskWebserver();
   taskNTPD();
 
-  // taskLoraSend();
+  taskLoraSend();
   taskOTA();
   taskAnalogInput();
-  // taskWifi();
-  taskMQTT();
+  //  taskWifi();
+  // taskMQTT();
   // taskDHT22();
   taskOneWire();
-  //  taskWifiAP();
+  //   taskWifiAP();
   taskBlink();
 }
 
