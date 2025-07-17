@@ -48,7 +48,7 @@ void printFroniusStatus(Print* output) {
   Update the weather forecast
 */
 void updateFronius() {
-  char* powerflow = fetch("http://192.168.1.30/status/powerflow");
+  char* powerflow = fetch("http://192.168.1.30/api/status/powerflow");
   if (strlen(powerflow) == 0) {
     Serial.println("No data from fronius");
   } else {
