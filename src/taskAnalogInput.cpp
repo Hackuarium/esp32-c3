@@ -2,6 +2,7 @@
 
 #include "./params.h"
 
+#ifdef ANALOG_INPUTS
 struct AnalogInput {
   uint8_t pin;
   int16_t parameter;
@@ -17,21 +18,22 @@ void TaskAnalogInput(void* pvParameters) {
   }
 
   while (true) {
-    vTaskDelay(40);  // 25 times per seconds
+    vTaskDelay(ANALOG_SLEEP);
     for (const auto& input : analogInputs) {
-      int16_t value = analogRead(input.pin);
-      setParameter(input.parameter, value * input.factor / 4096 * 3100);
+      int16_t value = analogReadMilliVolts(input.pin);
+      setParameter(input.parameter, value * input.factor);
     }
   }
-}
 
-void taskAnalogInput() {
-  // Now set up two tasks to run independently.
-  xTaskCreatePinnedToCore(TaskAnalogInput, "TaskAnalogInput",
-                          4096,  // This stack size can be checked & adjusted
-                                 // by reading the Stack Highwater
-                          NULL,
-                          2,  // Priority, with 3 (configMAX_PRIORITIES - 1)
-                              // being the highest, and 0 being the lowest.
-                          NULL, 1);
-}
+  void taskAnalogInput() {
+    // Now set up two tasks to run independently.
+    xTaskCreatePinnedToCore(TaskAnalogInput, "TaskAnalogInput",
+                            4096,  // This stack size can be checked & adjusted
+                                   // by reading the Stack Highwater
+                            NULL,
+                            2,  // Priority, with 3 (configMAX_PRIORITIES - 1)
+                                // being the highest, and 0 being the lowest.
+                            NULL, 1);
+  }
+
+#endif
