@@ -33,8 +33,8 @@ void TaskLoraSend(void* pvParameters) {
     uint8_t uplinkPayload[12];
     for (int i = 0; i < 6; i++) {
       int16_t value = getParameter(i);
-      uplinkPayload[i * 2] = highByte(value);
-      uplinkPayload[i * 2 + 1] = lowByte(value);
+      uplinkPayload[i * 2] = lowByte(value);
+      uplinkPayload[i * 2 + 1] = highByte(value);
     }
 
     int state = node.sendReceive(uplinkPayload, sizeof(uplinkPayload));

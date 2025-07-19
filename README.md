@@ -92,8 +92,10 @@ https://github.com/me-no-dev/ESPAsyncWebServer#using-platformio
 
 ## OTA
 
-pio run -t upload --upload-port square.local
-pio run -t uploadfs --upload-port square.local
+The square: 192.168.1.200
+
+pio run -t upload --upload-port 192.168.1.200
+pio run -t uploadfs --upload-port 192.168.1.200
 
 ## Test webserver
 

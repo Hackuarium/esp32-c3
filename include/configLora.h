@@ -1,15 +1,16 @@
 #include <Arduino.h>
 
-// #define WIRE_SDA 3
-// #define WIRE_SCL 4
-// #define THR_WIRE_MASTER 1
+#define WIRE_SDA SDA
+#define WIRE_SCL SCL
+#define THR_WIRE_MASTER 1
+
+#define BMP280 0x77
+
 #define THR_ONEWIRE 3
 
 extern SemaphoreHandle_t xSemaphoreWire;
 
-// #define WIRE_SDA 6  // ESP32-C3 Seeed Studio XIAO ESP32C3
-// #define WIRE_SCL 7
-
+#define ANALOG_SLEEP 1000
 #define ANALOG_INPUTS \
   {D0, PARAM_SOLAR_MILLI_VOLTS, 10.0}, {D1, PARAM_BATTERY_MILLI_VOLTS, 2.0}
 
@@ -25,6 +26,9 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_BATTERY_MILLI_VOLTS 3  // D
 #define PARAM_SOLAR_MILLI_VOLTS 4    // E
 #define PARAM_SOLAR_MILLI_AMPERES 5  // F
+
+#define PARAM_RELATIVE_ALTITUDE 15  // P
+#define PARAM_ALTITUDE_GROUND 16    // Q
 
 #define PARAM_UPTIME_H 20   // U
 #define PARAM_STATUS 21     // V

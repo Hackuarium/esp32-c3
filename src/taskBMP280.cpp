@@ -13,11 +13,11 @@ void TaskBMP280(void* pvParameters) {
 
   Adafruit_BMP280 bmp;  // I2C
 
-  while (!bmp.begin(0x76)) {
+  while (!bmp.begin(BMP280)) {  // could be 0x76 or 0x77
     Serial.println(
         F("Could not find a valid BMP280 sensor, check wiring or "
           "try a different address!"));
-    while (!bmp.begin(0x76)) {
+    while (!bmp.begin(BMP280)) {
       vTaskDelay(1000);
     }
   }
@@ -31,7 +31,7 @@ void TaskBMP280(void* pvParameters) {
 
   while (true) {
     // we prefer to go relatively quickly and average the result
-    vTaskDelay(10);
+    vTaskDelay(100);
 
     if (xSemaphoreTake(xSemaphoreWire, 1) == pdTRUE) {
       setParameter(PARAM_TEMPERATURE, bmp.readTemperature() * 100);

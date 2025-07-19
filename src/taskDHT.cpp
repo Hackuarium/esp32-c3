@@ -1,26 +1,29 @@
 #include "config.h"
 #ifdef DHT22PIN
 
-#include <Adafruit_Sensor.h>
 #include <DHT.h>
-#include <DHT_U.h>
 #include "params.h"
 
 void TaskDHT22(void* pvParameters) {
   DHT dht(DHT22PIN, DHT22);
   vTaskDelay(100);
+  dht.begin();
+
   (void)pvParameters;
   while (true) {
-    dht.begin();
     float temperature = dht.readTemperature();
     float humidity = dht.readHumidity();
+    /*
     Serial.print("Temperature: ");
     Serial.print(temperature);
     Serial.print(" *C, ");
     Serial.print("Humidity: ");
     Serial.print(humidity);
     Serial.println("%");
-    vTaskDelay(10000);
+    */
+    setParameter(PARAM_TEMPERATURE, temperature * 100);
+    setParameter(PARAM_HUMIDITY, humidity * 10);
+    vTaskDelay(100);
   }
 }
 

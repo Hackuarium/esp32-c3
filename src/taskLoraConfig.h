@@ -17,7 +17,7 @@ Radio radio = new RadioModule();
 */
 
 // how often to send an uplink - consider legal & FUP constraints - see notes
-const uint32_t uplinkIntervalSeconds = 30;
+const uint32_t uplinkIntervalSeconds = 20;
 
 #define RADIOLIB_LORAWAN_DEV_ADDR 0x260B400B
 
