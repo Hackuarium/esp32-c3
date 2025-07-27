@@ -1,3 +1,4 @@
+#include <string.h>
 #include "config.h"
 #include "params.h"
 #include "taskLoraConfig.h"
@@ -9,30 +10,81 @@ void deepSleep(int seconds);
 
 void waitOrSleep();
 int8_t getLoraVersion();
-void resetLoraSession();
-uint8_t* loraSession;
+void saveLoraSession(Print* output);
+void resetLoraSession(Print* output);
+void updateLoRaParameters();
+uint8_t loraSession[RADIOLIB_LORAWAN_SESSION_BUF_SIZE];
 int16_t loraState = 0;
 
-void initLoraSession() {
+void restoreLoraSession() {
   // we try to reload the session from NVS if it exists and
   // has the correct size
   size_t sessionSize = RADIOLIB_LORAWAN_SESSION_BUF_SIZE;
   boolean valid = getBlobParameter("lora.session", loraSession,
                                    RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
   if (valid) {
-    node.setBufferSession(loraSession);
+    node.clearSession();
+    loraState = node.setBufferSession(loraSession);
+    debug(loraState != RADIOLIB_ERR_NONE, F("Load session failed"), loraState,
+          true);
+    debug(loraState == RADIOLIB_ERR_NONE, F("Session loaded"), loraState,
+          false);
   } else {
-    resetLoraSession();
+    Serial.println(F("No session found, creating a new one"));
+    resetLoraSession(&Serial);
   }
 }
 
-void resetLoraSession() {
+void resetLoraSession(Print* output) {
+  updateLoRaParameters();
+ // node.clearSession();
   if (getLoraVersion() == 0) {
+    output->println(F("LoRaWAN 1.0"));
+    // for LoRaWAN 1.0
+    toHex(output, (uint8_t*)&devAddr, sizeof(devAddr));
+    output->println("");
+    toHex(output, nwkSEncKey, sizeof(nwkSEncKey));
+    output->println("");
+    toHex(output, appSKey, sizeof(appSKey));
+    output->println("");
+
+    loraState = node.beginABP(devAddr, NULL, NULL, nwkSEncKey, appSKey);
+    debug(loraState != RADIOLIB_ERR_NONE, F("Initialise node failed"),
+          loraState, true);
+  } else {
+    output->println(F("LoRaWAN 1.1"));
+    // for LoRaWAN 1.1
+    loraState =
+        node.beginABP(devAddr, fNwkSIntKey, sNwkSIntKey, nwkSEncKey, appSKey);
+    debug(loraState != RADIOLIB_ERR_NONE, F("Initialise node failed"),
+          loraState, true);
   }
+
+  // Save the new session after successful initialization
+  if (loraState == RADIOLIB_ERR_NONE) {
+    saveLoraSession(output);
+  }
+}
+
+void saveLoraSession(Print* output) {
+  if (loraState != RADIOLIB_ERR_NONE) {
+    output->println(F("Cannot save LoRaWAN session because of error"));
+    return;
+  }
+  memcpy(loraSession, node.getBufferSession(),
+         RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+  setBlobParameter("lora.session", loraSession,
+                   RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
 }
 
 void printLoraSession(Print* output) {
-  output->print("Session: ");
+  memcpy(loraSession, node.getBufferSession(),
+         RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+  output->println(F("LoRaWAN session parameters: "));
+  output->print("getFCntUp");
+  output->print(F(" = "));
+  output->println(node.getFCntUp());
+
   // print all the sssion parameters from RadioLib extracteing the info from
   // the LoRaWANSession_t enum
   output->print(F("DevAddr: "));
@@ -56,7 +108,7 @@ void printLoraSession(Print* output) {
         RADIOLIB_AES128_KEY_SIZE);
   output->println();
   output->print(F("FCntUp: "));
-  output->print(*(uint16_t*)(loraSession + RADIOLIB_LORAWAN_SESSION_FCNT_UP));
+  output->print(*(uint32_t*)(loraSession + RADIOLIB_LORAWAN_SESSION_FCNT_UP));
   output->println();
   output->print(F("N_FCntDown: "));
   output->print(
@@ -96,7 +148,6 @@ void TaskLoraSend(void* pvParameters) {
   loraState = radio.begin();
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise radio failed"), loraState,
         true);
-  loraSession = node.getBufferSession();
   loraState = node.beginABP(devAddr, NULL, NULL, nwkSEncKey, appSKey);
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise node failed"), loraState,
         true);
@@ -121,8 +172,7 @@ void TaskLoraSend(void* pvParameters) {
     debug(loraState < RADIOLIB_ERR_NONE, F("Error in sendReceive"), loraState,
           false);
 
-    setBlobParameter("lora.session", loraSession,
-                     RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+    saveLoraSession(&Serial);
 
     // Check if a downlink was received
     // (loraState 0 = no downlink, loraState 1/2 = downlink in window Rx1/Rx2)
@@ -166,6 +216,7 @@ void printLoRaHelp(Print* output) {
   output->println(F("(af) set 1.1 FNwkSIntKey"));
   output->println(F("(as) set 1.1 SNwkSIntKey"));
   output->println(F("(ae) session information"));
+  output->println(F("(ar) reset session and start ABP"));
 }
 
 void updateLoRaParameters() {
@@ -263,6 +314,14 @@ void processLoraCommand(char command,
       output->println(paramValue);
       break;
     }
+    case 'r':
+      resetLoraSession(output);
+      if (loraState == RADIOLIB_ERR_NONE) {
+        output->println(F("LoRaWAN session reset and activated"));
+      } else {
+        output->println(F("LoRaWAN session reset failed"));
+      }
+      break;
     default:
       printLoRaHelp(output);
       break;

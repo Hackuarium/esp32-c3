@@ -15,7 +15,7 @@
 
 RTC_DATA_ATTR int16_t parameters[MAX_PARAM];
 
-uint8_t tempBlob[64];  // temporary buffer for blobs
+uint8_t tempBlob[512];  // temporary buffer for blobs
 
 // todo uint16_t getQualifier();
 boolean setParameterBit(byte number, byte bitToSet);
