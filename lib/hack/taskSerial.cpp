@@ -1,5 +1,6 @@
 #include "./SerialUtilities.h"
 #include "./WifiUtilities.h"
+#include "./taskLoraSend.h"
 #include "./taskOneWire.h"
 #include "./taskPixels.h"
 #include "./taskSchedule.h"
@@ -162,6 +163,11 @@ void printResult(char* data, Print* output) {
 
   // we will process the commands, it means it starts with lowercase
   switch (data[0]) {
+#ifdef THR_LORA_SEND
+    case 'a':
+      processLoraCommand(data[1], paramValue, output);
+      break;
+#endif
     case 'h':
       printHelp(output);
       break;

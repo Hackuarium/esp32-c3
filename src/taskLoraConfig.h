@@ -16,20 +16,6 @@ SX1262 radio = new Module(41, 39, 42, 40);  // CS, DIO1, RESET, BUSY
 Radio radio = new RadioModule();
 */
 
-// how often to send an uplink - consider legal & FUP constraints - see notes
-const uint32_t uplinkIntervalSeconds = 20;
-
-#define RADIOLIB_LORAWAN_DEV_ADDR 0x260B400B
-
-// #define RADIOLIB_LORAWAN_DEV_EUI 0x70B3D57ED0070638
-#define RADIOLIB_LORAWAN_APP_KEY                                          \
-  0x03, 0x49, 0xD4, 0xC7, 0xE0, 0x8E, 0x86, 0xAD, 0xA4, 0x21, 0xBE, 0xAB, \
-      0x13, 0x93, 0x09, 0x92
-
-#define RADIOLIB_LORAWAN_NWK_KEY                                          \
-  0x62, 0x92, 0x58, 0xDE, 0x95, 0x4A, 0x30, 0x21, 0xCC, 0xA2, 0x61, 0xCC, \
-      0x84, 0xEA, 0xE4, 0x53,
-
 // regional choices: EU868, US915, AU915, AS923, AS923_2, AS923_3, AS923_4,
 // IN865, KR920, CN470
 const LoRaWANBand_t Region = EU868;
@@ -43,9 +29,16 @@ const uint8_t subBand = 0;
 
 // copy over the keys in to the something that will not compile if incorrectly
 // formatted
-uint32_t devAddr = RADIOLIB_LORAWAN_DEV_ADDR;
-uint8_t nwkSKey[] = {RADIOLIB_LORAWAN_NWK_KEY};
-uint8_t appSKey[] = {RADIOLIB_LORAWAN_APP_KEY};
+uint32_t devAddr = 0x260B400B;
+uint8_t nwkSEncKey[] = {
+    0x62, 0x92, 0x58, 0xDE, 0x95, 0x4A, 0x30, 0x21,
+    0xCC, 0xA2, 0x61, 0xCC, 0x84, 0xEA, 0xE4, 0x53,
+};
+uint8_t appSKey[] = {0x03, 0x49, 0xD4, 0xC7, 0xE0, 0x8E, 0x86, 0xAD,
+                     0xA4, 0x21, 0xBE, 0xAB, 0x13, 0x93, 0x09, 0x92};
+
+uint8_t fNwkSIntKey[16] = {0};
+uint8_t sNwkSIntKey[16] = {0};
 
 // create the LoRaWAN node
 LoRaWANNode node(&radio, &Region, subBand);

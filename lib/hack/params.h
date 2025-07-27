@@ -1,13 +1,17 @@
 #include "config.h"
 
-boolean setParameterBit(byte number, byte bitToSet);
-boolean clearParameterBit(byte number, byte bitToClear);
-
 boolean getParameterBit(byte number, byte bitToRead);
-
 boolean setParameterBit(byte number, byte bitToSet);
-
 boolean clearParameterBit(byte number, byte bitToClear);
+
+boolean checkParameterLength(char* paramValue, int length, Print* output);
+
+void deleteParameter(const char* key);
+void setBlobParameterFromHex(const char* key, char* hexString);
+boolean getBlobParameter(const char* key, uint8_t* blob, size_t length);
+
+void setParameterInt32(byte numberLow, byte numberHigh, int32_t value);
+int32_t getParameterInt32(byte numberLow, byte numberHigh);
 
 void setupParameters();
 
@@ -36,8 +40,8 @@ void printCompactParameters(Print* output);
 void getFunction(char* string);
 void setFunction(const char* string);
 
-void setParameter(char* key, char* value);
-void getParameter(char* key, char* value);
+void setParameter(const char* key, char* value);
+void getParameter(const char* key, char* value);
 
 void setQualifier(int16_t value);
 

@@ -34,16 +34,18 @@ void setupLora() {
   /// taskWebserver();
   // taskNTPD();
 
-  //  taskLoraSend();
+  taskLoraSend();
   // taskOTA();
+
   taskAnalogInput();
-  // taskBMP280();
-  // taskAHTx0();
-  //  taskWifi();
+  taskBMP280();
+  taskAHTx0();
+
+  // taskWifi();
   // taskMQTT();
   // taskDHT22();
   // taskOneWire();
-  //   taskWifiAP();
+  // taskWifiAP();
   taskBlink();
 }
 
@@ -56,7 +58,10 @@ void resetParameters() {
     setAndSaveParameter(i, ERROR_VALUE);
   }
 
-  setQualifier(16961);
+  setParameter(PARAM_LORA_SLEEP_SECONDS, 0);
+  setParameter(PARAM_LORA_INTERVAL_SECONDS, 300);
+
+  setQualifier(7275);
 }
 
 #endif

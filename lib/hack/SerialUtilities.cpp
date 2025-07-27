@@ -61,6 +61,9 @@ void printUtilitiesHelp(Print* output) {
 }
 
 void printHelp(Print* output) {
+#ifdef THR_LORA_SEND
+  output->println(F("lor(a)WAN"));
+#endif
   output->println(F("(f)s"));
   output->println(F("(h)elp"));
 #ifdef THR_WIRE_MASTER

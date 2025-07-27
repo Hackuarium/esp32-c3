@@ -15,6 +15,8 @@
 
 RTC_DATA_ATTR int16_t parameters[MAX_PARAM];
 
+uint8_t tempBlob[64];  // temporary buffer for blobs
+
 // todo uint16_t getQualifier();
 boolean setParameterBit(byte number, byte bitToSet);
 boolean clearParameterBit(byte number, byte bitToClear);
@@ -51,16 +53,57 @@ void setupParameters() {
   checkParameters();
 }
 
-void setParameter(char* key, char* value) {
+void setParameter(const char* key, char* value) {
   NVS.setString(key, value);
 }
 
-void getParameter(char* key, char* value) {
+void getParameter(const char* key, char* value) {
   strcpy(value, NVS.getString(key).c_str());
+}
+
+/**
+ * Parse a hex string into tempBlob
+ * String can starts with 0x and containg spaces
+ */
+void parseHex(char* hex, uint8_t* tempBlob) {
+  memset(tempBlob, 0, sizeof(tempBlob));
+  size_t len = strlen(hex);
+  for (size_t i = 0; i < len; i += 2) {
+    String byteString = String(hex[i]) + String(hex[i + 1]);
+    tempBlob[i / 2] = (uint8_t)strtol(byteString.c_str(), NULL, 16);
+  }
+}
+
+void deleteParameter(const char* key) {
+  NVS.erase(key);
+}
+
+void setBlobParameterFromHex(const char* key, char* hexString) {
+  parseHex(hexString, tempBlob);
+  NVS.setBlob(key, tempBlob, strlen(hexString) / 2);
+}
+
+boolean getBlobParameter(const char* key, uint8_t* blob, size_t length) {
+  if (length > sizeof(tempBlob)) {
+    length = sizeof(tempBlob);
+  }
+  boolean isPresent = NVS.getBlob(key, tempBlob, length);
+  memcpy(blob, tempBlob, length);
+  return isPresent;
 }
 
 int16_t getParameter(byte number) {
   return parameters[number];
+}
+
+int32_t getParameterInt32(byte numberLow, byte numberHigh) {
+  return (int32_t)parameters[numberLow] & 0xFFFF |
+         ((int32_t)(parameters[numberHigh] & 0xFFFF) << 16);
+}
+
+void setParameterInt32(byte numberLow, byte numberHigh, int32_t value) {
+  parameters[numberLow] = value & 0xFFFF;
+  parameters[numberHigh] = (value >> 16) & 0xFFFF;
 }
 
 void setParameter(byte number, int16_t value) {
@@ -109,6 +152,16 @@ boolean saveAndLogError(boolean isError, byte errorFlag) {
     }
   }
   return false;
+}
+
+boolean checkParameterLength(char* paramValue, int length, Print* output) {
+  if (strlen(paramValue) != length) {
+    output->print(F("Parameter must be "));
+    output->print(length);
+    output->println(F(" hex characters"));
+    return false;
+  }
+  return true;
 }
 
 String numberToLabel(byte number) {
