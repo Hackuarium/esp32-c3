@@ -37,7 +37,7 @@ void restoreLoraSession() {
 
 void resetLoraSession(Print* output) {
   updateLoRaParameters();
- // node.clearSession();
+  // node.clearSession();
   if (getLoraVersion() == 0) {
     output->println(F("LoRaWAN 1.0"));
     // for LoRaWAN 1.0
@@ -81,9 +81,6 @@ void printLoraSession(Print* output) {
   memcpy(loraSession, node.getBufferSession(),
          RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
   output->println(F("LoRaWAN session parameters: "));
-  output->print("getFCntUp");
-  output->print(F(" = "));
-  output->println(node.getFCntUp());
 
   // print all the sssion parameters from RadioLib extracteing the info from
   // the LoRaWANSession_t enum
@@ -148,6 +145,9 @@ void TaskLoraSend(void* pvParameters) {
   loraState = radio.begin();
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise radio failed"), loraState,
         true);
+
+  updateLoRaParameters();
+
   loraState = node.beginABP(devAddr, NULL, NULL, nwkSEncKey, appSKey);
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise node failed"), loraState,
         true);
@@ -220,7 +220,14 @@ void printLoRaHelp(Print* output) {
 }
 
 void updateLoRaParameters() {
-  getBlobParameter("lora.devAddr", (uint8_t*)&devAddr, sizeof(devAddr));
+  // Load devAddr as bytes to maintain proper byte order
+  uint8_t devAddrBytes[4];
+  if (getBlobParameter("lora.devAddr", devAddrBytes, sizeof(devAddrBytes))) {
+    // Convert from big-endian bytes to uint32_t
+    devAddr = ((uint32_t)devAddrBytes[0] << 24) |
+              ((uint32_t)devAddrBytes[1] << 16) |
+              ((uint32_t)devAddrBytes[2] << 8) | ((uint32_t)devAddrBytes[3]);
+  }
   getBlobParameter("lora.appSKey", appSKey, sizeof(appSKey));
   getBlobParameter("lora.nwkSEncKey", nwkSEncKey, sizeof(nwkSEncKey));
   getBlobParameter("lora.fNwkSIntK", fNwkSIntKey, sizeof(fNwkSIntKey));
@@ -310,7 +317,14 @@ void processLoraCommand(char command,
         deleteParameter("lora.devAddr");
         return;
       }
-      setBlobParameterFromHex("lora.devAddr", paramValue);
+      // Store devAddr as hex string, but convert to proper byte order
+      uint8_t devAddrBytes[4];
+      // Convert hex string to bytes (this gives us big-endian order)
+      for (int i = 0; i < 4; i++) {
+        char hexByte[3] = {paramValue[i * 2], paramValue[i * 2 + 1], '\0'};
+        devAddrBytes[i] = strtol(hexByte, NULL, 16);
+      }
+      setBlobParameter("lora.devAddr", devAddrBytes, sizeof(devAddrBytes));
       output->println(paramValue);
       break;
     }
