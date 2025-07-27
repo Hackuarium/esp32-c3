@@ -58,8 +58,14 @@ void resetParameters() {
     setAndSaveParameter(i, ERROR_VALUE);
   }
 
-  setParameter(PARAM_LORA_SLEEP_SECONDS, 0);
-  setParameter(PARAM_LORA_INTERVAL_SECONDS, 300);
+  setAndSaveParameter(PARAM_LORA_SLEEP_SECONDS, 0);
+  setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 10);
+  setBlobParameterFromHex("lora.devAddr", "11112222");
+  setBlobParameterFromHex("lora.appSKey", "11111111111111112222222222222222");
+  setBlobParameterFromHex("lora.nwkSEncKey",
+                          "22222222222222223333333333333333");
+  setBlobParameterFromHex("lora.fNwkSIntK", "33333333333333334444444444444444");
+  setBlobParameterFromHex("lora.sNwkSIntK", "44444444444444445555555555555555");
 
   setQualifier(7275);
 }

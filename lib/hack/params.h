@@ -7,8 +7,9 @@ boolean clearParameterBit(byte number, byte bitToClear);
 boolean checkParameterLength(char* paramValue, int length, Print* output);
 
 void deleteParameter(const char* key);
-void setBlobParameterFromHex(const char* key, char* hexString);
+void setBlobParameterFromHex(const char* key, const char* hexString);
 boolean getBlobParameter(const char* key, uint8_t* blob, size_t length);
+void setBlobParameter(const char* key, uint8_t* blob, size_t length);
 
 void setParameterInt32(byte numberLow, byte numberHigh, int32_t value);
 int32_t getParameterInt32(byte numberLow, byte numberHigh);

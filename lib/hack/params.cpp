@@ -65,7 +65,7 @@ void getParameter(const char* key, char* value) {
  * Parse a hex string into tempBlob
  * String can starts with 0x and containg spaces
  */
-void parseHex(char* hex, uint8_t* tempBlob) {
+void parseHex(const char* hex, uint8_t* tempBlob) {
   memset(tempBlob, 0, sizeof(tempBlob));
   size_t len = strlen(hex);
   for (size_t i = 0; i < len; i += 2) {
@@ -78,7 +78,11 @@ void deleteParameter(const char* key) {
   NVS.erase(key);
 }
 
-void setBlobParameterFromHex(const char* key, char* hexString) {
+void setBlobParameter(const char* key, uint8_t* blob, size_t length) {
+  NVS.setBlob(key, blob, length);
+}
+
+void setBlobParameterFromHex(const char* key, const char* hexString) {
   parseHex(hexString, tempBlob);
   NVS.setBlob(key, tempBlob, strlen(hexString) / 2);
 }
@@ -88,6 +92,10 @@ boolean getBlobParameter(const char* key, uint8_t* blob, size_t length) {
     length = sizeof(tempBlob);
   }
   boolean isPresent = NVS.getBlob(key, tempBlob, length);
+  if (!isPresent) {
+    memset(blob, 0, length);  // clear the blob if not present
+    return false;
+  }
   memcpy(blob, tempBlob, length);
   return isPresent;
 }

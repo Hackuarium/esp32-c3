@@ -26,3 +26,12 @@ uint8_t toHex(Print* output, unsigned long value) {
   checkDigit ^= toHex(output, (int16_t)(value >> 0 & 65535));
   return checkDigit;
 }
+
+void toHex(Print* output, const uint8_t* data, size_t length) {
+  for (size_t i = 0; i < length; i++) {
+    if (data[i] < 0x10) {
+      output->print('0');  // Add leading zero for single digit hex
+    }
+    output->print(data[i], HEX);
+  }
+}

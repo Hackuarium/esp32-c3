@@ -34,12 +34,11 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_LORA_SLEEP_SECONDS 17     // R
 #define PARAM_LORA_INTERVAL_SECONDS 18  // S
 
-#define PARAM_LORA_WAN_VERSION 19  // T - 0: 1.0, 1: 1.1
-#define PARAM_UPTIME_H 20          // U
-#define PARAM_STATUS 21            // V
-#define PARAM_WIFI_MODE 23         // CS - <=0: STA, 1: AP, 2: STA 30s then AP
-#define PARAM_WIFI_RSSI 24         // Y
-#define PARAM_ERROR 25             // Z
+#define PARAM_UPTIME_H 20   // U
+#define PARAM_STATUS 21     // V
+#define PARAM_WIFI_MODE 23  // CS - <=0: STA, 1: AP, 2: STA 30s then AP
+#define PARAM_WIFI_RSSI 24  // Y
+#define PARAM_ERROR 25      // Z
 
 #define PARAM_STATUS_FLAG_NO_WIFI 0
 #define PARAM_STATUS_FLAG_NO_MQTT 1
