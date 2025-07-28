@@ -1,3 +1,4 @@
+#include <ArduinoNvs.h>
 #include <string.h>
 #include "config.h"
 #include "params.h"
@@ -73,8 +74,7 @@ void saveLoraSession(Print* output) {
   }
   memcpy(loraSession, node.getBufferSession(),
          RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
-  setBlobParameter("lora.session", loraSession,
-                   RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+  NVS.setBlob("lora.session", loraSession, RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
 }
 
 void printLoraSession(Print* output) {
@@ -172,7 +172,17 @@ void TaskLoraSend(void* pvParameters) {
     debug(loraState < RADIOLIB_ERR_NONE, F("Error in sendReceive"), loraState,
           false);
 
-    saveLoraSession(&Serial);
+    // test save and reload a session
+    memcpy(loraSession, node.getBufferSession(),
+           RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+    NVS.setBlob("lora.session", loraSession, RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+    vTaskDelay(5 * 1000);
+
+    NVS.getBlob("lora.session", loraSession, RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
+
+    loraState = node.setBufferSession(loraSession);
+    debug(loraState != RADIOLIB_ERR_NONE, F("Load session failed"), loraState,
+          true);
 
     // Check if a downlink was received
     // (loraState 0 = no downlink, loraState 1/2 = downlink in window Rx1/Rx2)
