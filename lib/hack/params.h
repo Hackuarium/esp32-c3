@@ -11,6 +11,10 @@ void setBlobParameterFromHex(const char* key, const char* hexString);
 boolean getBlobParameter(const char* key, uint8_t* blob, size_t length);
 void setBlobParameter(const char* key, uint8_t* blob, size_t length);
 
+// will be saved in NVS
+void setNVSParameterInt32(const char* key, int32_t value);
+int32_t getNVSParameterInt32(const char* key);
+
 void setParameterInt32(byte numberLow, byte numberHigh, int32_t value);
 int32_t getParameterInt32(byte numberLow, byte numberHigh);
 

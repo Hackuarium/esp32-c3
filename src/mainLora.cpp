@@ -61,7 +61,8 @@ void resetParameters() {
   setAndSaveParameter(PARAM_LORA_SLEEP_SECONDS, 0);
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 10);
   uint32_t devAddr = 0x260B400B;
-  setBlobParameter("lora.devAddr", (uint8_t*)&devAddr, sizeof(devAddr));
+
+  setNVSParameterInt32("lora.devAddr", devAddr);
 
   setBlobParameterFromHex("lora.appSKey", "0349D4C7E08E86ADA421BEAB13930992");
   setBlobParameterFromHex("lora.nwkSEncKey",

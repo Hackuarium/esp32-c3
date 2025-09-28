@@ -231,13 +231,7 @@ void printLoRaHelp(Print* output) {
 
 void updateLoRaParameters() {
   // Load devAddr as bytes to maintain proper byte order
-  uint8_t devAddrBytes[4];
-  if (getBlobParameter("lora.devAddr", devAddrBytes, sizeof(devAddrBytes))) {
-    // Convert from big-endian bytes to uint32_t
-    devAddr = ((uint32_t)devAddrBytes[0] << 24) |
-              ((uint32_t)devAddrBytes[1] << 16) |
-              ((uint32_t)devAddrBytes[2] << 8) | ((uint32_t)devAddrBytes[3]);
-  }
+  devAddr = getNVSParameterInt32("lora.devAddr");
   getBlobParameter("lora.appSKey", appSKey, sizeof(appSKey));
   getBlobParameter("lora.nwkSEncKey", nwkSEncKey, sizeof(nwkSEncKey));
   getBlobParameter("lora.fNwkSIntK", fNwkSIntKey, sizeof(fNwkSIntKey));
@@ -268,6 +262,7 @@ void processLoraCommand(char command,
       }
       // and we print information and keys
       output->print(F("DevAddr: "));
+      output->println(devAddr, HEX);
       toHex(output, (uint8_t*)&devAddr, sizeof(devAddr));
       output->println();
       output->print(F("AppSKey: "));
@@ -327,14 +322,7 @@ void processLoraCommand(char command,
         deleteParameter("lora.devAddr");
         return;
       }
-      // Store devAddr as hex string, but convert to proper byte order
-      uint8_t devAddrBytes[4];
-      // Convert hex string to bytes (this gives us big-endian order)
-      for (int i = 0; i < 4; i++) {
-        char hexByte[3] = {paramValue[i * 2], paramValue[i * 2 + 1], '\0'};
-        devAddrBytes[i] = strtol(hexByte, NULL, 16);
-      }
-      setBlobParameter("lora.devAddr", devAddrBytes, sizeof(devAddrBytes));
+      setNVSParameterInt32("lora.devAddr", (int)strtol(paramValue, NULL, 16));
       output->println(paramValue);
       break;
     }

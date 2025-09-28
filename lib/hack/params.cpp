@@ -82,6 +82,14 @@ void setBlobParameter(const char* key, uint8_t* blob, size_t length) {
   NVS.setBlob(key, blob, length);
 }
 
+void setNVSParameterInt32(const char* key, int32_t value) {
+  NVS.setInt(key, value);
+}
+
+int32_t getNVSParameterInt32(const char* key) {
+  return NVS.getInt(key);
+}
+
 void setBlobParameterFromHex(const char* key, const char* hexString) {
   parseHex(hexString, tempBlob);
   NVS.setBlob(key, tempBlob, strlen(hexString) / 2);
