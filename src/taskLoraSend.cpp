@@ -263,8 +263,6 @@ void processLoraCommand(char command,
       // and we print information and keys
       output->print(F("DevAddr: "));
       output->println(devAddr, HEX);
-      toHex(output, (uint8_t*)&devAddr, sizeof(devAddr));
-      output->println();
       output->print(F("AppSKey: "));
       toHex(output, appSKey, sizeof(appSKey));
       output->println();
