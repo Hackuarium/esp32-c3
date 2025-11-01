@@ -1,3 +1,4 @@
+#ifdef PARAM_LORA_INTERVAL_SECONDS
 #include <ArduinoNvs.h>
 #include <string.h>
 #include "config.h"
@@ -347,3 +348,4 @@ void taskLoraSend() {
                               // being the highest, and 0 being the lowest.
                           NULL, 1);
 }
+#endif
