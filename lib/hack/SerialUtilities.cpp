@@ -104,7 +104,7 @@ static void printFreeMemory(Print* output) {
 
   output->println("Minimum free process stack space:");
   TaskHandle_t taskBlinkHandle = xTaskGetHandle("TaskBlink");
-  output->print("- blink: ");
+  output->print("- Blink: ");
   output->println(uxTaskGetStackHighWaterMark(taskBlinkHandle));
   TaskHandle_t taskPixelsHandle = xTaskGetHandle("TaskPixels");
   output->print("- Pixels: ");
@@ -112,6 +112,12 @@ static void printFreeMemory(Print* output) {
   TaskHandle_t taskMqttHandle = xTaskGetHandle("TaskMQTT");
   output->print("- MQTT: ");
   output->println(uxTaskGetStackHighWaterMark(taskMqttHandle));
+  TaskHandle_t taskWifiHandle = xTaskGetHandle("TaskWifi");
+  output->print("- Wifi: ");
+  output->println(uxTaskGetStackHighWaterMark(taskWifiHandle));
+  TaskHandle_t taskWebserverHandle = xTaskGetHandle("TaskWebserver");
+  output->print("- Webserver: ");
+  output->println(uxTaskGetStackHighWaterMark(taskWebserverHandle));
 }
 
 static void printInfo(Print* output) {
