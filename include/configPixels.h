@@ -127,8 +127,10 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_METEO_SLOT_TIME_6 102  // CY
 
 #define PARAM_COLOR_TRANSITION_NB_STEPS \
-  103  // CZ - we would prefer smooth transitions, define as number of steps for
-       // transition but the change is at least 1 per cycle (so 25 per second)
+  103  // CZ - we would prefer smooth transitions even if we go from red to blue
+       // immediately.
+       // this parameter defines the number of cycle to reach the target color
+       // there are 25 cycles per second
 
 #define SLOT_METEO_TEMPERATURE 0    // temperature / rain
 #define SLOT_METEO_WIND 1           // wind

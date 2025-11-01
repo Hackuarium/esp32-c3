@@ -19,7 +19,7 @@ uint32_t getPixelColor(uint16_t led,
 void updateLine(Adafruit_NeoPixel& pixels) {
   uint16_t pixelWidth = pow(2, getParameter(PARAM_INTENSITY) + 4);
   int16_t speed = getParameter(PARAM_SPEED);
-  lineCounter = (lineCounter + speed > 10 ? speed * 2 : speed) % pixelWidth;
+  lineCounter += (lineCounter + speed > 10 ? speed * 2 : speed) % pixelWidth;
 
   for (uint8_t row = 0; row < getParameter(PARAM_NB_ROWS); row++) {
     for (uint16_t column = 0; column < getParameter(PARAM_NB_COLUMNS);

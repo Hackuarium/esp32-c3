@@ -32,8 +32,8 @@ void updateOutColors(uint8_t colors[8],
   float_t percent2 = 1 - percent1;
 
   // we need ot select the 2 right colors
-  int16_t color1 = getParameter(colors[color1Index % 8]);
-  int16_t color2 = getParameter(colors[color2Index % 8]);
+  uint16_t color1 = getParameter(colors[color1Index % 8]);
+  uint16_t color2 = getParameter(colors[color2Index % 8]);
 
   float_t r1 = (color1 & 0xf00) >> 4;
   float_t g1 = (color1 & 0x0f0) >> 0;
