@@ -42,9 +42,6 @@ void printCompactParameters(Print* output, byte number);
 
 void printCompactParameters(Print* output);
 
-void getFunction(char* string);
-void setFunction(const char* string);
-
 void setParameter(const char* key, char* value);
 void getParameter(const char* key, char* value);
 

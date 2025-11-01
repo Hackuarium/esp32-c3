@@ -8,8 +8,6 @@ void taskSerial();
 void taskNTPD();
 void taskPixels();
 void taskOutput();
-void taskOneWire();
-void taskServo();
 void taskTest();
 void taskFetch();
 void taskUptime();

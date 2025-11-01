@@ -3,20 +3,14 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <freertos/task.h>
-#include "./pixels/cellular.h"
 #include "./pixels/comet.h"
 #include "./pixels/doAction.h"
 #include "./pixels/firework.h"
 #include "./pixels/flame.h"
-#include "./pixels/function.h"
-#include "./pixels/gif.h"
-#include "./pixels/life.h"
 #include "./pixels/line.h"
-#include "./pixels/meteo.h"
 #include "./pixels/pixels.h"
 #include "./pixels/rain.h"
 #include "./pixels/rgb.h"
-#include "./pixels/snake.h"
 #include "./pixels/spiral.h"
 #include "./pixels/test.h"
 #include "./pixels/wave.h"
@@ -25,6 +19,15 @@
 #include "params.h"
 #include "printSchedule.h"
 #include "taskNTPD.h"
+
+#if FLASH_SIZE_MB >= 8
+#include "./pixels/cellular.h"
+#include "./pixels/function.h"
+#include "./pixels/gif.h"
+#include "./pixels/life.h"
+#include "./pixels/meteo.h"
+#include "./pixels/snake.h"
+#endif
 
 Adafruit_NeoPixel pixels(MAX_LED, PIXELS_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -50,10 +53,12 @@ void TaskPixels(void* pvParameters) {
   pixels.clear();
   pixels.show();
 
+#if FLASH_SIZE_MB >= 8
   setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
   // setFunction("x + y + t");
   //  setGIF("/gifs/campfire.gif");
   setGIF("/gifs/dog.gif");
+#endif
 
   uint8_t previousProgram = -1;
   uint8_t programChanged = 0;
@@ -123,9 +128,11 @@ void TaskPixels(void* pvParameters) {
     pixels.show();  // Send the updated pixel colors to the hardware.
 
     switch (getParameter(PARAM_CURRENT_PROGRAM)) {
+#if FLASH_SIZE_MB >= 8
       case 0:
         updateFunction(pixels);
         break;
+#endif
       case 1:
         updateRain(pixels, state, programChanged);
         break;
@@ -138,6 +145,7 @@ void TaskPixels(void* pvParameters) {
       case 4:
         updateWave(pixels);
         break;
+#if FLASH_SIZE_MB >= 8
       case 5:
         updateMeteo(pixels, counter);
         break;
@@ -147,6 +155,7 @@ void TaskPixels(void* pvParameters) {
       case 7:
         updateLife(pixels, programChanged);
         break;
+#endif
       case 8:
         updateFlame(pixels);
         break;
@@ -159,12 +168,14 @@ void TaskPixels(void* pvParameters) {
       case 11:
         updateLine(pixels);
         break;
+#if FLASH_SIZE_MB >= 8
       case 12:
         updateGif(pixels);
         break;
       case 13:
         updateCellular(pixels, state, rowColors, programChanged);
         break;
+#endif
       case 14:
         updateTest(pixels);
         break;
@@ -209,9 +220,11 @@ void processPixelsCommand(char command,
       setAndSaveParameter(PARAM_WIFI_MODE, 2);
       updateMapping();
       break;
+#if FLASH_SIZE_MB >= 8
     case 'g':
       setGIF(paramValue);
       break;
+#endif
     case 'i':  // information
       printTime(output);
       output->print("Brightness: ");
