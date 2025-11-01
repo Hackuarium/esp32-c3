@@ -2,7 +2,7 @@
 #include "isNight.h"
 #include "params.h"
 
-#ifdef PARAM_ACTION1
+#ifdef PARAM_ACTION_1
 
 const uint8_t ACTIONS[8] = {PARAM_ACTION_1, PARAM_ACTION_2, PARAM_ACTION_3,
                             PARAM_ACTION_4, PARAM_ACTION_5, PARAM_ACTION_6,
