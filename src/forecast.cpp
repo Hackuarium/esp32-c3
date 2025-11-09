@@ -40,8 +40,13 @@ void updateForecast() {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(errorJSONForecast.c_str());
     } else {
-      forecast.current.temperature =
-          (int16_t)forecastObject["current"]["temperature"];
+      if (forecastObject["outside"].containsKey("temperature")) {
+        forecast.current.temperature =
+            (int16_t)forecastObject["outside"]["temperature"];
+      } else {
+        forecast.current.temperature =
+            (int16_t)forecastObject["current"]["temperature"];
+      }
       forecast.current.precipitation =
           (float)forecastObject["current"]["precipitation"];
       forecast.current.windSpeed =
