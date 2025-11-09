@@ -3,7 +3,7 @@
 #if BOARD_TYPE == KIND_ROCKET
 #include "params.h"
 
-void deepSleep(int seconds);
+void gotoSleep(int seconds);
 void taskBlink();
 void taskSi7021();
 void taskGY521();

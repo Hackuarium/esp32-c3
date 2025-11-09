@@ -6,7 +6,7 @@
 #include "params.h"
 
 void TaskAHTx0(void* pvParameters) {
-  vTaskDelay(1000);
+  vTaskDelay(150);
 
   Wire.begin(WIRE_SDA, WIRE_SCL);
 
@@ -22,7 +22,7 @@ void TaskAHTx0(void* pvParameters) {
 
   while (true) {
     // we prefer to go relatively quickly and average the result
-    vTaskDelay(1000);
+    vTaskDelay(100);
 
     if (xSemaphoreTake(xSemaphoreWire, 1) == pdTRUE) {
       aht.getEvent(

@@ -57,11 +57,17 @@ void restart() {
   ESP.restart();
 }
 
-void deepSleep(int seconds) {
-  if (seconds < 10) {
+void gotoSleep(int seconds) {
+  if (seconds <= 0) {
     return;
   }
   esp_sleep_enable_timer_wakeup(seconds * 1e6);
-  esp_deep_sleep_start();
+  esp_light_sleep_start();
+  // Deep sleep as issues because we really restart completely the
+  // microcontroller and currently in Lora we are not able to save all the state
+  // we need
+  // we we use deep sleep we need to check why the microcontroller was wake up
+  // in order to determine if it was the first time or a wake up from deep sleep
+  //  esp_deep_sleep_start();
   setParameter(PARAM_STATUS, 0);
 }

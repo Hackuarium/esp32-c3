@@ -2,7 +2,7 @@
 #if BOARD_TYPE == KIND_EXAMPLE
 #include "params.h"
 
-void deepSleep(int seconds);
+void gotoSleep(int seconds);
 void taskBlink();
 void taskSi7021();
 void taskGY521();
@@ -72,17 +72,17 @@ void loopExample() {
 
   if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI)) {
     // wifi not recheable
-    deepSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
+    gotoSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
   }
 
   if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_MQTT)) {
     // mqtt not recheable
-    deepSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
+    gotoSleep(getParameter(PARAM_SLEEP_ERROR_DELAY));
   }
 
   if (getParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_MQTT_PUBLISHED)) {
     // we succeeded to send MQTT info
-    deepSleep(getParameter(PARAM_SLEEP_NORMAL_DELAY));
+    gotoSleep(getParameter(PARAM_SLEEP_NORMAL_DELAY));
   }
 }
 

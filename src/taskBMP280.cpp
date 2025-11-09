@@ -7,7 +7,7 @@
 #include "params.h"
 
 void TaskBMP280(void* pvParameters) {
-  vTaskDelay(1000);
+  vTaskDelay(100);
 
   Wire.begin(WIRE_SDA, WIRE_SCL);
 

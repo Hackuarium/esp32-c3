@@ -2,7 +2,7 @@
 #if BOARD_TYPE == KIND_9_OUTPUTS
 #include "params.h"
 
-void deepSleep(int seconds);
+void gotoSleep(int seconds);
 void taskBlink();
 void taskSerial();
 void taskNTPD();

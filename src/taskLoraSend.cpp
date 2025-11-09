@@ -1,14 +1,15 @@
-#ifdef PARAM_LORA_INTERVAL_SECONDS
+#include "config.h"
+#if BOARD_TYPE == KIND_LORA
 #include <ArduinoNvs.h>
 #include <string.h>
-#include "config.h"
+#include "esp_sleep.h"
 #include "params.h"
 #include "taskLoraConfig.h"
 #include "toHex.h"
 
 #define BAND 868E6
 
-void deepSleep(int seconds);
+void gotoSleep(int seconds);
 
 void waitOrSleep();
 int8_t getLoraVersion();
@@ -142,7 +143,8 @@ void printLoraSession(Print* output) {
 }
 
 void TaskLoraSend(void* pvParameters) {
-  vTaskDelay(5 * 1000);
+  vTaskDelay(5000);
+  Serial.println("Starting LoRa send task");
   loraState = radio.begin();
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise radio failed"), loraState,
         true);
@@ -168,12 +170,12 @@ void TaskLoraSend(void* pvParameters) {
       uplinkPayload[i * 2] = lowByte(value);
       uplinkPayload[i * 2 + 1] = highByte(value);
     }
-
     int loraState = node.sendReceive(uplinkPayload, sizeof(uplinkPayload));
     debug(loraState < RADIOLIB_ERR_NONE, F("Error in sendReceive"), loraState,
           false);
 
     // test save and reload a session
+    /*
     memcpy(loraSession, node.getBufferSession(),
            RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
     NVS.setBlob("lora.session", loraSession, RADIOLIB_LORAWAN_SESSION_BUF_SIZE);
@@ -184,6 +186,7 @@ void TaskLoraSend(void* pvParameters) {
     loraState = node.setBufferSession(loraSession);
     debug(loraState != RADIOLIB_ERR_NONE, F("Load session failed"), loraState,
           true);
+          */
 
     // Check if a downlink was received
     // (loraState 0 = no downlink, loraState 1/2 = downlink in window Rx1/Rx2)
@@ -197,16 +200,19 @@ void TaskLoraSend(void* pvParameters) {
 }
 
 void waitOrSleep() {
-  // should we sleep ?
   if (getParameter(PARAM_LORA_SLEEP_SECONDS) > 0) {
     // we should sleep if uptime is more than 300s. Too difficult to debug
     // otherwise
+
     if (millis() > 300 * 1000) {
-      deepSleep(getParameter(PARAM_LORA_SLEEP_SECONDS));
+      gotoSleep(getParameter(PARAM_LORA_SLEEP_SECONDS));
     } else {
       vTaskDelay(getParameter(PARAM_LORA_SLEEP_SECONDS) * 1000);
     }
   }
+
+  /* This should allow the sensor to update the values */
+  vTaskDelay(1000);
 
   // we wait for the next uplink interval
   // this is to avoid sending too often and to respect the FUP
