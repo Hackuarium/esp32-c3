@@ -231,7 +231,7 @@ void processPixelsCommand(char command,
       output->println(getParameter(PARAM_BRIGHTNESS));
       output->print("Background brightness: ");
       output->println(getParameter(PARAM_BACKGROUND_BRIGHTNESS));
-#ifdef THR_SCHEDULE
+#ifdef PARAM_ACTION_1
       printSchedule(output);
 #endif
       printForecast(output);

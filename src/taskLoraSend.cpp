@@ -144,7 +144,6 @@ void printLoraSession(Print* output) {
 
 void TaskLoraSend(void* pvParameters) {
   vTaskDelay(5000);
-  Serial.println("Starting LoRa send task");
   loraState = radio.begin();
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise radio failed"), loraState,
         true);

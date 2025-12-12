@@ -33,7 +33,7 @@ void updateForecast() {
       fetch("http://weather-proxy.cheminfo.org/v2/forecast24");
 
   if (strlen(responseForecast) == 0) {
-    Serial.println("No data from fronius");
+    Serial.println("No data from forecast server");
   } else {
     errorJSONForecast = deserializeJson(forecastObject, responseForecast);
     if (errorJSONForecast) {
