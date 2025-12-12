@@ -1,15 +1,11 @@
 #include <WiFi.h>
-#include "params.h"
-
 #include "esp_wpa2.h"
-
-// if we can not connect during 30s we will start the AP
+#include "params.h"
 
 void taskWifiAP();
 
 char ssid[30];
 char password[30];
-// the wifi also requires username and password
 char username[30];
 char identity[30];
 
@@ -18,6 +14,62 @@ void retrieveWifiParameters() {
   getParameter("wifi.password", password);
   getParameter("wifi.username", username);
   getParameter("wifi.identity", identity);
+}
+
+// Function to find and connect to the strongest AP with matching SSID
+bool connectToStrongestAP(const char* targetSSID, bool isEnterprise) {
+  Serial.println("Scanning for networks...");
+  int numNetworks = WiFi.scanNetworks();
+
+  if (numNetworks == 0) {
+    Serial.println("No networks found");
+    return false;
+  }
+
+  int8_t bestRSSI = -127;
+  int bestIndex = -1;
+  uint8_t bestBSSID[6];
+  int32_t bestChannel = 0;
+
+  // Find the strongest network with matching SSID
+  for (int i = 0; i < numNetworks; i++) {
+    if (strcmp(WiFi.SSID(i).c_str(), targetSSID) == 0) {
+      int8_t rssi = WiFi.RSSI(i);
+      Serial.printf("Found %s with RSSI: %d dBm (Channel: %d)\n", targetSSID,
+                    rssi, WiFi.channel(i));
+
+      if (rssi > bestRSSI) {
+        bestRSSI = rssi;
+        bestIndex = i;
+        memcpy(bestBSSID, WiFi.BSSID(i), 6);
+        bestChannel = WiFi.channel(i);
+      }
+    }
+  }
+
+  WiFi.scanDelete();
+
+  if (bestIndex == -1) {
+    Serial.printf("SSID '%s' not found in scan\n", targetSSID);
+    return false;
+  }
+
+  Serial.printf("Connecting to strongest AP: %s (RSSI: %d dBm, Channel: %d)\n",
+                targetSSID, bestRSSI, bestChannel);
+  Serial.printf("BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n", bestBSSID[0],
+                bestBSSID[1], bestBSSID[2], bestBSSID[3], bestBSSID[4],
+                bestBSSID[5]);
+
+  // Connect to specific BSSID (strongest AP)
+  if (isEnterprise) {
+    // For Enterprise, credentials are already set via
+    // esp_wifi_sta_wpa2_ent_set_* WiFi.begin(ssid, passphrase, channel, bssid)
+    WiFi.begin(targetSSID, NULL, bestChannel, bestBSSID);
+  } else {
+    WiFi.begin(targetSSID, password, bestChannel, bestBSSID);
+  }
+
+  return true;
 }
 
 void TaskWifi(void* pvParameters) {
@@ -48,39 +100,20 @@ void TaskWifi(void* pvParameters) {
 
   Serial.print("Trying to connect to ");
   Serial.println(ssid);
-  Serial.print("Using password ");
-  Serial.println(password);
 
   WiFi.mode(WIFI_STA);
-  // WiFi.setMinSecurity(WIFI_AUTH_WEP); // does not seems to have any impact
-  // WiFi.setMinSecurity(WIFI_AUTH_WPA_PSK);  // Lower min security to WPA.
 
-  // WiFi.begin(ssid, password);
-  // The following line is required because of a bug in the LOLIN esp32-c3
-  // board https://github.com/espressif/arduino-esp32/issues/6767 It could
-  // be removed in the other cases and yield to better connection range
-  // WiFi.setTxPower(WIFI_POWER_8_5dBm);
-  // WiFi.disconnect(true);
-  //
-  // if identity not defined use username as identity
   if (strlen(identity) == 0) {
     strcpy(identity, username);
   }
-  // parameter wifi type
+
   bool wifi_Enterprise_type = false;
-  // if identity and username not defined use domestic WPA2 to connect to wifi
-  if (strlen(identity) == 0 && strlen(/* The `username` variable in the code is
-  being used to store the username required for connecting to a WiFi network
-  using WPA2 Enterprise security. It is retrieved from the parameters and used
-  along with the `identity` and `password` to establish a secure connection to
-  the WiFi network. If the `identity` is not defined, the `username` is used as
-  the identity for the WPA2 Enterprise connection. */
-                                      username) == 0) {
+
+  if (strlen(identity) == 0 && strlen(username) == 0) {
     Serial.println("Using domestic WPA2");
     wifi_Enterprise_type = false;
-  }
-  // if identity and username defined use WPA2 Enterprise to connect to wifi
-  else {
+  } else {
+    Serial.println("Using WPA2 Enterprise");
     esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)identity, strlen(identity));
     esp_wifi_sta_wpa2_ent_set_username((uint8_t*)username, strlen(username));
     esp_wifi_sta_wpa2_ent_set_password((uint8_t*)password, strlen(password));
@@ -88,31 +121,63 @@ void TaskWifi(void* pvParameters) {
     wifi_Enterprise_type = true;
   }
 
-  uint8_t counter;
+  uint8_t counter = 0;
+  uint8_t reconnectAttempts = 0;
+
   while ((wifiTimeout <= 0 || (millis() - start) < wifiTimeout * 1000) &&
          counter++ < 30) {
     vTaskDelay(2000);
+
     if (WiFi.status() != WL_CONNECTED) {
       setParameter(PARAM_WIFI_RSSI, -1);
-      Serial.println("WIFI not connected, trying to connect");
+      Serial.println("WIFI not connected, scanning for strongest AP");
 
-      if (wifi_Enterprise_type == true) {
-        WiFi.begin(ssid);
-      } else {
-        WiFi.begin(ssid, password);
-      }
+      // Scan and connect to strongest AP
+      if (connectToStrongestAP(ssid, wifi_Enterprise_type)) {
+        // Wait for connection
+        int waitCounter = 0;
+        while (WiFi.status() != WL_CONNECTED && waitCounter++ < 20) {
+          vTaskDelay(500);
+          Serial.print(".");
+        }
+        Serial.println();
 
-      if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("WIFI connected");
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.println("WIFI connected successfully");
+          Serial.print("IP address: ");
+          Serial.println(WiFi.localIP());
+          Serial.print("Connected RSSI: ");
+          Serial.println(WiFi.RSSI());
+        }
       }
     }
+
     if (WiFi.status() != WL_CONNECTED) {
       setParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI);
+      reconnectAttempts++;
     } else {
       clearParameterBit(PARAM_STATUS, PARAM_STATUS_FLAG_NO_WIFI);
       setParameter(PARAM_WIFI_RSSI, WiFi.RSSI());
       counter = 0;
-      wifiTimeout = -1;  // we will never start AP anymore if we are connected
+      reconnectAttempts = 0;
+      wifiTimeout = -1;
+
+      // Monitor signal strength and rescan if it drops significantly
+      static unsigned long lastScanTime = 0;
+      static int8_t lastRSSI = 0;
+      int8_t currentRSSI = WiFi.RSSI();
+
+      /*
+      // Rescan every 5 minutes or if signal drops by more than 10 dBm
+      if (millis() - lastScanTime > 300000 ||
+          (lastRSSI - currentRSSI > 10 && currentRSSI < -70)) {
+        Serial.println("Signal degraded or periodic check, rescanning...");
+        WiFi.disconnect();
+        lastScanTime = millis();
+        counter = 29;  // Force reconnection in next iteration
+      }
+      */
+      lastRSSI = currentRSSI;
     }
   }
 
@@ -128,12 +193,5 @@ void TaskWifi(void* pvParameters) {
 }
 
 void taskWifi() {
-  // Now set up two tasks to run independently.
-  xTaskCreatePinnedToCore(TaskWifi, "TaskWifi",
-                          12000,  // This stack size can be checked & adjusted
-                                  // by reading the Stack Highwater
-                          NULL,
-                          0,  // Priority, with 3 (configMAX_PRIORITIES - 1)
-                              // being the highest, and 0 being the lowest.
-                          NULL, 1);
+  xTaskCreatePinnedToCore(TaskWifi, "TaskWifi", 12000, NULL, 0, NULL, 1);
 }
