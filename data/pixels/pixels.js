@@ -7,6 +7,7 @@ export class Pixels {
     this.mqttTopics = [];
     this.servers = [];
     this.parameters = [];
+    this.advanced = false;
     this.init();
 
     this.state = this.initState().then(() => {
@@ -17,7 +18,7 @@ export class Pixels {
     // if there is some mqttServers we need to add in the class name 'onlyHTTP' with the property display: none
     // to hide the mqtt part
     const style = document.createElement("style");
-    if (this.mqttServers.length > 0) {
+    if (this.mqttServers.length > 0 && !this.advanced) {
       style.innerHTML = "[data-only-http] {display: none}";
     } else {
       style.innerHTML = "[data-only-mqtt] {display: none}";
@@ -45,6 +46,9 @@ export class Pixels {
       }
       if (urlParams.get("mqttServers")) {
         this.mqttServers = urlParams.get("mqttServers").split(",");
+      }
+      if (urlParams.get("advanced")) {
+        this.advanced = urlParams.get("advanced") === "true";
       }
     }
     if (this.servers.length === 0) {
