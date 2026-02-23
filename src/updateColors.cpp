@@ -85,7 +85,7 @@ void updateOutColors(uint8_t colors[8],
 }
 
 void updateColors() {
-  colorCounter += getParameter(PARAM_SPEED);
+  colorCounter = (colorCounter + getParameter(PARAM_SPEED)) % 8000;
 
   updateOutColors(COLORS_OUT1, PARAM_RED1, PARAM_GREEN1, PARAM_BLUE1);
 
