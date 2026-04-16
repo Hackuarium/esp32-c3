@@ -13,19 +13,17 @@ void fullMeteoDisplay(Adafruit_NeoPixel& pixels) {
   Forecast* forecast = getForecast();
   getHourMinute(meteoTempChars);
   uint8_t currentSlot = (uint8_t)(getHour() / 3);
-  bool showFelt = ((millis() / 2000) % 2) == 1;
+  int16_t feltDelta =
+      forecast->current.feltTemperature - forecast->current.temperature;
+  bool showFelt = abs(feltDelta) >= 1 && ((millis() / 2000) % 2) == 1;
   int intTemperature = showFelt ? forecast->current.feltTemperature
                                 : forecast->current.temperature;
   String temperature =
       (intTemperature >= 0 ? "+" : "") + String(intTemperature);
   uint32_t temperatureColor = Adafruit_NeoPixel::Color(255, 0, 255);
   if (showFelt) {
-    if (forecast->current.feltTemperature < forecast->current.temperature) {
-      temperatureColor = Adafruit_NeoPixel::Color(0, 0, 255);
-    } else if (forecast->current.feltTemperature >
-               forecast->current.temperature) {
-      temperatureColor = Adafruit_NeoPixel::Color(255, 0, 0);
-    }
+    temperatureColor = feltDelta < 0 ? Adafruit_NeoPixel::Color(0, 0, 255)
+                                     : Adafruit_NeoPixel::Color(255, 0, 0);
   }
 
   // hours
