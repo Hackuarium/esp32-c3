@@ -2,6 +2,7 @@
 
 struct Current {
   int16_t temperature;
+  int16_t feltTemperature;
   float precipitation;
   int16_t windSpeed;
   int16_t gustSpeed;

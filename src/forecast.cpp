@@ -47,6 +47,8 @@ void updateForecast() {
         forecast.current.temperature =
             (int16_t)forecastObject["current"]["temperature"];
       }
+      forecast.current.feltTemperature =
+          (int16_t)forecastObject["current"]["feltTemperature"];
       forecast.current.precipitation =
           (float)forecastObject["current"]["precipitation"];
       forecast.current.windSpeed =

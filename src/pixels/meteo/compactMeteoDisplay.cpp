@@ -26,8 +26,20 @@ void compactMeteoDisplay(Adafruit_NeoPixel& pixels) {
   Forecast* forecast = getForecast();
 
   getHourMinute(meteoTempChars);
-  String temperature = (forecast->current.temperature >= 0 ? "+" : "") +
-                       String(forecast->current.temperature);
+  bool showFelt = ((millis() / 2000) % 2) == 1;
+  int16_t displayedTemperature = showFelt ? forecast->current.feltTemperature
+                                          : forecast->current.temperature;
+  String temperature =
+      (displayedTemperature >= 0 ? "+" : "") + String(displayedTemperature);
+  uint32_t temperatureColor = Adafruit_NeoPixel::Color(255, 0, 255);
+  if (showFelt) {
+    if (forecast->current.feltTemperature < forecast->current.temperature) {
+      temperatureColor = Adafruit_NeoPixel::Color(0, 0, 255);
+    } else if (forecast->current.feltTemperature >
+               forecast->current.temperature) {
+      temperatureColor = Adafruit_NeoPixel::Color(255, 0, 0);
+    }
+  }
 
   switch (slot) {
     case 0:
@@ -49,7 +61,7 @@ void compactMeteoDisplay(Adafruit_NeoPixel& pixels) {
       // display current temperature
       for (uint8_t i = 0; i < temperature.length(); ++i) {
         uint8_t ascii = (uint8_t)temperature.charAt(i);
-        paintSymbol(pixels, ascii, i * 4, 0);
+        paintSymbol(pixels, ascii, i * 4, 0, temperatureColor);
       }
       break;
   }
