@@ -14,6 +14,8 @@ void setupHandrail();
 void loopHandrail();
 void setupLora();
 void loopLora();
+void setupLoraGPS();
+void loopLoraGPS();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -29,6 +31,8 @@ void setup() {
   setupHandrail();
 #elif BOARD_TYPE == KIND_LORA
   setupLora();
+#elif BOARD_TYPE == KIND_LORA_GPS
+  setupLoraGPS();
 #else
   setupExample();
 #endif
@@ -47,6 +51,8 @@ void loop() {
   loopHandrail();
 #elif BOARD_TYPE == KIND_LORA
   loopLora();
+#elif BOARD_TYPE == KIND_LORA_GPS
+  loopLoraGPS();
 #else
   loopExample();
 #endif

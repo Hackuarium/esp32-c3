@@ -2,6 +2,8 @@
 #define KIND_PIXELS 2
 #define KIND_9_OUTPUTS 3
 #define KIND_HANDRAIL 4
+#define KIND_LORA 5
+#define KIND_LORA_GPS 6
 #define KIND_EXAMPLE 99
 
 #if BOARD_TYPE == KIND_ROCKET
@@ -16,6 +18,8 @@
 #include "./configHandrail.h"
 #elif BOARD_TYPE == KIND_LORA
 #include "./configLora.h"
+#elif BOARD_TYPE == KIND_LORA_GPS
+#include "./configLoraGPS.h"
 #else
 #error "Unknown board type"
 #endif

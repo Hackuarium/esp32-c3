@@ -20,6 +20,10 @@ void printResult(char* data, Print* output);
 void processSpecificCommand(char* data, char* paramValue, Print* output);
 void printSpecificHelp(Print* output);
 
+#ifdef THR_GPS
+void processGpsCommand(char command, char* paramValue, Print* output);
+#endif
+
 void TaskSerial(void* pvParameters) {
   Serial.begin(115200);
   while (true) {
@@ -175,6 +179,12 @@ void printResult(char* data, Print* output) {
     case 'f':
       processFSCommand(data[1], paramValue, output);
       break;
+
+#ifdef THR_GPS
+    case 'g':
+      processGpsCommand(data[1], paramValue, output);
+      break;
+#endif
 
 #ifdef THR_WIRE_MASTER
     case 'i':

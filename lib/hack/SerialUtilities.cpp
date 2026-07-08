@@ -65,6 +65,9 @@ void printHelp(Print* output) {
   output->println(F("lor(a)WAN"));
 #endif
   output->println(F("(f)s"));
+#ifdef THR_GPS
+  output->println(F("(g)ps"));
+#endif
   output->println(F("(h)elp"));
 #ifdef THR_WIRE_MASTER
   output->println(F("(i)2c"));
