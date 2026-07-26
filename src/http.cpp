@@ -27,17 +27,30 @@ static bool httpDidConnect = false;
 static uint32_t httpFetchesOnConnection = 0;
 
 /*
-  `crt_bundle_attach` validates TLS against the bundled Mozilla root store, so
-  https:// URLs work without pinning a certificate here. Plain http:// URLs are
-  unaffected. The timeout covers a full TLS handshake to a remote host, which
-  needs considerably longer than a plain request on the LAN.
+  Arduino-ESP32 ships its own copy of the Mozilla root bundle in
+  WiFiClientSecure and renames the IDF helper, so the symbol depends on which
+  esp_crt_bundle.h wins the include path: the Arduino core exposes
+  `arduino_esp_crt_bundle_attach`, bare ESP-IDF `esp_crt_bundle_attach`. Picking
+  the wrong one only fails on the boards that resolve to the other core.
+*/
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 2
+#define CRT_BUNDLE_ATTACH arduino_esp_crt_bundle_attach
+#else
+#define CRT_BUNDLE_ATTACH esp_crt_bundle_attach
+#endif
+
+/*
+  `crt_bundle_attach` validates TLS against that root store, so https:// URLs
+  work without pinning a certificate here. Plain http:// URLs are unaffected.
+  The timeout covers a full TLS handshake to a remote host, which needs
+  considerably longer than a plain request on the LAN.
 */
 static esp_http_client_config_t httpConfig = {
     .method = HTTP_METHOD_GET,
     .timeout_ms = 10000,
     .event_handler = httpEventHandler,
     .user_data = httpBuffer,
-    .crt_bundle_attach = esp_crt_bundle_attach,
+    .crt_bundle_attach = CRT_BUNDLE_ATTACH,
 };
 
 static void httpDropConnection() {

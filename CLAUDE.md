@@ -39,6 +39,13 @@ installing a new platform changes what *every* unpinned env builds against.
 If you only need a syntax check of shared code and the target toolchain is
 missing, `-e lineC3` compiles the same sources for the C3.
 
+**A green C3 build does not mean the S3 builds.** They can resolve to different
+Arduino cores, and the cores differ in more than versions — Arduino-ESP32 ships
+its own `esp_crt_bundle.h` (in `libraries/WiFiClientSecure/src/`) that shadows
+the ESP-IDF one and renames the helper to `arduino_esp_crt_bundle_attach`. Code
+that compiled fine against bare IDF failed on the S3 for exactly that reason.
+Build the env you are actually shipping.
+
 ## The energy wall (`square`)
 
 Renders the live house energy balance on a 16×16 NeoPixel matrix behind a
