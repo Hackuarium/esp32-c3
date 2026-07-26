@@ -10,30 +10,48 @@
 #include "fronius.h"
 
 /*
-  Update the weather and fronius
+  How often the LED wall's energy balance is refreshed (ms).
+
+  Deliberately shorter than the backend's 5 s HTTP keep-alive window: within it
+  the connection is reused and the TLS handshake is skipped entirely (~3 ms per
+  fetch instead of ~13 ms), so this cadence costs LESS per fetch than a slower
+  one, which would always reconnect from cold. It also bounds how stale the wall
+  can be against a backend that refreshes its own reading every 10 s.
+*/
+#define ENERGY_FLOW_INTERVAL_MS 2500
+/* The forecast changes by the hour; it lives on another host, so each of these
+   evicts the kept-alive energy-flow connection and costs one handshake. */
+#define FORECAST_INTERVAL_MS 60000
+/* Loop tick — must divide the shortest interval above. */
+#define FETCH_TICK_MS 500
+
+/*
+  Update the weather and the energy balance, each on its own cadence.
 */
 void TaskFetch(void* pvParameters) {
-  static uint16_t counter = 0;
+  uint32_t lastEnergyFlow = 0;
+  uint32_t lastForecast = 0;
   vTaskDelay(10000);
   while (true) {
     while (WiFi.status() != WL_CONNECTED) {
       vTaskDelay(5000);
     }
+    // Unsigned arithmetic, so the millis() wrap at ~49 days is handled. Both
+    // start at 0, which is already "due" and fires on the first pass.
+    uint32_t now = millis();
 #ifdef FETCH_FRONIUS
-    // Every 10 s, not every second: the energy balance is served over HTTPS from
-    // a remote host now, so each fetch is a full TLS handshake. 10 s matches the
-    // dashboard's own refresh and is far finer than the wall can show anyway.
-    if (counter % 10 == 0) {
+    if (now - lastEnergyFlow >= ENERGY_FLOW_INTERVAL_MS) {
       updateFronius();
+      lastEnergyFlow = now;
     }
 #endif
-    if (counter % 60 == 0) {
 #ifdef FETCH_WEATHER
+    if (now - lastForecast >= FORECAST_INTERVAL_MS) {
       updateForecast();
-#endif
+      lastForecast = now;
     }
-    counter++;
-    vTaskDelay(1000);
+#endif
+    vTaskDelay(FETCH_TICK_MS);
   }
 }
 
