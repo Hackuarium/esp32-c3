@@ -20,7 +20,12 @@ void TaskFetch(void* pvParameters) {
       vTaskDelay(5000);
     }
 #ifdef FETCH_FRONIUS
-    updateFronius();
+    // Every 10 s, not every second: the energy balance is served over HTTPS from
+    // a remote host now, so each fetch is a full TLS handshake. 10 s matches the
+    // dashboard's own refresh and is far finer than the wall can show anyway.
+    if (counter % 10 == 0) {
+      updateFronius();
+    }
 #endif
     if (counter % 60 == 0) {
 #ifdef FETCH_WEATHER

@@ -3,35 +3,30 @@
 #include <Arduino.h>
 
 /*
-  Live energy balance served by the solar monitoring backend
-  (https://github.com/lpatiny/solar.patiny.com) on /api/energy-flow.
+  The live energy balance drawn by the LED wall, served by the solar monitoring
+  backend (https://github.com/lpatiny/solar.patiny.com) on
+  /api/energy-flow/compact.
 
-  The backend already splits the balance into source -> sink flows, and folds the
-  Marstek batteries into it, so nothing has to be derived here any more. Powers
-  are in W and are never negative unless the name says otherwise; the battery
-  level is in Wh.
+  The backend aggregates the Fronius inverter AND the Marstek batteries and
+  already splits the balance into source -> sink flows, so nothing is derived
+  here. Every field maps one-to-one onto something the wall draws: four squares
+  and the six links between them. Powers are in W and never negative; the battery
+  level is usable Wh, with each pack's reserve floor already removed.
 */
 struct FroniusStatus {
-  // The four displayed quantities.
-  float powerFromPV;
-  float currentLoad;
-  float gridImport;
-  float gridExport;
-  float powerFromGrid;  // signed: positive importing, negative exporting
-  float batteryStoredWh;
-  float batteryCapacityWh;
-  float batteryChargePercentage;
-  float batteryCharge;
-  float batteryDischarge;
-  float powerFromBattery;  // signed: positive discharging, negative charging
-  // The six links between them.
-  float fromPVToLoad;
-  float fromPVToBattery;
-  float fromPVToNetwork;
-  float fromBatteryToLoad;
-  float fromBatteryToNetwork;
-  float fromNetworkToLoad;
-  float fromNetworkToBattery;
+  // The four squares.
+  float powerFromPV;      // "pv"
+  float batteryStoredWh;  // "ba"
+  float networkPower;     // "gr" — magnitude either way; the flux shows which
+  float currentLoad;      // "co"
+  // The six links.
+  float fromPVToLoad;          // "ph"
+  float fromPVToBattery;       // "pb"
+  float fromPVToNetwork;       // "pg"
+  float fromBatteryToLoad;     // "bh"
+  float fromBatteryToNetwork;  // "bg"
+  float fromNetworkToLoad;     // "gh"
+  float fromNetworkToBattery;  // "gb"
   // True when the backend's own reading has aged out.
   bool isStale;
 };

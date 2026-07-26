@@ -11,18 +11,20 @@
 #include "http.h"
 
 /*
-  Live energy balance from the solar monitoring backend
-  (https://github.com/lpatiny/solar.patiny.com). It aggregates the Fronius
-  inverter AND the Marstek batteries, and already splits the balance into
-  source -> sink flows, so this firmware no longer derives them from the raw
-  Fronius powerflow. The response is ~400 bytes, well inside the 1000-byte fetch
-  buffer. Override with -D ENERGY_FLOW_URL=... at build time.
+  The LED wall payload from the solar monitoring backend: exactly the values the
+  wall draws, under two-letter keys, in about 110 bytes. Served over HTTPS from
+  the public host, so the panel no longer needs to sit on the same LAN as the
+  inverter — TLS is validated against the bundled root store (see http.cpp).
+
+  Override at build time with -D ENERGY_FLOW_URL=... to point at a local
+  deployment.
 */
 #ifndef ENERGY_FLOW_URL
-#define ENERGY_FLOW_URL "http://192.168.1.30:60504/api/energy-flow"
+#define ENERGY_FLOW_URL "https://solar.patiny.com/api/energy-flow/compact"
 #endif
 
-StaticJsonDocument<1000> energyFlowObject;
+// 12 numeric members; 512 bytes is ample and leaves the parse allocation-free.
+StaticJsonDocument<512> energyFlowObject;
 
 FroniusStatus froniusStatus;
 
@@ -33,31 +35,27 @@ FroniusStatus getFroniusStatus() {
 DeserializationError errorJSONFronius;
 
 void printFroniusStatus(Print* output) {
-  output->print("Power from PV: ");
+  output->print("PV: ");
   output->println(froniusStatus.powerFromPV);
-  output->print("Current load: ");
-  output->println(froniusStatus.currentLoad);
-  output->print("Grid import: ");
-  output->println(froniusStatus.gridImport);
-  output->print("Grid export: ");
-  output->println(froniusStatus.gridExport);
-  output->print("Battery stored (Wh): ");
+  output->print("Battery (Wh): ");
   output->println(froniusStatus.batteryStoredWh);
-  output->print("Battery charge percentage: ");
-  output->println(froniusStatus.batteryChargePercentage);
-  output->print("From PV to load: ");
-  output->println(froniusStatus.fromPVToLoad);
-  output->print("From PV to battery: ");
-  output->println(froniusStatus.fromPVToBattery);
-  output->print("From PV to network: ");
+  output->print("Network: ");
+  output->println(froniusStatus.networkPower);
+  output->print("Load: ");
+  output->println(froniusStatus.currentLoad);
+  output->print("PV -> load / battery / network: ");
+  output->print(froniusStatus.fromPVToLoad);
+  output->print(" / ");
+  output->print(froniusStatus.fromPVToBattery);
+  output->print(" / ");
   output->println(froniusStatus.fromPVToNetwork);
-  output->print("From battery to load: ");
-  output->println(froniusStatus.fromBatteryToLoad);
-  output->print("From battery to network: ");
+  output->print("Battery -> load / network: ");
+  output->print(froniusStatus.fromBatteryToLoad);
+  output->print(" / ");
   output->println(froniusStatus.fromBatteryToNetwork);
-  output->print("From network to load: ");
-  output->println(froniusStatus.fromNetworkToLoad);
-  output->print("From network to battery: ");
+  output->print("Network -> load / battery: ");
+  output->print(froniusStatus.fromNetworkToLoad);
+  output->print(" / ");
   output->println(froniusStatus.fromNetworkToBattery);
   output->println("");
 }
@@ -77,37 +75,27 @@ void updateFronius() {
     Serial.println(errorJSONFronius.c_str());
     return;
   }
+  // A 503 (backend up, no inverter reading yet) parses fine but carries none of
+  // these keys; keep the previous values rather than blanking the wall.
+  if (!energyFlowObject.containsKey("pv")) {
+    Serial.println("Solar backend has no reading yet");
+    return;
+  }
 
-  froniusStatus.powerFromPV = (float)energyFlowObject["production_w"];
-  froniusStatus.currentLoad = (float)energyFlowObject["consumption_w"];
-  froniusStatus.gridImport = (float)energyFlowObject["grid_import_w"];
-  froniusStatus.gridExport = (float)energyFlowObject["grid_export_w"];
-  froniusStatus.powerFromGrid =
-      froniusStatus.gridImport - froniusStatus.gridExport;
+  froniusStatus.powerFromPV = (float)energyFlowObject["pv"];
+  froniusStatus.batteryStoredWh = (float)energyFlowObject["ba"];
+  froniusStatus.networkPower = (float)energyFlowObject["gr"];
+  froniusStatus.currentLoad = (float)energyFlowObject["co"];
 
-  froniusStatus.batteryStoredWh = (float)energyFlowObject["battery_stored_wh"];
-  froniusStatus.batteryCapacityWh =
-      (float)energyFlowObject["battery_capacity_wh"];
-  froniusStatus.batteryChargePercentage =
-      (float)energyFlowObject["battery_soc_pct"];
-  froniusStatus.batteryCharge = (float)energyFlowObject["battery_charge_w"];
-  froniusStatus.batteryDischarge =
-      (float)energyFlowObject["battery_discharge_w"];
-  froniusStatus.powerFromBattery =
-      froniusStatus.batteryDischarge - froniusStatus.batteryCharge;
+  froniusStatus.fromPVToLoad = (float)energyFlowObject["ph"];
+  froniusStatus.fromPVToBattery = (float)energyFlowObject["pb"];
+  froniusStatus.fromPVToNetwork = (float)energyFlowObject["pg"];
+  froniusStatus.fromBatteryToLoad = (float)energyFlowObject["bh"];
+  froniusStatus.fromBatteryToNetwork = (float)energyFlowObject["bg"];
+  froniusStatus.fromNetworkToLoad = (float)energyFlowObject["gh"];
+  froniusStatus.fromNetworkToBattery = (float)energyFlowObject["gb"];
 
-  froniusStatus.fromPVToLoad = (float)energyFlowObject["solar_to_home_w"];
-  froniusStatus.fromPVToBattery = (float)energyFlowObject["solar_to_battery_w"];
-  froniusStatus.fromPVToNetwork = (float)energyFlowObject["solar_to_grid_w"];
-  froniusStatus.fromBatteryToLoad =
-      (float)energyFlowObject["battery_to_home_w"];
-  froniusStatus.fromBatteryToNetwork =
-      (float)energyFlowObject["battery_to_grid_w"];
-  froniusStatus.fromNetworkToLoad = (float)energyFlowObject["grid_to_home_w"];
-  froniusStatus.fromNetworkToBattery =
-      (float)energyFlowObject["grid_to_battery_w"];
-
-  froniusStatus.isStale = (bool)energyFlowObject["is_stale"];
+  froniusStatus.isStale = ((int)energyFlowObject["st"]) != 0;
 
   //  printFroniusStatus(&Serial);
 }

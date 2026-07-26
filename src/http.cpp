@@ -4,6 +4,7 @@
 
 #include <WiFi.h>
 #include "config.h"
+#include "esp_crt_bundle.h"
 #include "esp_http_client.h"
 
 #define MAX_HTTP_BUFFER 1000
@@ -14,11 +15,18 @@ char httpBuffer[MAX_HTTP_BUFFER] = {0};
 esp_http_client_handle_t httpClientHandle;
 esp_err_t httpError;
 
+/*
+  `crt_bundle_attach` validates TLS against the bundled Mozilla root store, so
+  https:// URLs work without pinning a certificate here. Plain http:// URLs are
+  unaffected. The timeout covers a full TLS handshake to a remote host, which
+  needs considerably longer than a plain request on the LAN.
+*/
 static esp_http_client_config_t httpConfig = {
     .method = HTTP_METHOD_GET,
-    .timeout_ms = 2000,
+    .timeout_ms = 10000,
     .event_handler = httpEventHandler,
     .user_data = httpBuffer,
+    .crt_bundle_attach = esp_crt_bundle_attach,
 };
 
 /*
@@ -52,9 +60,10 @@ esp_err_t httpEventHandler(esp_http_client_event_t* evt) {
   static int output_len;  // Stores number of bytes read
   switch (evt->event_id) {
     case HTTP_EVENT_ON_CONNECTED:
-      //  Serial.println("Clear memory");
-      // Serial.println(sizeof(evt->data));
-      memset(&evt->data, 0, sizeof(evt->data));
+      // Restart the write cursor. A redirect (or an aborted transfer) connects
+      // again without ever reaching ON_FINISH, and carrying the old offset over
+      // would append the second response after the first.
+      output_len = 0;
       break;
     case HTTP_EVENT_ON_DATA:
       /*

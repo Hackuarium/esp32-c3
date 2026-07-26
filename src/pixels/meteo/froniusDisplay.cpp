@@ -111,12 +111,10 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
               Adafruit_NeoPixel::Color(0x00, 0x50, 0x00),
               Adafruit_NeoPixel::Color(0x00, 0x10, 0x00), highValue, lowValue);
 
-  // Network: what we exchange with the grid in either direction — only one of
-  // import/export is ever non-zero — and which way it goes is read off the flux
-  // entering or leaving the square.
-  float networkLevel = status.gridImport + status.gridExport;
-  highValue = floor(networkLevel / 500);
-  lowValue = floor((networkLevel - highValue * 500) / 50);
+  // Network: what we exchange with the grid, magnitude either way — which way it
+  // goes is read off the flux entering or leaving the square.
+  highValue = floor(status.networkPower / 500);
+  lowValue = floor((status.networkPower - highValue * 500) / 50);
   paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
               Adafruit_NeoPixel::Color(0x50, 0x50, 0x50),
               Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), highValue, lowValue);
