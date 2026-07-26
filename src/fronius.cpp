@@ -12,15 +12,18 @@
 
 /*
   The LED wall payload from the solar monitoring backend: exactly the values the
-  wall draws, under two-letter keys, in about 110 bytes. Served over HTTPS from
-  the public host, so the panel no longer needs to sit on the same LAN as the
-  inverter — TLS is validated against the bundled root store (see http.cpp).
+  wall draws, under two-letter keys, in about 110 bytes. Served over plain HTTP
+  from the public host, so the panel no longer needs to sit on the same LAN as
+  the inverter. HTTP (not HTTPS) on purpose: a TLS handshake needs a ~40 KB
+  contiguous heap block that this ESP32-S3 build (~55 KB free) cannot spare, so
+  the device only ever does plain HTTP — same reason the weather forecast goes
+  through an HTTP proxy.
 
   Override at build time with -D ENERGY_FLOW_URL=... to point at a local
   deployment.
 */
 #ifndef ENERGY_FLOW_URL
-#define ENERGY_FLOW_URL "https://solar.patiny.com/api/energy-flow/compact"
+#define ENERGY_FLOW_URL "http://solar.patiny.com/api/energy-flow/compact"
 #endif
 
 // 12 numeric members; 512 bytes is ample and leaves the parse allocation-free.
