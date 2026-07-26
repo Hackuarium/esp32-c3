@@ -21,7 +21,9 @@ struct SquareColors {
   power square has no known maximum, so it says so by overflowing the ring; the
   battery knows its usable capacity and passes the flag instead, which lets it
   run out of LEDs (it holds more than the 16.9 kWh they cover) without ever
-  claiming to be full when it is not.
+  claiming to be full when it is not. With two sources a full square drops the
+  stacked split for a checkerboard of the two colours: a uniformly lit square
+  only means "at least 16 LEDs worth", the checkerboard means genuinely full.
 */
 void paintSquare(Adafruit_NeoPixel& pixels,
                  uint8_t row,
@@ -49,6 +51,16 @@ void paintSquare(Adafruit_NeoPixel& pixels,
       pixels.setPixelColor(getLedIndex(row + i, column + j),
                            colors.background);
     }
+  }
+
+  if (full && upper != nullptr) {
+    for (uint8_t i = 0; i < 5; ++i) {
+      for (uint8_t j = 0; j < 5; ++j) {
+        pixels.setPixelColor(getLedIndex(row + i, column + j),
+                             (i + j) % 2 == 0 ? colors.high : upper->high);
+      }
+    }
+    return;
   }
 
   for (uint8_t i = 0; i < highValue; ++i) {
@@ -147,8 +159,9 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   // the square goes dark when the fleet is empty rather than keeping a slice
   // permanently lit. 1 kWh per LED around and 100 Wh per LED inside, which the
   // ~18.4 kWh fleet overruns: past 16.9 kWh the square is simply maxed out. It
-  // lights up bright only within 1 % of the usable capacity the backend reports,
-  // so "everything lit" means genuinely full and not merely off the scale.
+  // switches to a green/turquoise checkerboard only within 1 % of the usable
+  // capacity the backend reports, so that pattern means the fleet is genuinely
+  // full and not merely off the scale.
   // The ring is filled BYD first and Marstek after it, each in its own green, so
   // the boundary between the two shows which pack is holding the charge.
   highValue = min((int)floor(status.batteryStoredWh / 1000), 16);
