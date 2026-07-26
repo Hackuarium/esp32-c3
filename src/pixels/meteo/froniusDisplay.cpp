@@ -93,22 +93,28 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   pixels.clear();
   FroniusStatus status = getFroniusStatus();
 
-  // PV
+  // PV: 500 W per LED around, 50 W per LED inside
   uint8_t highValue = floor(status.powerFromPV / 500);
   uint8_t lowValue = floor((status.powerFromPV - highValue * 500) / 50);
   paintSquare(pixels, 0, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
               Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
               Adafruit_NeoPixel::Color(0x10, 0x10, 0x00), highValue, lowValue);
-  // Battery
 
+  // Battery: the USABLE energy stored across every pack (Fronius BYD plus the
+  // Marstek units) — the backend already subtracts each pack's reserve floor, so
+  // the square goes dark when the fleet is empty rather than keeping a slice
+  // permanently lit. 1.25 kWh per LED around and 125 Wh per LED inside; a full
+  // ring is 20 kWh against the 18.4 kWh the fleet holds, so it never saturates.
+  highValue = floor(status.batteryStoredWh / 1250);
+  lowValue = floor((status.batteryStoredWh - highValue * 1250) / 125);
   paintSquare(pixels, 0, 11, Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
-              Adafruit_NeoPixel::Color(0, 0, 0),
-              Adafruit_NeoPixel::Color(0x00, 0x10, 0x00),
-              (uint8_t)round((status.batteryChargePercentage - 6) / 5.68), 0);
-  // Network
-  float networkLevel = status.powerFromGrid;
-  if (networkLevel < 0)
-    networkLevel = -networkLevel;
+              Adafruit_NeoPixel::Color(0x00, 0x50, 0x00),
+              Adafruit_NeoPixel::Color(0x00, 0x10, 0x00), highValue, lowValue);
+
+  // Network: what we exchange with the grid in either direction — only one of
+  // import/export is ever non-zero — and which way it goes is read off the flux
+  // entering or leaving the square.
+  float networkLevel = status.gridImport + status.gridExport;
   highValue = floor(networkLevel / 500);
   lowValue = floor((networkLevel - highValue * 500) / 50);
   paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
@@ -145,4 +151,17 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   paintFlux(pixels, 5, 13, 11, 13, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),
             Adafruit_NeoPixel::Color(0x00, 0x00, 0x10),
             getFluxSpeed(counter, status.fromBatteryToLoad));
+
+  // Flux Battery <-> Network, along the free anti-diagonal. The Marstek units
+  // can be charged from the grid (and discharged into it), which the Fronius
+  // alone could never report, so only one of the two directions is ever active.
+  if (status.fromNetworkToBattery > status.fromBatteryToNetwork) {
+    paintFlux(pixels, 11, 4, 5, 10, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),
+              Adafruit_NeoPixel::Color(0x00, 0x00, 0x10),
+              getFluxSpeed(counter, status.fromNetworkToBattery));
+  } else {
+    paintFlux(pixels, 5, 10, 11, 4, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),
+              Adafruit_NeoPixel::Color(0x00, 0x00, 0x10),
+              getFluxSpeed(counter, status.fromBatteryToNetwork));
+  }
 }

@@ -28,7 +28,11 @@ char* fetch(char* url) {
   httpConfig.url = url;
   // Serial.print("Fetching: ");
   // Serial.println(httpConfig.url);
-  httpBuffer[MAX_HTTP_BUFFER] = {0};
+  // Actually clear the shared buffer. The old `httpBuffer[MAX_HTTP_BUFFER] = {0}`
+  // wrote one past the end and cleared nothing, so a short response left the
+  // tail of a previous, longer one behind — the energy-flow payload is ~400 B
+  // and shares this buffer with the much longer forecast one.
+  memset(httpBuffer, 0, MAX_HTTP_BUFFER);
   httpClientHandle = esp_http_client_init(&httpConfig);
   httpError = esp_http_client_perform(httpClientHandle);
   if (httpError == ESP_OK) {
