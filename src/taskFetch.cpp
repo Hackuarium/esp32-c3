@@ -18,7 +18,9 @@
   one, which would always reconnect from cold. It also bounds how stale the wall
   can be against a backend that refreshes its own reading every 10 s.
 */
+#ifndef ENERGY_FLOW_INTERVAL_MS
 #define ENERGY_FLOW_INTERVAL_MS 2500
+#endif
 /* The forecast changes by the hour; it lives on another host, so each of these
    evicts the kept-alive energy-flow connection and costs one handshake. */
 #define FORECAST_INTERVAL_MS 60000
@@ -58,8 +60,9 @@ void TaskFetch(void* pvParameters) {
 void taskFetch() {
   // Now set up two tasks to rntpdun independently.
   xTaskCreatePinnedToCore(TaskFetch, "TaskFetch",
-                          20000,  // This stack size can be checked & adjusted
-                                  // by reading the Stack Highwatee
+                          24576,  // A TLS handshake needs several KB more stack
+                                  // than the plain HTTP this task used to do;
+                                  // check the Stack Highwater before lowering.
                           NULL,
                           0,  // Priority, with 3 (configMAX_PRIORITIES - 1)
                               // being the highest, and 0 being the lowest.

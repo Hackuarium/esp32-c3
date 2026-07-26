@@ -21,6 +21,10 @@ esp_err_t httpError;
 static int httpOutputLen = 0;
 /* The URL the currently-open connection was made for ("" when none is open). */
 static char httpOpenUrl[MAX_HTTP_URL] = {0};
+/* Set by httpPerform when it had to open a new connection (i.e. pay a handshake). */
+static bool httpDidConnect = false;
+/* Requests the connection being replaced managed to serve. */
+static uint32_t httpFetchesOnConnection = 0;
 
 /*
   `crt_bundle_attach` validates TLS against the bundled Mozilla root store, so
@@ -54,6 +58,7 @@ static void httpDropConnection() {
   (the forecast lives on another host) closes the connection first.
 */
 static esp_err_t httpPerform(char* url) {
+  httpDidConnect = false;
   if (httpClientHandle != NULL && strcmp(httpOpenUrl, url) != 0) {
     httpDropConnection();
   }
@@ -65,6 +70,7 @@ static esp_err_t httpPerform(char* url) {
     }
     strncpy(httpOpenUrl, url, MAX_HTTP_URL - 1);
     httpOpenUrl[MAX_HTTP_URL - 1] = 0;
+    httpDidConnect = true;
   }
   httpOutputLen = 0;
   // Clear the shared buffer. The original `httpBuffer[MAX_HTTP_BUFFER] = {0}`
@@ -76,6 +82,7 @@ static esp_err_t httpPerform(char* url) {
 }
 
 char* fetch(char* url) {
+  uint32_t startedAt = millis();
   httpError = httpPerform(url);
   if (httpError != ESP_OK) {
     // A kept-alive socket the server has since closed fails on first use. Drop
@@ -84,6 +91,19 @@ char* fetch(char* url) {
     httpDropConnection();
     httpError = httpPerform(url);
   }
+
+  // Report only when a connection had to be opened, so the log tells you at a
+  // glance whether reuse is working on this device: silence means it is, a line
+  // every poll means it is not, and the figure is the real handshake cost here.
+  if (httpDidConnect) {
+    Serial.printf("[http] opened a connection in %lu ms (previous one served %lu requests)\n",
+                  (unsigned long)(millis() - startedAt),
+                  (unsigned long)httpFetchesOnConnection);
+    httpFetchesOnConnection = 0;
+  } else {
+    httpFetchesOnConnection++;
+  }
+
   if (httpError == ESP_OK) {
     if (strlen(httpBuffer) == 0) {
       Serial.println("No data");
