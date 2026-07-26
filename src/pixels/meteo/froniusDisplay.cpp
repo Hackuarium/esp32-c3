@@ -113,15 +113,17 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   const SquareColors solarColors = {Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
                                     Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
                                     Adafruit_NeoPixel::Color(0x10, 0x10, 0x00)};
-  // The two greens of the battery square: pure green for the Fronius BYD, mint
-  // for the Marstek fleet stacked on top of it.
+  // The two greens of the battery square: pure green for the Fronius BYD,
+  // turquoise for the Marstek fleet stacked on top of it. The two hues are far
+  // apart on purpose — the dim centre LEDs have no neighbour of the other colour
+  // to be judged against, so a close pair reads as a single green.
   const SquareColors bydColors = {Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
                                   Adafruit_NeoPixel::Color(0x00, 0x50, 0x00),
                                   Adafruit_NeoPixel::Color(0x00, 0x10, 0x00)};
   const SquareColors marstekColors = {
-      Adafruit_NeoPixel::Color(0x00, 0xff, 0x80),
-      Adafruit_NeoPixel::Color(0x00, 0x50, 0x28),
-      Adafruit_NeoPixel::Color(0x00, 0x10, 0x08)};
+      Adafruit_NeoPixel::Color(0x00, 0xff, 0xd0),
+      Adafruit_NeoPixel::Color(0x00, 0x50, 0x41),
+      Adafruit_NeoPixel::Color(0x00, 0x10, 0x0d)};
   const SquareColors networkColors = {
       Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
       Adafruit_NeoPixel::Color(0x50, 0x50, 0x50),
