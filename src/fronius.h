@@ -16,9 +16,10 @@
 struct FroniusStatus {
   // The four squares.
   float powerFromPV;      // "pv"
-  float batteryStoredWh;  // "ba" — the whole fleet, BYD plus Marstek
-  float bydStoredWh;      // "bd" — the BYD's share of it
-  float marstekStoredWh;  // "mk" — the Marstek fleet's share of it
+  float batteryStoredWh;    // "ba" — the whole fleet, BYD plus Marstek
+  float bydStoredWh;        // "bd" — the BYD's share of it
+  float marstekStoredWh;    // "mk" — the Marstek fleet's share of it
+  float batteryCapacityWh;  // "bc" — usable capacity; the fleet is full near it
   float networkPower;     // "gr" — magnitude either way; the flux shows which
   float currentLoad;      // "co"
   // The six links.

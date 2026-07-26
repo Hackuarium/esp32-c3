@@ -16,6 +16,12 @@ struct SquareColors {
   upper one's, which is how the battery square tells the BYD apart from the
   Marstek fleet. The centre sits at the top of the stack, so `upperHoldsCentre`
   says which of the two owns the remainder. Pass nullptr for a single source.
+
+  `full` lights the whole square at full brightness — the top of the scale. A
+  power square has no known maximum, so it says so by overflowing the ring; the
+  battery knows its usable capacity and passes the flag instead, which lets it
+  run out of LEDs (it holds more than the 16.9 kWh they cover) without ever
+  claiming to be full when it is not.
 */
 void paintSquare(Adafruit_NeoPixel& pixels,
                  uint8_t row,
@@ -23,16 +29,14 @@ void paintSquare(Adafruit_NeoPixel& pixels,
                  const SquareColors& colors,
                  uint8_t highValue,
                  uint8_t lowValue,
+                 bool full = false,
                  const SquareColors* upper = nullptr,
                  uint8_t lowerLeds = 0,
                  bool upperHoldsCentre = false) {
-  if (highValue > 16) {  // we fill completely the square with bright color
-    for (uint8_t i = 0; i < 5; ++i) {
-      for (uint8_t j = 0; j < 5; ++j) {
-        pixels.setPixelColor(getLedIndex(row + i, column + j), colors.high);
-      }
-    }
-    return;
+  bool complete = full || highValue > 16;
+  if (complete) {
+    highValue = 16;
+    lowValue = 9;
   }
 
   static uint8_t rowLevels[16] = {0, 0, 0, 0, 0, 1, 2, 3,
@@ -55,8 +59,9 @@ void paintSquare(Adafruit_NeoPixel& pixels,
   }
 
   // details information in the centrum
-  uint32_t centreColor =
-      (upper != nullptr && upperHoldsCentre) ? upper->low : colors.low;
+  const SquareColors& centre =
+      (upper != nullptr && upperHoldsCentre) ? *upper : colors;
+  uint32_t centreColor = complete ? centre.high : centre.low;
   for (uint8_t i = 0; i < min(lowValue, (uint8_t)9); ++i) {
     pixels.setPixelColor(
         getLedIndex(row + 1 + floor(i / 3), column + 1 + i % 3), centreColor);
@@ -140,15 +145,20 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   // Battery: the USABLE energy stored across every pack (Fronius BYD plus the
   // Marstek units) — the backend already subtracts each pack's reserve floor, so
   // the square goes dark when the fleet is empty rather than keeping a slice
-  // permanently lit. 1.25 kWh per LED around and 125 Wh per LED inside; a full
-  // ring is 20 kWh against the 18.4 kWh the fleet holds, so it never saturates.
+  // permanently lit. 1 kWh per LED around and 100 Wh per LED inside, which the
+  // ~18.4 kWh fleet overruns: past 16.9 kWh the square is simply maxed out. It
+  // lights up bright only within 1 % of the usable capacity the backend reports,
+  // so "everything lit" means genuinely full and not merely off the scale.
   // The ring is filled BYD first and Marstek after it, each in its own green, so
   // the boundary between the two shows which pack is holding the charge.
-  highValue = floor(status.batteryStoredWh / 1250);
-  lowValue = floor((status.batteryStoredWh - highValue * 1250) / 125);
-  uint8_t bydLeds = min((uint8_t)round(status.bydStoredWh / 1250), highValue);
-  paintSquare(pixels, 0, 11, bydColors, highValue, lowValue, &marstekColors,
-              bydLeds, status.marstekStoredWh >= 125);
+  highValue = min((int)floor(status.batteryStoredWh / 1000), 16);
+  lowValue = floor((status.batteryStoredWh - highValue * 1000) / 100);
+  uint8_t bydLeds = min((uint8_t)round(status.bydStoredWh / 1000), highValue);
+  bool batteryFull =
+      status.batteryCapacityWh > 0 &&
+      status.batteryStoredWh >= 0.99f * status.batteryCapacityWh;
+  paintSquare(pixels, 0, 11, bydColors, highValue, lowValue, batteryFull,
+              &marstekColors, bydLeds, status.marstekStoredWh >= 100);
 
   // Network: what we exchange with the grid, magnitude either way — which way it
   // goes is read off the flux entering or leaving the square.

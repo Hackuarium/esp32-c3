@@ -26,7 +26,7 @@
 #define ENERGY_FLOW_URL "http://solar.patiny.com/api/energy-flow/compact"
 #endif
 
-// 14 numeric members; 512 bytes is ample and leaves the parse allocation-free.
+// 15 numeric members; 512 bytes is ample and leaves the parse allocation-free.
 StaticJsonDocument<512> energyFlowObject;
 
 FroniusStatus froniusStatus;
@@ -45,7 +45,9 @@ void printFroniusStatus(Print* output) {
   output->print(" = BYD ");
   output->print(froniusStatus.bydStoredWh);
   output->print(" + Marstek ");
-  output->println(froniusStatus.marstekStoredWh);
+  output->print(froniusStatus.marstekStoredWh);
+  output->print(" of ");
+  output->println(froniusStatus.batteryCapacityWh);
   output->print("Network: ");
   output->println(froniusStatus.networkPower);
   output->print("Load: ");
@@ -100,6 +102,8 @@ void updateFronius() {
     froniusStatus.bydStoredWh = froniusStatus.batteryStoredWh;
     froniusStatus.marstekStoredWh = 0;
   }
+  // Zero when the backend does not report it; the square then never reads full.
+  froniusStatus.batteryCapacityWh = (float)energyFlowObject["bc"];
   froniusStatus.networkPower = (float)energyFlowObject["gr"];
   froniusStatus.currentLoad = (float)energyFlowObject["co"];
 

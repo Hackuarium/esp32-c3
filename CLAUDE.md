@@ -55,13 +55,16 @@ BYD, mint for the Marstek, top-right), grid (white, bottom-left), consumption
 
 - `src/pixels/meteo/froniusDisplay.cpp` — the renderer. `paintSquare` lights the
   **16 perimeter LEDs** for the coarse unit and the **3×3 centre** for the
-  remainder; over a full ring the square lights completely (off-scale signal).
-  500 W and 50 W per LED for power, 1.25 kWh and 125 Wh for the battery.
-  The battery square stacks **two sources in two greens**: the BYD's share of
-  the level fills the ring first in pure green, the Marstek fleet's continues in
-  mint, so the boundary shows which pack holds the charge. `paintFlux` lights
-  every third of six LEDs and marches them; `getFluxSpeed` sets the rate from
-  the power.
+  remainder. 500 W and 50 W per LED for power, 1 kWh and 100 Wh for the battery.
+  A power square signals "off the scale" by overflowing its ring and lighting
+  completely; the battery instead gets an explicit `full` flag, because the
+  ~18.4 kWh fleet holds more than the 16.9 kWh its LEDs cover — it lights up
+  bright only within **1 % of the usable capacity** the backend reports (`bc`).
+  The battery square also stacks **two sources in two greens**: the BYD's share
+  of the level fills the ring first in pure green, the Marstek fleet's continues
+  in turquoise, so the boundary shows which pack holds the charge. `paintFlux`
+  lights every third of six LEDs and marches them; `getFluxSpeed` sets the rate
+  from the power.
 - `src/fronius.cpp` — fetches the data. The names are historical: it no longer
   talks to a Fronius inverter, it reads
   `https://solar.patiny.com/api/energy-flow/compact`, which already aggregates
