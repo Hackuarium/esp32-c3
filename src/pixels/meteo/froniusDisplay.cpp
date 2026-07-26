@@ -4,18 +4,32 @@
 #include "config.h"
 #include "fronius.h"
 
+struct SquareColors {
+  uint32_t high;        // one perimeter LED: a coarse unit
+  uint32_t low;         // one centre LED: a fine unit
+  uint32_t background;  // unlit
+};
+
+/*
+  A quantity square. `upper` splits it between two stacked sources: the first
+  `lowerLeds` perimeter LEDs keep the lower source's colour and the rest take the
+  upper one's, which is how the battery square tells the BYD apart from the
+  Marstek fleet. The centre sits at the top of the stack, so `upperHoldsCentre`
+  says which of the two owns the remainder. Pass nullptr for a single source.
+*/
 void paintSquare(Adafruit_NeoPixel& pixels,
                  uint8_t row,
                  uint8_t column,
-                 uint32_t highColor,
-                 uint32_t lowColor,
-                 uint32_t backgroundColor,
+                 const SquareColors& colors,
                  uint8_t highValue,
-                 uint8_t lowValue) {
+                 uint8_t lowValue,
+                 const SquareColors* upper = nullptr,
+                 uint8_t lowerLeds = 0,
+                 bool upperHoldsCentre = false) {
   if (highValue > 16) {  // we fill completely the square with bright color
     for (uint8_t i = 0; i < 5; ++i) {
       for (uint8_t j = 0; j < 5; ++j) {
-        pixels.setPixelColor(getLedIndex(row + i, column + j), highColor);
+        pixels.setPixelColor(getLedIndex(row + i, column + j), colors.high);
       }
     }
     return;
@@ -28,21 +42,24 @@ void paintSquare(Adafruit_NeoPixel& pixels,
 
   for (uint8_t i = 0; i < 5; ++i) {
     for (uint8_t j = 0; j < 5; ++j) {
-      pixels.setPixelColor(getLedIndex(row + i, column + j), backgroundColor);
+      pixels.setPixelColor(getLedIndex(row + i, column + j),
+                           colors.background);
     }
   }
 
   for (uint8_t i = 0; i < highValue; ++i) {
+    uint32_t ledColor =
+        (upper != nullptr && i >= lowerLeds) ? upper->high : colors.high;
     pixels.setPixelColor(
-        getLedIndex(row + rowLevels[i], column + columnLevels[i]), highColor);
-    pixels.setPixelColor(
-        getLedIndex(row + rowLevels[i], column + columnLevels[i]), highColor);
+        getLedIndex(row + rowLevels[i], column + columnLevels[i]), ledColor);
   }
 
   // details information in the centrum
+  uint32_t centreColor =
+      (upper != nullptr && upperHoldsCentre) ? upper->low : colors.low;
   for (uint8_t i = 0; i < min(lowValue, (uint8_t)9); ++i) {
     pixels.setPixelColor(
-        getLedIndex(row + 1 + floor(i / 3), column + 1 + i % 3), lowColor);
+        getLedIndex(row + 1 + floor(i / 3), column + 1 + i % 3), centreColor);
   }
 }
 
@@ -93,37 +110,53 @@ void froniusDisplay(Adafruit_NeoPixel& pixels, uint16_t counter) {
   pixels.clear();
   FroniusStatus status = getFroniusStatus();
 
+  const SquareColors solarColors = {Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
+                                    Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
+                                    Adafruit_NeoPixel::Color(0x10, 0x10, 0x00)};
+  // The two greens of the battery square: pure green for the Fronius BYD, mint
+  // for the Marstek fleet stacked on top of it.
+  const SquareColors bydColors = {Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
+                                  Adafruit_NeoPixel::Color(0x00, 0x50, 0x00),
+                                  Adafruit_NeoPixel::Color(0x00, 0x10, 0x00)};
+  const SquareColors marstekColors = {
+      Adafruit_NeoPixel::Color(0x00, 0xff, 0x80),
+      Adafruit_NeoPixel::Color(0x00, 0x50, 0x28),
+      Adafruit_NeoPixel::Color(0x00, 0x10, 0x08)};
+  const SquareColors networkColors = {
+      Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
+      Adafruit_NeoPixel::Color(0x50, 0x50, 0x50),
+      Adafruit_NeoPixel::Color(0x10, 0x10, 0x10)};
+  const SquareColors loadColors = {Adafruit_NeoPixel::Color(0xff, 0x00, 0x00),
+                                   Adafruit_NeoPixel::Color(0x50, 0x00, 0x00),
+                                   Adafruit_NeoPixel::Color(0x10, 0x00, 0x00)};
+
   // PV: 500 W per LED around, 50 W per LED inside
   uint8_t highValue = floor(status.powerFromPV / 500);
   uint8_t lowValue = floor((status.powerFromPV - highValue * 500) / 50);
-  paintSquare(pixels, 0, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0x00),
-              Adafruit_NeoPixel::Color(0x50, 0x50, 0x00),
-              Adafruit_NeoPixel::Color(0x10, 0x10, 0x00), highValue, lowValue);
+  paintSquare(pixels, 0, 0, solarColors, highValue, lowValue);
 
   // Battery: the USABLE energy stored across every pack (Fronius BYD plus the
   // Marstek units) — the backend already subtracts each pack's reserve floor, so
   // the square goes dark when the fleet is empty rather than keeping a slice
   // permanently lit. 1.25 kWh per LED around and 125 Wh per LED inside; a full
   // ring is 20 kWh against the 18.4 kWh the fleet holds, so it never saturates.
+  // The ring is filled BYD first and Marstek after it, each in its own green, so
+  // the boundary between the two shows which pack is holding the charge.
   highValue = floor(status.batteryStoredWh / 1250);
   lowValue = floor((status.batteryStoredWh - highValue * 1250) / 125);
-  paintSquare(pixels, 0, 11, Adafruit_NeoPixel::Color(0x00, 0xff, 0x00),
-              Adafruit_NeoPixel::Color(0x00, 0x50, 0x00),
-              Adafruit_NeoPixel::Color(0x00, 0x10, 0x00), highValue, lowValue);
+  uint8_t bydLeds = min((uint8_t)round(status.bydStoredWh / 1250), highValue);
+  paintSquare(pixels, 0, 11, bydColors, highValue, lowValue, &marstekColors,
+              bydLeds, status.marstekStoredWh >= 125);
 
   // Network: what we exchange with the grid, magnitude either way — which way it
   // goes is read off the flux entering or leaving the square.
   highValue = floor(status.networkPower / 500);
   lowValue = floor((status.networkPower - highValue * 500) / 50);
-  paintSquare(pixels, 11, 0, Adafruit_NeoPixel::Color(0xff, 0xff, 0xff),
-              Adafruit_NeoPixel::Color(0x50, 0x50, 0x50),
-              Adafruit_NeoPixel::Color(0x10, 0x10, 0x10), highValue, lowValue);
+  paintSquare(pixels, 11, 0, networkColors, highValue, lowValue);
   // Consumption
   highValue = floor(status.currentLoad / 500);
   lowValue = floor((status.currentLoad - highValue * 500) / 50);
-  paintSquare(pixels, 11, 11, Adafruit_NeoPixel::Color(0xff, 0x00, 0x00),
-              Adafruit_NeoPixel::Color(0x50, 0x00, 0x00),
-              Adafruit_NeoPixel::Color(0x10, 0x00, 0x00), highValue, lowValue);
+  paintSquare(pixels, 11, 11, loadColors, highValue, lowValue);
 
   // Flux Network to Consumption
   paintFlux(pixels, 13, 5, 13, 11, Adafruit_NeoPixel::Color(0x00, 0x00, 0xff),

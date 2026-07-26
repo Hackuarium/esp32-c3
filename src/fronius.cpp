@@ -26,7 +26,7 @@
 #define ENERGY_FLOW_URL "http://solar.patiny.com/api/energy-flow/compact"
 #endif
 
-// 12 numeric members; 512 bytes is ample and leaves the parse allocation-free.
+// 14 numeric members; 512 bytes is ample and leaves the parse allocation-free.
 StaticJsonDocument<512> energyFlowObject;
 
 FroniusStatus froniusStatus;
@@ -41,7 +41,11 @@ void printFroniusStatus(Print* output) {
   output->print("PV: ");
   output->println(froniusStatus.powerFromPV);
   output->print("Battery (Wh): ");
-  output->println(froniusStatus.batteryStoredWh);
+  output->print(froniusStatus.batteryStoredWh);
+  output->print(" = BYD ");
+  output->print(froniusStatus.bydStoredWh);
+  output->print(" + Marstek ");
+  output->println(froniusStatus.marstekStoredWh);
   output->print("Network: ");
   output->println(froniusStatus.networkPower);
   output->print("Load: ");
@@ -87,6 +91,15 @@ void updateFronius() {
 
   froniusStatus.powerFromPV = (float)energyFlowObject["pv"];
   froniusStatus.batteryStoredWh = (float)energyFlowObject["ba"];
+  // An older backend only reports the fleet total; book it all on the BYD so the
+  // square keeps its single green instead of turning entirely Marstek mint.
+  if (energyFlowObject.containsKey("bd")) {
+    froniusStatus.bydStoredWh = (float)energyFlowObject["bd"];
+    froniusStatus.marstekStoredWh = (float)energyFlowObject["mk"];
+  } else {
+    froniusStatus.bydStoredWh = froniusStatus.batteryStoredWh;
+    froniusStatus.marstekStoredWh = 0;
+  }
   froniusStatus.networkPower = (float)energyFlowObject["gr"];
   froniusStatus.currentLoad = (float)energyFlowObject["co"];
 
