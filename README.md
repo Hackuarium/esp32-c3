@@ -94,8 +94,27 @@ https://github.com/me-no-dev/ESPAsyncWebServer#using-platformio
 
 The square: 192.168.1.200
 
-pio run -t upload --upload-port 192.168.1.200
-pio run -t uploadfs --upload-port 192.168.1.200
+It is the `square` env and it is the default (`default_envs`), and its
+`upload_port` is set to that address in `platformio.ini`, so a plain
+
+    pio run -t upload
+
+flashes the wall over the air. The explicit form still works, and is what you
+need for any other device:
+
+    pio run -t upload --upload-port 192.168.1.200
+    pio run -t uploadfs --upload-port 192.168.1.200
+
+To flash it over USB instead, override the port:
+
+    pio run -t upload --upload-port /dev/cu.usbmodem…
+
+The square runs the energy wall: it polls
+`https://solar.patiny.com/api/energy-flow/compact` every 2.5 s over HTTPS and
+needs no access to the inverter's LAN. Point it elsewhere with
+`-D ENERGY_FLOW_URL=…`, and change the cadence with
+`-D ENERGY_FLOW_INTERVAL_MS=…`. On the serial console it logs a line only when
+it has to open a connection — silence means the TLS connection is being reused.
 
 ## Test webserver
 
