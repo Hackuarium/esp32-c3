@@ -62,15 +62,17 @@ void getParameter(const char* key, char* value) {
 }
 
 /**
- * Parse a hex string into tempBlob
- * String can starts with 0x and containg spaces
+ * Parse a hex string into blob, zero padded up to blobLength
  */
-void parseHex(const char* hex, uint8_t* tempBlob) {
-  memset(tempBlob, 0, sizeof(tempBlob));
-  size_t len = strlen(hex);
-  for (size_t i = 0; i < len; i += 2) {
-    String byteString = String(hex[i]) + String(hex[i + 1]);
-    tempBlob[i / 2] = (uint8_t)strtol(byteString.c_str(), NULL, 16);
+void parseHex(const char* hex, uint8_t* blob, size_t blobLength) {
+  memset(blob, 0, blobLength);
+  size_t len = strlen(hex) / 2;
+  if (len > blobLength) {
+    len = blobLength;
+  }
+  for (size_t i = 0; i < len; i++) {
+    String byteString = String(hex[i * 2]) + String(hex[i * 2 + 1]);
+    blob[i] = (uint8_t)strtol(byteString.c_str(), NULL, 16);
   }
 }
 
@@ -91,7 +93,7 @@ int32_t getNVSParameterInt32(const char* key) {
 }
 
 void setBlobParameterFromHex(const char* key, const char* hexString) {
-  parseHex(hexString, tempBlob);
+  parseHex(hexString, tempBlob, sizeof(tempBlob));
   NVS.setBlob(key, tempBlob, strlen(hexString) / 2);
 }
 

@@ -60,6 +60,7 @@ void resetParameters() {
 
   setAndSaveParameter(PARAM_LORA_SLEEP_SECONDS, 600);
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
+  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 9);
   uint32_t devAddr = 0x260B400B;
 
   setNVSParameterInt32("lora.devAddr", devAddr);

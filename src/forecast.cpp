@@ -40,15 +40,22 @@ void updateForecast() {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(errorJSONForecast.c_str());
     } else {
+      float airTemperature = (float)forecastObject["current"]["temperature"];
+      float airFeltTemperature =
+          forecastObject["current"]["feltTemperature"] | airTemperature;
       if (forecastObject["outside"].containsKey("temperature")) {
         forecast.current.temperature =
             (int16_t)forecastObject["outside"]["temperature"];
       } else {
-        forecast.current.temperature =
-            (int16_t)forecastObject["current"]["temperature"];
+        forecast.current.temperature = (int16_t)airTemperature;
       }
+      /* The felt temperature is only meaningful relative to the air
+         temperature it was computed from, so carry over the delta instead of
+         the absolute value: the displayed base may come from the local sensor,
+         which reads several degrees apart from the forecast. */
       forecast.current.feltTemperature =
-          (int16_t)forecastObject["current"]["feltTemperature"];
+          forecast.current.temperature +
+          (int16_t)round(airFeltTemperature - airTemperature);
       forecast.current.precipitation =
           (float)forecastObject["current"]["precipitation"];
       forecast.current.windSpeed =
