@@ -377,7 +377,12 @@ void printLoRaHelp(Print* output) {
   output->println(F("(as) set 1.1 SNwkSIntKey"));
   output->println(F("(ae) session information"));
   output->println(F("(ar) reset session and start ABP"));
+  output->println(F("settings, read with (ai), written as e.g. T9"));
+  output->println(F("(R) seconds of sleep after an uplink, 0 = stay awake"));
+  output->println(F("(S) extra seconds to wait after an uplink"));
   output->println(F("(T) spreading factor 7-12, other value = ADR"));
+  output->println(F("    R + S under 10 is raised to 10, and the duty cycle"));
+  output->println(F("    still delays the uplink further when needed"));
 }
 
 void updateLoRaParameters() {
