@@ -109,7 +109,7 @@ the next one. 104–113 is the one range free in every config here, which is why
 `MAX_PARAM` after including the header fails to compile rather than writing past
 `parameters[]`.
 
-`DI` and `DJ` are spare on purpose. Parameters are persisted in NVS **under
+`DJ` is spare on purpose. Parameters are persisted in NVS **under
 their letter** (`NVS.setInt(numberToLabel(i), …)`), so renumbering one silently
 hands a deployed node the value of something else — the block has to grow into
 its spares, never shift. For the same reason raising `MAX_PARAM` is safe: it
@@ -192,6 +192,14 @@ and longitude are int32, each spread over two adjacent int16 slots via
 sensor joins the same way — write parameters, set the window. Adjacency is load
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
+
+The one frame a node sends on its own without being asked to carry anything is
+the HELLO, every `DI` seconds (0 = never, **10800 — three hours — by default**),
+plus one as soon as the task starts so a node that has just booted does not stay
+out of its neighbours' peer tables for a whole period. It proves a direct link
+and nothing else, which is why it is never relayed and why its cadence is
+measured in hours: a peer table costs airtime to maintain, and airtime is the
+budget everything else competes for.
 
 ### The three roles, and the bridge (`DA`, `src/lora/loraBridge.h`)
 

@@ -89,6 +89,8 @@ static void printLoraMeshHelp(Print* output) {
                      F("carrier in 0.1 MHz, 8684 = 868.4 MHz"));
   printParameterHelp(output, PARAM_LORA_BANDWIDTH,
                      F("bandwidth kHz: 250, 125 or 62 (= 62.5)"));
+  printParameterHelp(output, PARAM_LORA_HELLO_SECONDS,
+                     F("seconds between HELLOs, 0 = never, 10800 = 3 h"));
   printParameterHelp(output, PARAM_LORA_INTERVAL_SECONDS,
                      F("seconds between parameter broadcasts, 0 = never"));
   printParameterHelp(output, PARAM_LORA_BROADCAST_FIRST_PARAMETER,

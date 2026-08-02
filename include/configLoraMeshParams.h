@@ -16,7 +16,7 @@
    Include it after, and a board whose MAX_PARAM is too small to hold the block
    fails to compile rather than writing past parameters[].
 
-   Two slots are left spare so the mesh can grow without moving what is already
+   A slot is left spare so the mesh can grow without moving what is already
    stored in NVS: a parameter is persisted under its letter, so renumbering one
    silently hands a node the value of something else. */
 
@@ -51,8 +51,13 @@
    PARAM_LORA_BROADCAST_NB_PARAMETERS slots. */
 #define PARAM_LORA_BROADCAST_FIRST_PARAMETER 110  // DG
 #define PARAM_LORA_BROADCAST_NB_PARAMETERS 111    // DH
+/* seconds between two automatic HELLOs, 0 = never. A HELLO only proves a direct
+   link, so it is worth little airtime: three hours keeps the peer table alive
+   without competing with whatever the node actually has to say */
+#define PARAM_LORA_HELLO_SECONDS 112  // DI
+#define LORA_HELLO_SECONDS_DEFAULT 10800
 
-/* 112 and 113 (DI, DJ) are reserved for the mesh */
+/* 113 (DJ) is reserved for the mesh */
 #define LORA_MESH_MAX_PARAM 114
 
 #define LORA_ROLE_ENDPOINT 0

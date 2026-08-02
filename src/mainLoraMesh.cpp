@@ -40,6 +40,7 @@ void resetParameters() {
   setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 7);
   setAndSaveParameter(PARAM_LORA_FREQUENCY, 8684);
   setAndSaveParameter(PARAM_LORA_BANDWIDTH, 125);
+  setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
 
 #ifdef GPS_RX
   /* a tracker is only a node whose broadcast window happens to be the six GPS

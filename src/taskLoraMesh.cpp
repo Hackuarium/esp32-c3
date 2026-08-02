@@ -45,10 +45,6 @@
 #define LORA_DUTY_CYCLE_WINDOW_MS 3600000ul
 #endif
 
-#ifndef LORA_HELLO_INTERVAL_MS
-#define LORA_HELLO_INTERVAL_MS (12ul * 60ul * 1000ul)
-#endif
-
 /* how many other nodes have to be heard relaying a frame before this node gives
    up its own copy - a cheap approximation of Trickle suppression, and what
    keeps a flood from costing N^2 transmissions */
@@ -225,6 +221,17 @@ static uint8_t defaultTtl() {
 
 static boolean isRepeater() {
   return getParameter(PARAM_LORA_ROLE) == LORA_ROLE_REPEATER;
+}
+
+/* seconds between two automatic HELLOs, 0 = never. A board that joined the mesh
+   without resetting its parameters has this slot unset, and silence is not what
+   an unset parameter should mean here, so anything negative is the default */
+static uint32_t helloIntervalMillis() {
+  int16_t value = getParameter(PARAM_LORA_HELLO_SECONDS);
+  if (value < 0) {
+    return LORA_HELLO_SECONDS_DEFAULT * 1000ul;
+  }
+  return (uint32_t)value * 1000ul;
 }
 
 /* Semtech's airtime formula for an explicit header at CR 4/5. Everything that
@@ -972,6 +979,9 @@ void TaskLoraMesh(void* pvParameters) {
   Serial.print(transmitCounter);
   Serial.println(groupKeyPresent ? F(", key set") : F(", NO KEY"));
 
+  /* the first HELLO goes out as soon as the task runs: hours are a long time
+     for a node that has just booted to stay out of its neighbours' peer tables */
+  boolean helloSent = false;
   uint32_t lastHello = 0;
   uint32_t lastBroadcast = 0;
 
@@ -993,7 +1003,10 @@ void TaskLoraMesh(void* pvParameters) {
     serviceRelayQueue();
     servicePending();
 
-    if (millis() - lastHello > LORA_HELLO_INTERVAL_MS) {
+    uint32_t helloInterval = helloIntervalMillis();
+    if (helloInterval > 0 &&
+        (!helloSent || millis() - lastHello > helloInterval)) {
+      helloSent = true;
       lastHello = millis();
       sendHello();
     }
