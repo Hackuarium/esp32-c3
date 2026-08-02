@@ -78,7 +78,7 @@ static void printLoraMeshHelp(Print* output) {
   output->println(F("(ac) copy this node's own parameters outwards"));
   output->println(F("    ac42:C6    copy C to H to node 42"));
   output->println(F("    ac:C6      copy C to H to every node"));
-  output->println(F("settings, read with (ai), written as e.g. T9"));
+  output->println(F("settings, read with (ai), written as e.g. DE9"));
   printParameterHelp(output, PARAM_LORA_ROLE,
                      F("0 = endpoint, 1 = repeater, 2 = bridge (JSON)"));
   printParameterHelp(output, PARAM_LORA_TTL,

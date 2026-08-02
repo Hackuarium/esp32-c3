@@ -14,16 +14,16 @@ static uint8_t headerSize(uint8_t ctrl) {
   return (ctrl & 0x08) ? 7 : 6;
 }
 
-/* every immutable bit - version, type, counter size - stays bound to the tag;
-   only the three ttl bits are masked out, which is unavoidable for any hop
-   limited protocol */
+/* The whole header is bound to the tag: everything a relay rewrites sits in the
+   trailer, so nothing has to be masked out here and the header as transmitted
+   is itself the additional data - no copy, no cleared bits. */
 static void buildNonce(uint8_t ctrl,
                        uint8_t source,
                        uint8_t destination,
                        uint32_t counter,
                        uint8_t* nonce) {
   memset(nonce, 0, LORA_NONCE_SIZE);
-  nonce[0] = ctrl & LORA_CTRL_IMMUTABLE;
+  nonce[0] = ctrl;
   nonce[1] = source;
   nonce[2] = destination;
   /* always the zero extended 32 bit value, so widening the transmitted counter
@@ -34,13 +34,11 @@ static void buildNonce(uint8_t ctrl,
   nonce[6] = (uint8_t)counter;
 }
 
-/* the header as transmitted, with the ttl bits cleared */
-static uint8_t buildAdditionalData(const uint8_t* header,
-                                   uint8_t size,
-                                   uint8_t* additionalData) {
-  memcpy(additionalData, header, size);
-  additionalData[0] &= LORA_CTRL_IMMUTABLE;
-  return size;
+/* the trailer size implied by a hop count: entries stop being recorded once the
+   table is full, but the hops keep counting */
+static uint8_t trailerSize(uint8_t hops) {
+  uint8_t stored = hops < LORA_ROUTE_MAX ? hops : LORA_ROUTE_MAX;
+  return (uint8_t)(1 + stored * LORA_ROUTE_ENTRY_SIZE);
 }
 
 uint8_t loraFrameEncode(const LoraFrame* frame,
@@ -49,15 +47,16 @@ uint8_t loraFrameEncode(const LoraFrame* frame,
                         uint8_t bufferSize) {
   uint8_t counterSize = frame->counter > LORA_COUNTER_24_BIT_MAX ? 4 : 3;
   uint8_t size = counterSize + 3;
+  /* only an origin encodes, so the trailer is always one byte: no hop has been
+     taken yet and there is nothing to record */
   if (frame->bodyLength > LORA_MAX_BODY_SIZE ||
-      (uint16_t)size + frame->bodyLength + LORA_MIC_SIZE > bufferSize) {
+      (uint16_t)size + frame->bodyLength + LORA_MIC_SIZE + 1 > bufferSize) {
     return 0;
   }
 
   uint8_t ctrl = (uint8_t)(((frame->version & 0x01) << 7) |
                            ((frame->type & 0x07) << 4) |
-                           ((counterSize == 4 ? 1 : 0) << 3) |
-                           (frame->ttl & LORA_TTL_MASK));
+                           ((counterSize == 4 ? 1 : 0) << 3));
   buffer[0] = ctrl;
   buffer[1] = frame->source;
   buffer[2] = frame->destination;
@@ -74,16 +73,13 @@ uint8_t loraFrameEncode(const LoraFrame* frame,
 
   uint8_t nonce[LORA_NONCE_SIZE];
   buildNonce(ctrl, frame->source, frame->destination, frame->counter, nonce);
-  uint8_t additionalData[LORA_HEADER_MAX_SIZE];
-  buildAdditionalData(buffer, size, additionalData);
-
   mbedtls_ccm_context context;
   mbedtls_ccm_init(&context);
   int state = mbedtls_ccm_setkey(&context, MBEDTLS_CIPHER_ID_AES, key,
                                  LORA_KEY_SIZE * 8);
   if (state == 0) {
     state = mbedtls_ccm_encrypt_and_tag(
-        &context, frame->bodyLength, nonce, LORA_NONCE_SIZE, additionalData,
+        &context, frame->bodyLength, nonce, LORA_NONCE_SIZE, buffer,
         size, frame->body, buffer + size, buffer + size + frame->bodyLength,
         LORA_MIC_SIZE);
   }
@@ -92,7 +88,9 @@ uint8_t loraFrameEncode(const LoraFrame* frame,
     return 0;
   }
 
-  return size + frame->bodyLength + LORA_MIC_SIZE;
+  uint8_t length = size + frame->bodyLength + LORA_MIC_SIZE;
+  buffer[length] = (uint8_t)((frame->budget & LORA_HOPS_MASK) << 4);
+  return length + 1;
 }
 
 boolean loraFrameDecode(const uint8_t* buffer,
@@ -102,19 +100,37 @@ boolean loraFrameDecode(const uint8_t* buffer,
   if (length < 1) {
     return false;
   }
-  uint8_t ctrl = buffer[0];
-  uint8_t size = headerSize(ctrl);
-  if (length < size + LORA_MIC_SIZE) {
+  /* the trailer is read from the end: its last byte says how many hops the
+     frame took, which is what gives the size of the rest of it */
+  uint8_t trailer = buffer[length - 1];
+  uint8_t budget = trailer >> 4;
+  uint8_t hops = trailer & LORA_HOPS_MASK;
+  uint8_t trailerBytes = trailerSize(hops);
+  if (length < trailerBytes) {
     return false;
   }
-  uint8_t bodyLength = length - size - LORA_MIC_SIZE;
+  uint8_t payloadLength = length - trailerBytes;
+
+  uint8_t ctrl = buffer[0];
+  uint8_t size = headerSize(ctrl);
+  if (payloadLength < size + LORA_MIC_SIZE) {
+    return false;
+  }
+  uint8_t bodyLength = payloadLength - size - LORA_MIC_SIZE;
   if (bodyLength > LORA_MAX_BODY_SIZE) {
     return false;
   }
 
   frame->version = (ctrl >> 7) & 0x01;
   frame->type = (ctrl >> 4) & 0x07;
-  frame->ttl = ctrl & LORA_TTL_MASK;
+  frame->budget = budget;
+  frame->hops = hops;
+  frame->routeLength = hops < LORA_ROUTE_MAX ? hops : LORA_ROUTE_MAX;
+  for (uint8_t i = 0; i < frame->routeLength; i++) {
+    const uint8_t* entry = buffer + payloadLength + i * LORA_ROUTE_ENTRY_SIZE;
+    frame->route[i].address = entry[0];
+    frame->route[i].rssi = (int8_t)entry[1];
+  }
   frame->source = buffer[1];
   frame->destination = buffer[2];
   frame->counter = loraFrameGetCounter(buffer);
@@ -122,16 +138,13 @@ boolean loraFrameDecode(const uint8_t* buffer,
 
   uint8_t nonce[LORA_NONCE_SIZE];
   buildNonce(ctrl, frame->source, frame->destination, frame->counter, nonce);
-  uint8_t additionalData[LORA_HEADER_MAX_SIZE];
-  buildAdditionalData(buffer, size, additionalData);
-
   mbedtls_ccm_context context;
   mbedtls_ccm_init(&context);
   int state = mbedtls_ccm_setkey(&context, MBEDTLS_CIPHER_ID_AES, key,
                                  LORA_KEY_SIZE * 8);
   if (state == 0) {
     state = mbedtls_ccm_auth_decrypt(&context, bodyLength, nonce,
-                                     LORA_NONCE_SIZE, additionalData, size,
+                                     LORA_NONCE_SIZE, buffer, size,
                                      buffer + size, frame->body,
                                      buffer + size + bodyLength, LORA_MIC_SIZE);
   }
@@ -140,13 +153,42 @@ boolean loraFrameDecode(const uint8_t* buffer,
   return state == 0;
 }
 
-void loraFrameSetTtl(uint8_t* buffer, uint8_t ttl) {
-  buffer[0] = (uint8_t)((buffer[0] & LORA_CTRL_IMMUTABLE) |
-                        (ttl & LORA_TTL_MASK));
+void loraFrameSetBudget(uint8_t* buffer, uint8_t length, uint8_t budget) {
+  buffer[length - 1] = (uint8_t)(((budget & LORA_HOPS_MASK) << 4) |
+                                 (buffer[length - 1] & LORA_HOPS_MASK));
 }
 
-uint8_t loraFrameGetTtl(const uint8_t* buffer) {
-  return buffer[0] & LORA_TTL_MASK;
+boolean loraFrameAppendRelay(uint8_t* buffer,
+                             uint8_t* length,
+                             uint8_t bufferSize,
+                             uint8_t address,
+                             int16_t rssi) {
+  uint8_t trailer = buffer[*length - 1];
+  uint8_t hops = trailer & LORA_HOPS_MASK;
+  if (hops >= LORA_HOPS_MAX) {
+    return true;
+  }
+
+  if (hops >= LORA_ROUTE_MAX) {
+    /* the table is full: keep counting the hop, stop recording it */
+    buffer[*length - 1] = (uint8_t)((trailer & 0xF0) | (hops + 1));
+    return true;
+  }
+  if ((uint16_t)*length + LORA_ROUTE_ENTRY_SIZE > bufferSize) {
+    return false;
+  }
+
+  /* the entry goes where the trailer byte sits, which then moves to the end */
+  if (rssi < -128) {
+    rssi = -128;
+  } else if (rssi > 127) {
+    rssi = 127;
+  }
+  buffer[*length - 1] = address;
+  buffer[*length] = (uint8_t)(int8_t)rssi;
+  buffer[*length + 1] = (uint8_t)((trailer & 0xF0) | (hops + 1));
+  *length = (uint8_t)(*length + LORA_ROUTE_ENTRY_SIZE);
+  return true;
 }
 
 uint8_t loraFrameGetSource(const uint8_t* buffer) {

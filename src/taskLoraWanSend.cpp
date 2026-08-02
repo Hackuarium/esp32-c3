@@ -134,7 +134,7 @@ void applyLoraRadioSettings(Print* output) {
   node.setDutyCycle(true, 0);
   node.setDwellTime(true, 0);
 
-  appliedSpreadingFactor = getParameter(PARAM_LORA_SPREADING_FACTOR);
+  appliedSpreadingFactor = getParameter(PARAM_LORAWAN_SPREADING_FACTOR);
   if (appliedSpreadingFactor < 7 || appliedSpreadingFactor > 12) {
     node.setADR(true);
     printSpreadingFactor(output);
@@ -300,7 +300,7 @@ void TaskLoraWanSend(void* pvParameters) {
 
     if (node.isActivated()) {
       /* pick up a spreading factor changed over serial without needing a reset */
-      if (getParameter(PARAM_LORA_SPREADING_FACTOR) != appliedSpreadingFactor) {
+      if (getParameter(PARAM_LORAWAN_SPREADING_FACTOR) != appliedSpreadingFactor) {
         applyLoraRadioSettings(&Serial);
       }
 
@@ -332,14 +332,14 @@ void TaskLoraWanSend(void* pvParameters) {
 }
 
 void waitOrSleep() {
-  if (getParameter(PARAM_LORA_SLEEP_SECONDS) > 0) {
+  if (getParameter(PARAM_LORAWAN_SLEEP_SECONDS) > 0) {
     // we should sleep if uptime is more than 300s. Too difficult to debug
     // otherwise
 
     if (millis() > 300 * 1000) {
-      gotoSleep(getParameter(PARAM_LORA_SLEEP_SECONDS));
+      gotoSleep(getParameter(PARAM_LORAWAN_SLEEP_SECONDS));
     } else {
-      vTaskDelay(getParameter(PARAM_LORA_SLEEP_SECONDS) * 1000);
+      vTaskDelay(getParameter(PARAM_LORAWAN_SLEEP_SECONDS) * 1000);
     }
   }
 
@@ -348,12 +348,12 @@ void waitOrSleep() {
 
   // we wait for the next uplink interval
   // this is to avoid sending too often and to respect the FUP
-  if (getParameter(PARAM_LORA_SLEEP_SECONDS) +
-          getParameter(PARAM_LORA_INTERVAL_SECONDS) <
+  if (getParameter(PARAM_LORAWAN_SLEEP_SECONDS) +
+          getParameter(PARAM_LORAWAN_INTERVAL_SECONDS) <
       10) {
     vTaskDelay(10 * 1000);
-  } else if (getParameter(PARAM_LORA_INTERVAL_SECONDS) > 0) {
-    vTaskDelay(getParameter(PARAM_LORA_INTERVAL_SECONDS) * 1000);
+  } else if (getParameter(PARAM_LORAWAN_INTERVAL_SECONDS) > 0) {
+    vTaskDelay(getParameter(PARAM_LORAWAN_INTERVAL_SECONDS) * 1000);
   }
 
   /* the configured interval can be shorter than the duty cycle allows, and it
@@ -378,11 +378,11 @@ void printLoraWanHelp(Print* output) {
   output->println(F("(ae) session information"));
   output->println(F("(ar) reset session and start ABP"));
   output->println(F("settings, read with (ai), written as e.g. T9"));
-  printParameterHelp(output, PARAM_LORA_SLEEP_SECONDS,
+  printParameterHelp(output, PARAM_LORAWAN_SLEEP_SECONDS,
                      F("seconds of sleep after an uplink, 0 = stay awake"));
-  printParameterHelp(output, PARAM_LORA_INTERVAL_SECONDS,
+  printParameterHelp(output, PARAM_LORAWAN_INTERVAL_SECONDS,
                      F("extra seconds to wait after an uplink"));
-  printParameterHelp(output, PARAM_LORA_SPREADING_FACTOR,
+  printParameterHelp(output, PARAM_LORAWAN_SPREADING_FACTOR,
                      F("spreading factor 7-12, other value = ADR"));
   output->println(F("    the two delays under 10s are raised to 10s, and the"));
   output->println(F("    duty cycle still delays the uplink further if needed"));
@@ -447,9 +447,9 @@ void processLoraCommand(char command,
       toHex(output, sNwkSIntKey, sizeof(sNwkSIntKey));
       output->println();
       output->print(F("Uplink interval: "));
-      output->println(getParameter(PARAM_LORA_INTERVAL_SECONDS));
+      output->println(getParameter(PARAM_LORAWAN_INTERVAL_SECONDS));
       output->print(F("Sleep seconds: "));
-      output->println(getParameter(PARAM_LORA_SLEEP_SECONDS));
+      output->println(getParameter(PARAM_LORAWAN_SLEEP_SECONDS));
       printSpreadingFactor(output);
       output->print(F("Next uplink allowed in: "));
       output->print(node.timeUntilUplink() / 1000);

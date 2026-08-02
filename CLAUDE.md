@@ -89,26 +89,64 @@ exactly one of them.
   written to NVS after every uplink because the frame counter must survive a
   reboot or the network rejects the next uplink as a replay.
 - **The private mesh** (`THR_LORA_MESH`, `[env:loraMesh]`, `[env:loraGPS]`) —
-  `src/lora/`, no network server, one AES-128 group key. Gated on the
-  `THR_LORA_MESH` flag rather than a board kind, so **any** board joins the mesh
-  by defining it in its `config<Kind>.h` and calling `taskLoraMesh()` from its
-  setup; it also needs `PARAM_LORA_ROLE`, `PARAM_LORA_TTL`,
-  `PARAM_LORA_SPREADING_FACTOR` and `PARAM_LORA_INTERVAL_SECONDS`.
+  `src/lora/`, no network server, one AES-128 group key.
+
+### Adding the mesh to any board
+
+Two lines. In the board's `config<Kind>.h`:
+
+    #include "./configLoraMeshParams.h"
+
+and `taskLoraMesh();` in its setup. That is all — the header brings
+`THR_LORA`, `THR_LORA_MESH`, the role constants and the parameters.
+
+**The mesh owns parameters 104–113 (`DA`…`DJ`) on every board.** The code refers
+to parameters only by name, so each config *could* pick its own slots — and that
+is exactly the trap: the block would then collide with `PARAM_OUT2_COLOR1` on
+the handrail, `PARAM_GATE1_IN` on the pixels board, and something else again on
+the next one. 104–113 is the one range free in every config here, which is why
+`MAX_PARAM` is 114 wherever the mesh is enabled. A board that sets a smaller
+`MAX_PARAM` after including the header fails to compile rather than writing past
+`parameters[]`.
+
+`DI` and `DJ` are spare on purpose. Parameters are persisted in NVS **under
+their letter** (`NVS.setInt(numberToLabel(i), …)`), so renumbering one silently
+hands a deployed node the value of something else — the block has to grow into
+its spares, never shift. For the same reason raising `MAX_PARAM` is safe: it
+only adds keys, and no existing value changes meaning.
 
 ### The mesh wire format (`src/lora/loraFrame.h`)
 
-    ctrl(1) src(1) dst(1) counter(3 or 4) | ciphertext | mic(4)
-    \___________ authenticated _________/   \_ encrypted _/
+    ctrl(1) src(1) dst(1) counter(3 or 4) | ciphertext | mic(4) | route(2h) | budget,hops(1)
+    \___________ authenticated _________/   \_ encrypted _/       \________ mutable _______/
 
-    ctrl, bit 7 to 0:  ver(1) type(3) cntsz(1) ttl(3)
+    ctrl, bit 7 to 0:     ver(1) type(3) cntsz(1) spare(3)
+    trailer, bit 7 to 0:  budget(4) hops(4)
 
-10 bytes of overhead. AES-128-CCM with a 4-byte tag does confidentiality and
-authenticity in one pass; there is no second key and no separate CMAC.
+11 bytes of overhead, plus 2 per recorded hop. AES-128-CCM with a 4-byte tag
+does confidentiality and authenticity in one pass; there is no second key and no
+separate CMAC.
 
-- **Only the three ttl bits are mutable.** They are masked out of both the nonce
-  and the additional data, which is what lets a relay decrement the countdown
-  without invalidating the tag — and why escalating a retry from ttl 0 to ttl 2
-  rewrites one byte instead of re-encrypting.
+- **Everything mutable lives in the trailer, past the tag**, so the header is
+  authenticated in full — nothing is masked out of the nonce, and the header as
+  transmitted *is* the additional data, passed to mbedtls without a copy. A
+  relay cannot instead sign its passage inside the ciphertext: it holds the
+  group key and could re-encrypt, but the nonce comes from the origin's `src`
+  and `counter`, which it must not change, and re-encrypting under a spent nonce
+  is the one misuse CCM does not survive.
+- **The trailer is read from the end**, which is what makes it self-describing:
+  the last byte gives the hop count, the number of stored route entries follows
+  from it (`min(hops, LORA_ROUTE_MAX)`), and everything before them is header,
+  ciphertext and tag. No length field, no flag bit.
+- **A route entry is `address(1) rssi(1)`** — the dBm at which *that* relay heard
+  the frame, so one reception carries the margin of every hop it crossed. The
+  last hop is deliberately absent: the receiver measures that one itself. Past
+  `LORA_ROUTE_MAX` (4) the hops keep counting and stop being recorded, so
+  `hops > 4` is how a truncated route announces itself.
+- **The route is unauthenticated by construction** — metadata of the same
+  standing as an RSSI reading, not evidence. Anyone replaying a captured frame
+  can claim `budget 15, hops 0`. `LORA_TTL_MAX_ACCEPT`, not the budget, is what
+  actually caps amplification.
 - **The counter does two jobs**: it is the CCM nonce and the anti-replay
   sequence, so it must never go backwards. `mesh.counter` in NVS therefore holds
   a **reservation**, not the live value — a promise that nothing above it was
@@ -122,10 +160,12 @@ authenticity in one pass; there is no second key and no separate CMAC.
   traffic is ever amplified. It then dedups on `(src, counter)`, waits a random
   0…3× airtime, and cancels its copy if it hears two other nodes relay the same
   frame. Skipping any of the three turns a flood into an N² storm.
-- `ttl == 0` means "do not relay" — that, not the broadcast address, is the
-  direct-vs-flood switch. A relay also refuses anything arriving with
-  `ttl > LORA_TTL_MAX_ACCEPT`, which caps amplification whatever the sender
-  claims.
+- **The budget counts up, not down**: a frame travels while `hops < budget`, and
+  a `budget` of 0 means "do not relay" — that, not the broadcast address, is the
+  direct-vs-flood switch. A relay also refuses anything whose *remaining* budget
+  exceeds `LORA_TTL_MAX_ACCEPT`, which caps amplification whatever the sender
+  claims. An ACK or a RESP is sent back with a budget of the `hops` the request
+  actually took, which is a measurement rather than the guess the countdown gave.
 - **A retry reuses the same counter.** Incrementing it would make the receiver
   execute the command twice, because it cannot tell a lost ACK from a second
   command.
@@ -141,17 +181,59 @@ fit and int16 otherwise — the opcode says which.
 ### Telemetry is the same block, sent periodically as DATA
 
 There is no per-sensor frame type. A node broadcasts the parameter window
-`AE`…`AE + AF` every `S` seconds (0 = never), encoded exactly like an `ac`
+`DG`…`DG + DH` every `DF` seconds (0 = never), encoded exactly like an `ac`
 copy — but as **DATA rather than CMD**, so a receiver *prints* the block instead
 of applying it. A broadcast SET would have every neighbour overwrite its own `G`
 with the tracker's latitude.
 
 That is all a GPS tracker is: `taskGPS` writes the fix into `G`…`L` (latitude
 and longitude are int32, each spread over two adjacent int16 slots via
-`setParameterInt32`), and `S60 AE6 AF6` puts those six on the air. Any future
+`setParameterInt32`), and `DF60 DG6 DH6` puts those six on the air. Any future
 sensor joins the same way — write parameters, set the window. Adjacency is load
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
+
+### The three roles, and the bridge (`DA`, `src/lora/loraBridge.h`)
+
+`DA` is `0 = endpoint`, `1 = repeater`, `2 = bridge`. A bridge is an endpoint
+whose **console is a data feed rather than a log**: it emits one JSON object per
+line on Serial, so a host reads the port line by line and stores what parses.
+
+Everything else is **quiet by default** — an endpoint has no reason to narrate
+its own traffic to a port nobody reads, so the automatic sends report to
+`loraMeshSilent()`, a `Print` that discards. The bridge still sees them, because
+the JSON is emitted by the send path itself rather than written to that stream.
+That split is the whole design: `output` is who asked, the JSON feed is what
+happened.
+
+| Event | Emitted when | Carries |
+|---|---|---|
+| `raw` | **any** packet is received, before the key is consulted | `length rssi snr frame` (whole packet as hex) |
+| `reject` | the tag did not verify | `length` — pairs with the `raw` line above it |
+| `tx` | any frame leaves | `type dst counter ack` |
+| `rx` | an authentic frame is heard, **including ones not addressed here** | `type src dst counter budget hops rssi snr fresh route body` |
+| `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix |
+| `data` | a DATA body with an unknown opcode | `src opcode length` |
+| `cmd` | a remote SET was applied here | `src status` |
+| `noack` | the escalation ladder gave up | `dst counter` |
+| `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr age` |
+
+Every packet therefore produces **two lines**: `raw` before anything is trusted,
+then `rx` (or `reject`). A bridge with no key, or the wrong one, still logs every
+`raw` line — a capture survives a node that cannot read what it heard. `rx`
+carries `route` as an array of `{address, rssi}` and `body` as the decrypted
+plaintext in hex, so a host can archive what it cannot yet interpret.
+
+Parameter labels are uppercase and the fixed keys lowercase, so a flat object
+never collides. A command answered over MQTT or the web page is **echoed on
+Serial** (`loraBridgeCopy`), so the host sees exchanges it did not start.
+
+A bridge does not relay — `isRepeater()` is still only role 1. Set `AI1` on the
+nodes that should extend range and `AI2` on the one plugged into the machine.
+
+Human lines and JSON lines can still interleave on a bridge: typing `ai` on its
+serial port prints the human block. A host should keep the lines that parse and
+drop the rest.
 
 ### Radio settings and the duty cycle
 

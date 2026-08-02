@@ -334,7 +334,7 @@ static uint32_t nextCounter() {
 
 static uint8_t buildFrame(uint8_t destination,
                           uint8_t type,
-                          uint8_t ttl,
+                          uint8_t budget,
                           uint32_t counter,
                           const uint8_t* body,
                           uint8_t bodyLength,
@@ -342,7 +342,9 @@ static uint8_t buildFrame(uint8_t destination,
   LoraFrame frame;
   frame.version = 0;
   frame.type = type;
-  frame.ttl = ttl;
+  frame.budget = budget;
+  frame.hops = 0;
+  frame.routeLength = 0;
   frame.source = nodeAddress;
   frame.destination = destination;
   frame.counter = counter;
@@ -359,8 +361,9 @@ static boolean expectsAcknowledge(uint8_t type) {
 
 /* The ladder: try direct twice, then ask for two relayed hops, then four. A
    retry always reuses the same counter, so the receiver can tell "the ACK was
-   lost" from "he sent it again" - and because the ttl bits sit outside the
-   authenticated data, escalating rewrites one byte instead of re-encrypting. */
+   lost" from "he sent it again" - and because the budget sits in the trailer,
+   outside the authenticated data, escalating rewrites one byte instead of
+   re-encrypting. */
 static uint8_t ladderTtl(uint8_t attempt) {
   if (attempt < 2) {
     return 0;
@@ -381,7 +384,7 @@ static void sendAcknowledge(uint8_t destination,
                             uint8_t type,
                             uint32_t requestCounter,
                             uint8_t status,
-                            uint8_t ttl) {
+                            uint8_t budget) {
   uint8_t body[4];
   body[0] = (uint8_t)(requestCounter >> 16);
   body[1] = (uint8_t)(requestCounter >> 8);
@@ -389,7 +392,7 @@ static void sendAcknowledge(uint8_t destination,
   body[3] = status;
   uint8_t buffer[LORA_MAX_FRAME_SIZE];
   uint8_t length =
-      buildFrame(destination, type, ttl, nextCounter(), body, 4, buffer);
+      buildFrame(destination, type, budget, nextCounter(), body, 4, buffer);
   if (length > 0) {
     transmitFrame(buffer, length);
   }
@@ -410,6 +413,25 @@ static void reportTransmission(uint8_t type,
   loraBridgeEnd(json);
 }
 
+/* The frame exactly as it came off the radio, before anything has been trusted:
+   a bridge logs this even with no key or a wrong one, so a capture survives a
+   node that cannot read what it heard. */
+static void reportRawReception(const uint8_t* buffer,
+                               uint8_t length,
+                               int16_t rssi,
+                               int8_t snr) {
+  Print* json = loraBridgeBegin("raw");
+  loraBridgeInt(json, "length", length);
+  loraBridgeInt(json, "rssi", rssi);
+  loraBridgeInt(json, "snr", snr);
+  if (json != NULL) {
+    json->print(F(",\"frame\":\""));
+    toHex(json, buffer, length);
+    json->print('"');
+  }
+  loraBridgeEnd(json);
+}
+
 static void reportReception(const LoraFrame* frame,
                             int16_t rssi,
                             int8_t snr,
@@ -419,10 +441,31 @@ static void reportReception(const LoraFrame* frame,
   loraBridgeInt(json, "src", frame->source);
   loraBridgeInt(json, "dst", frame->destination);
   loraBridgeInt(json, "counter", frame->counter);
-  loraBridgeInt(json, "ttl", frame->ttl);
+  loraBridgeInt(json, "budget", frame->budget);
+  loraBridgeInt(json, "hops", frame->hops);
   loraBridgeInt(json, "rssi", rssi);
   loraBridgeInt(json, "snr", snr);
   loraBridgeInt(json, "fresh", fresh ? 1 : 0);
+  if (json != NULL) {
+    /* the path the frame took, each relay with the margin it heard it at. The
+       last hop is this node, whose rssi is the reading above. */
+    json->print(F(",\"route\":["));
+    for (uint8_t i = 0; i < frame->routeLength; i++) {
+      if (i > 0) {
+        json->print(',');
+      }
+      json->print(F("{\"address\":"));
+      json->print(frame->route[i].address);
+      json->print(F(",\"rssi\":"));
+      json->print(frame->route[i].rssi);
+      json->print('}');
+    }
+    json->print(']');
+    /* the plaintext body, so the host can keep what it cannot yet interpret */
+    json->print(F(",\"body\":\""));
+    toHex(json, frame->body, frame->bodyLength);
+    json->print('"');
+  }
   loraBridgeEnd(json);
 }
 
@@ -456,11 +499,11 @@ boolean loraMeshSend(uint8_t destination,
   uint32_t counter = nextCounter();
   /* a beacon exists to prove a direct link: relaying it would prove nothing and
      cost the whole mesh an airtime slot */
-  uint8_t ttl = acknowledged || type == LORA_TYPE_HELLO ? ladderTtl(0)
-                                                        : defaultTtl();
+  uint8_t budget = acknowledged || type == LORA_TYPE_HELLO ? ladderTtl(0)
+                                                           : defaultTtl();
   uint8_t buffer[LORA_MAX_FRAME_SIZE];
   uint8_t length =
-      buildFrame(destination, type, ttl, counter, body, bodyLength, buffer);
+      buildFrame(destination, type, budget, counter, body, bodyLength, buffer);
   if (length == 0) {
     output->println(F("Body too long"));
     giveLoraMesh();
@@ -496,7 +539,8 @@ boolean loraMeshSend(uint8_t destination,
   LoraPeer* peer = loraPeerFind(destination);
   if (peer == NULL || millis() - peer->lastHeardMillis > 30ul * 60ul * 1000ul) {
     pending.attempt = 2;
-    loraFrameSetTtl(pending.frame, ladderTtl(pending.attempt));
+    loraFrameSetBudget(pending.frame, pending.frameLength,
+                      ladderTtl(pending.attempt));
   }
 
   transmitFrame(pending.frame, pending.frameLength);
@@ -517,7 +561,7 @@ static void queueRelay(const uint8_t* buffer,
                        uint8_t length,
                        uint8_t source,
                        uint32_t counter,
-                       uint8_t ttl) {
+                       int16_t rssi) {
   RelayEntry* entry = NULL;
   for (uint8_t i = 0; i < LORA_RELAY_QUEUE_SIZE; i++) {
     if (!relayQueue[i].active) {
@@ -531,7 +575,12 @@ static void queueRelay(const uint8_t* buffer,
 
   memcpy(entry->frame, buffer, length);
   entry->frameLength = length;
-  loraFrameSetTtl(entry->frame, ttl - 1);
+  /* the hop is counted and, while the table has room, signed with this node's
+     address and the margin it was heard at */
+  if (!loraFrameAppendRelay(entry->frame, &entry->frameLength,
+                            LORA_MAX_FRAME_SIZE, nodeAddress, rssi)) {
+    return;
+  }
   entry->source = source;
   entry->counter = counter;
   entry->overheard = 0;
@@ -598,7 +647,7 @@ static void sendParameterResponse(uint8_t destination,
                                   uint32_t requestCounter,
                                   uint8_t firstParameter,
                                   uint8_t count,
-                                  uint8_t ttl) {
+                                  uint8_t budget) {
   uint8_t body[LORA_MAX_BODY_SIZE];
   body[0] = (uint8_t)(requestCounter >> 16);
   body[1] = (uint8_t)(requestCounter >> 8);
@@ -608,13 +657,13 @@ static void sendParameterResponse(uint8_t destination,
       LORA_MAX_BODY_SIZE - LORA_RESP_COUNTER_SIZE);
   if (encoded == 0) {
     sendAcknowledge(destination, LORA_TYPE_NACK, requestCounter,
-                    LORA_REASON_OUT_OF_RANGE, ttl);
+                    LORA_REASON_OUT_OF_RANGE, budget);
     return;
   }
 
   uint8_t buffer[LORA_MAX_FRAME_SIZE];
   uint8_t length =
-      buildFrame(destination, LORA_TYPE_RESP, ttl, nextCounter(), body,
+      buildFrame(destination, LORA_TYPE_RESP, budget, nextCounter(), body,
                  LORA_RESP_COUNTER_SIZE + encoded, buffer);
   if (length > 0) {
     transmitFrame(buffer, length);
@@ -643,7 +692,7 @@ static void handleCommand(const LoraFrame* frame, boolean duplicate) {
   if (frame->bodyLength >= 3 && frame->body[0] == LORA_CMD_GET_PARAMETERS) {
     if (frame->destination != LORA_ADDRESS_BROADCAST) {
       sendParameterResponse(frame->source, frame->counter, frame->body[1],
-                            frame->body[2], frame->ttl);
+                            frame->body[2], frame->hops);
     }
     return;
   }
@@ -652,7 +701,7 @@ static void handleCommand(const LoraFrame* frame, boolean duplicate) {
     /* the request got through but our ACK did not: answer again, execute once */
     if (peer->hasAcknowledged && peer->acknowledgedCounter == frame->counter) {
       sendAcknowledge(frame->source, LORA_TYPE_ACK, frame->counter,
-                      peer->acknowledgedStatus, frame->ttl);
+                      peer->acknowledgedStatus, frame->hops);
     }
     return;
   }
@@ -676,7 +725,7 @@ static void handleCommand(const LoraFrame* frame, boolean duplicate) {
   if (frame->destination != LORA_ADDRESS_BROADCAST) {
     sendAcknowledge(frame->source,
                     status == LORA_STATUS_OK ? LORA_TYPE_ACK : LORA_TYPE_NACK,
-                    frame->counter, status, frame->ttl);
+                    frame->counter, status, frame->hops);
   }
 }
 
@@ -691,6 +740,11 @@ static void handleReceived() {
   if (state != RADIOLIB_ERR_NONE) {
     return;
   }
+
+  int16_t rawRssi = (int16_t)radio.getRSSI();
+  int8_t rawSnr = (int8_t)radio.getSNR();
+  reportRawReception(buffer, (uint8_t)length, rawRssi, rawSnr);
+
   if (!groupKeyPresent) {
     return;
   }
@@ -700,6 +754,11 @@ static void handleReceived() {
      group traffic is ever acted on, and - just as important - only authentic
      traffic is ever amplified by a relay */
   if (!loraFrameDecode(buffer, (uint8_t)length, groupKey, &frame)) {
+    /* the raw event above already carries the bytes; this says the tag did not
+       verify, so the host can tell a foreign transmitter from a decode it lost */
+    Print* json = loraBridgeBegin("reject");
+    loraBridgeInt(json, "length", length);
+    loraBridgeEnd(json);
     return;
   }
   if (frame.source == nodeAddress) {
@@ -712,8 +771,8 @@ static void handleReceived() {
 
   boolean fresh = loraPeerAcceptCounter(frame.source, frame.counter);
   LoraPeer* peer = loraPeerGet(frame.source);
-  peer->lastRssi = (int16_t)radio.getRSSI();
-  peer->lastSnr = (int8_t)radio.getSNR();
+  peer->lastRssi = rawRssi;
+  peer->lastSnr = rawSnr;
 
   boolean forMe = frame.destination == nodeAddress ||
                   frame.destination == LORA_ADDRESS_BROADCAST;
@@ -722,14 +781,18 @@ static void handleReceived() {
      of the role is to observe the mesh */
   reportReception(&frame, peer->lastRssi, peer->lastSnr, fresh);
 
-  if (fresh && isRepeater() && frame.ttl > 0 &&
+  /* the budget counts up now: a frame travels while it has hops left, and
+     "do not relay" is a budget of zero rather than an exhausted countdown */
+  uint8_t remaining =
+      frame.budget > frame.hops ? frame.budget - frame.hops : 0;
+  if (fresh && isRepeater() && remaining > 0 &&
       frame.destination != nodeAddress) {
-    if (frame.ttl > LORA_TTL_MAX_ACCEPT) {
-      Serial.print(F("Relay refused, ttl "));
-      Serial.println(frame.ttl);
+    if (remaining > LORA_TTL_MAX_ACCEPT) {
+      Serial.print(F("Relay refused, remaining hops "));
+      Serial.println(remaining);
     } else {
       queueRelay(buffer, (uint8_t)length, frame.source, frame.counter,
-                 frame.ttl);
+                 peer->lastRssi);
     }
   }
 
@@ -760,7 +823,7 @@ static void handleReceived() {
       if (frame.type == LORA_TYPE_DATA_ACK &&
           frame.destination != LORA_ADDRESS_BROADCAST) {
         sendAcknowledge(frame.source, LORA_TYPE_ACK, frame.counter,
-                        LORA_STATUS_OK, frame.ttl);
+                        LORA_STATUS_OK, frame.hops);
       }
       break;
     case LORA_TYPE_HELLO:
@@ -797,7 +860,8 @@ static void servicePending() {
     return;
   }
 
-  loraFrameSetTtl(pending.frame, ladderTtl(pending.attempt));
+  loraFrameSetBudget(pending.frame, pending.frameLength,
+                      ladderTtl(pending.attempt));
   transmitFrame(pending.frame, pending.frameLength);
   pending.dueMillis =
       millis() + ladderTimeout(pending.attempt, pending.frameLength);

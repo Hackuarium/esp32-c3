@@ -31,10 +31,10 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_RELATIVE_ALTITUDE 15  // P
 #define PARAM_ALTITUDE_GROUND 16    // Q
 
-#define PARAM_LORA_SLEEP_SECONDS 17     // R
-#define PARAM_LORA_INTERVAL_SECONDS 18  // S
+#define PARAM_LORAWAN_SLEEP_SECONDS 17     // R
+#define PARAM_LORAWAN_INTERVAL_SECONDS 18  // S
 // 7 to 12, anything else hands the choice to the network through ADR
-#define PARAM_LORA_SPREADING_FACTOR 19  // T
+#define PARAM_LORAWAN_SPREADING_FACTOR 19  // T
 
 #define PARAM_UPTIME_H 20   // U
 #define PARAM_STATUS 21     // V
