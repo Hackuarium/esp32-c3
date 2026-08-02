@@ -5,6 +5,14 @@
 
 void printFSHelp(Print* output) {
   output->println(F("(fd) Directory"));
+#ifdef PARAM_LOGGING_INTERVAL
+  output->println(F("settings of the log.txt logger, e.g. AB100"));
+  printParameterHelp(output, PARAM_LOGGING_INTERVAL,
+                     F("positive is seconds, negative is milliseconds"));
+  printParameterHelp(output, PARAM_LOGGING_NB_ENTRIES,
+                     F("entries still to write, negative empties the file"));
+  output->println(F("    every entry holds the first 16 parameters"));
+#endif
 }
 
 static void printFSDir(Print* output) {

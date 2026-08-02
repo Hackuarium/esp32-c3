@@ -19,6 +19,11 @@ void printWifiHelp(Print* output) {
   output->println(F("(wb) MQTT publish topic"));
   output->println(F("(wt) MQTT subscribe topic"));
   output->println(F("(wx) Scan for wifi network"));
+#ifdef PARAM_WIFI_MODE
+  output->println(F("settings, current value shown, written as e.g. CS2"));
+  printParameterHelp(output, PARAM_WIFI_MODE,
+                     F("<=0 station, 1 access point, 2 station then AP"));
+#endif
 }
 
 void dnsLookup(char* name, char* ip) {

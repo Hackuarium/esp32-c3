@@ -202,6 +202,38 @@ void printPixelsHelp(Print* output) {
   output->println(F("(pl) Reset parameters for line"));
   output->println(F("(pr) Reset parameters for square 8x8"));
   output->println(F("(ps) Reset parameters for square 16x16"));
+  output->println(F("settings, current value shown, written as e.g. BA64"));
+  printParameterHelp(output, PARAM_CURRENT_PROGRAM,
+                     F("0 function, 1 rain, 2 rgb, 3 comet, 4 wave,"));
+  output->println(F("    5 meteo, 6 snake, 7 life, 8 flame, 9 spiral,"));
+  output->println(F("    10 firework, 11 line, 12 gif, 13 cellular, 14 test"));
+  printParameterHelp(output, PARAM_BRIGHTNESS, F("overall brightness 0-255"));
+  printParameterHelp(output, PARAM_BACKGROUND_BRIGHTNESS,
+                     F("brightness of the unlit background 0-255"));
+  printParameterHelp(output, PARAM_INTENSITY,
+                     F("density of the effect, higher is denser"));
+  printParameterHelp(output, PARAM_SPEED, F("animation speed"));
+  printParameterHelp(output, PARAM_COLOR_MODEL, F("palette used for colors"));
+  printParameterHelp(output, PARAM_COLOR_CHANGE_SPEED,
+                     F("how fast the color cycles through the palette"));
+  printParameterHelp(output, PARAM_COLOR_TRANSITION_NB_STEPS,
+                     F("cycles to fade to a new color, 25 cycles per second"));
+  printParameterHelp(output, PARAM_DIRECTION,
+                     F("1-4 fixed, 5-7 random, 9-12 clockwise"));
+  printParameterHelp(output, PARAM_NB_ROWS, F("rows of the matrix"));
+  printParameterHelp(output, PARAM_NB_COLUMNS, F("columns of the matrix"));
+  printParameterHelp(output, PARAM_LAYOUT_MODEL,
+                     F("how the strip is wired into rows and columns"));
+  printParameterHelp(output, PARAM_COLOR_LED_MODEL,
+                     F("led color order, 6 NEO_RGB, 82 NEO_GRB"));
+#ifdef PARAM_SCHEDULE
+  printParameterHelp(output, PARAM_SCHEDULE,
+                     F("1 day, 2 night, 3 day and night"));
+  printParameterHelp(output, PARAM_SUNSET_OFFSET,
+                     F("minutes before or after sunset to turn on"));
+  printParameterHelp(output, PARAM_SUNRISE_OFFSET,
+                     F("minutes before or after sunrise to turn off"));
+#endif
 }
 
 void processPixelsCommand(char command,

@@ -43,19 +43,25 @@ void updateForecast() {
       float airTemperature = (float)forecastObject["current"]["temperature"];
       float airFeltTemperature =
           forecastObject["current"]["feltTemperature"] | airTemperature;
-      if (forecastObject["outside"].containsKey("temperature")) {
-        forecast.current.temperature =
-            (int16_t)forecastObject["outside"]["temperature"];
+      JsonObject outside = forecastObject["outside"];
+      if (outside.containsKey("temperature")) {
+        float outsideTemperature = (float)outside["temperature"];
+        forecast.current.temperature = (int16_t)round(outsideTemperature);
+        /* The proxy computes the felt temperature on the local sensor whenever
+           it has one. Without it, the felt temperature is only meaningful
+           relative to the air temperature it was computed from, so carry over
+           the delta instead of the absolute value: the displayed base then comes
+           from the local sensor, which reads several degrees apart from the
+           forecast. */
+        forecast.current.feltTemperature =
+            outside.containsKey("feltTemperature")
+                ? (int16_t)round((float)outside["feltTemperature"])
+                : (int16_t)round(outsideTemperature + airFeltTemperature -
+                                 airTemperature);
       } else {
-        forecast.current.temperature = (int16_t)airTemperature;
+        forecast.current.temperature = (int16_t)round(airTemperature);
+        forecast.current.feltTemperature = (int16_t)round(airFeltTemperature);
       }
-      /* The felt temperature is only meaningful relative to the air
-         temperature it was computed from, so carry over the delta instead of
-         the absolute value: the displayed base may come from the local sensor,
-         which reads several degrees apart from the forecast. */
-      forecast.current.feltTemperature =
-          forecast.current.temperature +
-          (int16_t)round(airFeltTemperature - airTemperature);
       forecast.current.precipitation =
           (float)forecastObject["current"]["precipitation"];
       forecast.current.windSpeed =
