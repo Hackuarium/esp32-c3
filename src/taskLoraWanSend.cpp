@@ -1,10 +1,10 @@
 #include "config.h"
-#if BOARD_TYPE == KIND_LORA
+#if BOARD_TYPE == KIND_LORAWAN
 #include <ArduinoNvs.h>
 #include <string.h>
 #include "esp_sleep.h"
 #include "params.h"
-#include "taskLoraConfig.h"
+#include "taskLoraWanConfig.h"
 #include "toHex.h"
 
 #define BAND 868E6
@@ -21,8 +21,8 @@ void updateLoRaParameters();
 uint8_t loraSession[RADIOLIB_LORAWAN_SESSION_BUF_SIZE];
 int16_t loraState = 0;
 
-/* the node, the key arrays and loraSession are shared between TaskLoraSend and
-   the serial task: reinitialising the node from a serial command while an
+/* the node, the key arrays and loraSession are shared between TaskLoraWanSend
+   and the serial task: reinitialising the node from a serial command while an
    uplink is in the air wedges the SX1262 driver. Every access to them goes
    through this mutex */
 static StaticSemaphore_t xMutexBufferLora;
@@ -276,7 +276,7 @@ void printLoraSession(Print* output) {
   }
 }
 
-void TaskLoraSend(void* pvParameters) {
+void TaskLoraWanSend(void* pvParameters) {
   vTaskDelay(5000);
   loraState = radio.begin();
   debug(loraState != RADIOLIB_ERR_NONE, F("Initialise radio failed"), loraState,
@@ -368,7 +368,7 @@ void waitOrSleep() {
   }
 }
 
-void printLoRaHelp(Print* output) {
+void printLoraWanHelp(Print* output) {
   output->println(F("(ai) info - print keys, version"));
   output->println(F("(ad) set DevAddr (hex 8 chars)"));
   output->println(F("(an) set 1.0/1.1  NwkSKey / NwkSEncKey"));
@@ -378,11 +378,14 @@ void printLoRaHelp(Print* output) {
   output->println(F("(ae) session information"));
   output->println(F("(ar) reset session and start ABP"));
   output->println(F("settings, read with (ai), written as e.g. T9"));
-  output->println(F("(R) seconds of sleep after an uplink, 0 = stay awake"));
-  output->println(F("(S) extra seconds to wait after an uplink"));
-  output->println(F("(T) spreading factor 7-12, other value = ADR"));
-  output->println(F("    R + S under 10 is raised to 10, and the duty cycle"));
-  output->println(F("    still delays the uplink further when needed"));
+  printParameterHelp(output, PARAM_LORA_SLEEP_SECONDS,
+                     F("seconds of sleep after an uplink, 0 = stay awake"));
+  printParameterHelp(output, PARAM_LORA_INTERVAL_SECONDS,
+                     F("extra seconds to wait after an uplink"));
+  printParameterHelp(output, PARAM_LORA_SPREADING_FACTOR,
+                     F("spreading factor 7-12, other value = ADR"));
+  output->println(F("    the two delays under 10s are raised to 10s, and the"));
+  output->println(F("    duty cycle still delays the uplink further if needed"));
 }
 
 void updateLoRaParameters() {
@@ -409,7 +412,7 @@ void processLoraCommand(char command,
                         Print* output) {  // char and char* ??
   if (command != 'i' && command != 'n' && command != 'a' && command != 'e' &&
       command != 'f' && command != 's' && command != 'd' && command != 'r') {
-    printLoRaHelp(output);
+    printLoraWanHelp(output);
     return;
   }
 
@@ -514,9 +517,9 @@ void processLoraCommand(char command,
   xSemaphoreGive(xSemaphoreLora);
 }
 
-void taskLoraSend() {
+void taskLoraWanSend() {
   xSemaphoreLora = xSemaphoreCreateMutexStatic(&xMutexBufferLora);
-  xTaskCreatePinnedToCore(TaskLoraSend, "TaskLoraSend",
+  xTaskCreatePinnedToCore(TaskLoraWanSend, "TaskLoraWanSend",
                           16000,  // This stack size can be checked & adjusted
                                   // by reading the Stack Highwater
                           NULL,

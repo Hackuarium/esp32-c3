@@ -115,13 +115,21 @@ int16_t getParameter(byte number) {
 }
 
 int32_t getParameterInt32(byte numberLow, byte numberHigh) {
-  return (int32_t)parameters[numberLow] & 0xFFFF |
+  return ((int32_t)parameters[numberLow] & 0xFFFF) |
          ((int32_t)(parameters[numberHigh] & 0xFFFF) << 16);
 }
 
 void setParameterInt32(byte numberLow, byte numberHigh, int32_t value) {
   parameters[numberLow] = value & 0xFFFF;
   parameters[numberHigh] = (value >> 16) & 0xFFFF;
+}
+
+int32_t getParameterInt32(byte number) {
+  return getParameterInt32(number, number + 1);
+}
+
+void setParameterInt32(byte number, int32_t value) {
+  setParameterInt32(number, number + 1, value);
 }
 
 void setParameter(byte number, int16_t value) {
@@ -189,6 +197,21 @@ String numberToLabel(byte number) {
   }
   result += (char)(number - floor(number / 26) * 26 + 65);
   return result;
+}
+
+void printParameterHelp(Print* output,
+                        byte number,
+                        const __FlashStringHelper* description) {
+  output->print('(');
+  output->print(numberToLabel(number));
+  output->print(F(") "));
+  if (getParameter(number) == ERROR_VALUE) {
+    output->print(F("unset"));
+  } else {
+    output->print(getParameter(number));
+  }
+  output->print(F(" - "));
+  output->println(description);
 }
 
 void printParameter(Print* output, byte number) {

@@ -2,8 +2,9 @@
 #define KIND_PIXELS 2
 #define KIND_9_OUTPUTS 3
 #define KIND_HANDRAIL 4
-#define KIND_LORA 5
-#define KIND_LORA_GPS 6
+#define KIND_LORAWAN 5
+// 6 was KIND_LORA_GPS, now a GPS fix broadcast on the mesh (KIND_LORA_MESH)
+#define KIND_LORA_MESH 7
 #define KIND_EXAMPLE 99
 
 #if BOARD_TYPE == KIND_ROCKET
@@ -16,10 +17,10 @@
 #include "./config9Outputs.h"
 #elif BOARD_TYPE == KIND_HANDRAIL
 #include "./configHandrail.h"
-#elif BOARD_TYPE == KIND_LORA
-#include "./configLora.h"
-#elif BOARD_TYPE == KIND_LORA_GPS
-#include "./configLoraGPS.h"
+#elif BOARD_TYPE == KIND_LORAWAN
+#include "./configLoraWan.h"
+#elif BOARD_TYPE == KIND_LORA_MESH
+#include "./configLoraMesh.h"
 #else
 #error "Unknown board type"
 #endif

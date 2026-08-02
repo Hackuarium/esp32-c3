@@ -61,7 +61,9 @@ void printUtilitiesHelp(Print* output) {
 }
 
 void printHelp(Print* output) {
-#ifdef THR_LORA_SEND
+#ifdef THR_LORA_MESH
+  output->println(F("lor(a) mesh"));
+#elif defined(THR_LORA)
   output->println(F("lor(a)WAN"));
 #endif
   output->println(F("(f)s"));

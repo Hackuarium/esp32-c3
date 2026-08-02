@@ -1,5 +1,5 @@
 #include "config.h"
-#if BOARD_TYPE == KIND_LORA
+#if BOARD_TYPE == KIND_LORAWAN
 #include "params.h"
 
 void gotoSleep(int seconds);
@@ -14,7 +14,7 @@ void taskTest();
 void taskWifi();
 void taskWifiAP();
 void taskOTA();
-void taskLoraSend();
+void taskLoraWanSend();
 void taskMQTT();
 void taskDHT22();
 void taskBMP280();
@@ -28,13 +28,13 @@ void taskInput();
 void taskRestart();
 void taskTimer();
 
-void setupLora() {
+void setupLoraWan() {
   setupParameters();
   taskSerial();
   /// taskWebserver();
   // taskNTPD();
 
-  taskLoraSend();
+  taskLoraWanSend();
   // taskOTA();
 
   taskAnalogInput();
@@ -49,7 +49,7 @@ void setupLora() {
   taskBlink();
 }
 
-void loopLora() {
+void loopLoraWan() {
   vTaskDelay(100000);
 }
 

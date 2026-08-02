@@ -12,10 +12,8 @@ TinyGPSCustom fixQuality(gps, "GNGGA", 6);
 
 static void publishFix() {
   if (gps.location.isValid()) {
-    setParameterInt32(PARAM_GPS_LATITUDE_LOW, PARAM_GPS_LATITUDE_HIGH,
-                      (int32_t)(gps.location.lat() * 1e6));
-    setParameterInt32(PARAM_GPS_LONGITUDE_LOW, PARAM_GPS_LONGITUDE_HIGH,
-                      (int32_t)(gps.location.lng() * 1e6));
+    setParameterInt32(PARAM_GPS_LATITUDE, (int32_t)(gps.location.lat() * 1e6));
+    setParameterInt32(PARAM_GPS_LONGITUDE, (int32_t)(gps.location.lng() * 1e6));
   }
   if (gps.altitude.isValid()) {
     setParameter(PARAM_GPS_ALTITUDE, (int16_t)gps.altitude.meters());

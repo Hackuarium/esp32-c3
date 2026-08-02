@@ -1,14 +1,15 @@
 #include <Arduino.h>
 
-#define THR_LORA_SEND 1
-#define THR_GPS 1
+#define WIRE_SDA SDA
+#define WIRE_SCL SCL
+#define THR_WIRE_MASTER 1
+
+#define BMP280 0x77
+
+#define THR_ONEWIRE 3
+#define THR_LORA 1
 
 extern SemaphoreHandle_t xSemaphoreWire;
-
-// GPS is connected to the serial port on pin D7 (UART RX).
-// FlyfishRC M10 Mini default / recommended baud rate is 115200.
-#define GPS_RX D7
-#define GPS_BAUD 115200
 
 #define ANALOG_SLEEP 1000
 #define ANALOG_INPUTS \
@@ -27,19 +28,13 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_SOLAR_MILLI_VOLTS 4    // E
 #define PARAM_SOLAR_MILLI_AMPERES 5  // F
 
-// GPS fix, latitude/longitude stored as degrees * 1e6 across two int16 slots
-#define PARAM_GPS_LATITUDE_LOW 6    // G
-#define PARAM_GPS_LATITUDE_HIGH 7   // H
-#define PARAM_GPS_LONGITUDE_LOW 8   // I
-#define PARAM_GPS_LONGITUDE_HIGH 9  // J
-#define PARAM_GPS_ALTITUDE 10       // K - meters
-#define PARAM_GPS_SATELLITES 11     // L
-
 #define PARAM_RELATIVE_ALTITUDE 15  // P
 #define PARAM_ALTITUDE_GROUND 16    // Q
 
 #define PARAM_LORA_SLEEP_SECONDS 17     // R
 #define PARAM_LORA_INTERVAL_SECONDS 18  // S
+// 7 to 12, anything else hands the choice to the network through ADR
+#define PARAM_LORA_SPREADING_FACTOR 19  // T
 
 #define PARAM_UPTIME_H 20   // U
 #define PARAM_STATUS 21     // V

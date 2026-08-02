@@ -18,6 +18,12 @@ int32_t getNVSParameterInt32(const char* key);
 void setParameterInt32(byte numberLow, byte numberHigh, int32_t value);
 int32_t getParameterInt32(byte numberLow, byte numberHigh);
 
+/* An int32 kept in two adjacent parameters, low half first. Adjacency is what
+   lets a block of parameters carry it: (ac) and the periodic broadcast send a
+   run of consecutive slots, so the two halves travel in the same frame. */
+void setParameterInt32(byte number, int32_t value);
+int32_t getParameterInt32(byte number);
+
 void setupParameters();
 
 void toggleParameterBit(byte number, byte bitToToggle);
@@ -35,6 +41,15 @@ void setAndSaveParameter(byte number, int16_t value);
 boolean saveAndLogError(boolean isError, byte errorFlag);
 
 void printParameter(Print* output, byte number);
+
+String numberToLabel(byte number);
+
+/* prints one settings line of a help screen, e.g. "(T) spreading factor". The
+   letter is derived from the parameter number because the same parameter does
+   not have the same number, hence not the same letter, on every board */
+void printParameterHelp(Print* output,
+                        byte number,
+                        const __FlashStringHelper* description);
 
 void printParameters(Print* output);
 

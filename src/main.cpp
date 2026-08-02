@@ -12,10 +12,10 @@ void setup9Outputs();
 void loop9Outputs();
 void setupHandrail();
 void loopHandrail();
-void setupLora();
-void loopLora();
-void setupLoraGPS();
-void loopLoraGPS();
+void setupLoraWan();
+void loopLoraWan();
+void setupLoraMesh();
+void loopLoraMesh();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -29,10 +29,10 @@ void setup() {
   setup9Outputs();
 #elif BOARD_TYPE == KIND_HANDRAIL
   setupHandrail();
-#elif BOARD_TYPE == KIND_LORA
-  setupLora();
-#elif BOARD_TYPE == KIND_LORA_GPS
-  setupLoraGPS();
+#elif BOARD_TYPE == KIND_LORAWAN
+  setupLoraWan();
+#elif BOARD_TYPE == KIND_LORA_MESH
+  setupLoraMesh();
 #else
   setupExample();
 #endif
@@ -49,10 +49,10 @@ void loop() {
   loop9Outputs();
 #elif BOARD_TYPE == KIND_HANDRAIL
   loopHandrail();
-#elif BOARD_TYPE == KIND_LORA
-  loopLora();
-#elif BOARD_TYPE == KIND_LORA_GPS
-  loopLoraGPS();
+#elif BOARD_TYPE == KIND_LORAWAN
+  loopLoraWan();
+#elif BOARD_TYPE == KIND_LORA_MESH
+  loopLoraMesh();
 #else
   loopExample();
 #endif
