@@ -267,10 +267,16 @@ retry ladder unusable. `LORA_DUTY_CYCLE_WINDOW_MS` shortens the window if you
 want the node more conservative. RadioLib does not enforce any of this outside
 LoRaWAN.
 
-**Power is still `LORA_TX_POWER 22` (158 mW), over the 25 mW ERP the band
-allows.** It was inherited from the old beacon code and is deliberately left
-alone — lowering it to 14 dBm costs real range, so it is a decision, not an
-oversight. Fix it before anything ships.
+**Transmit power follows the carrier too**, for the same reason. `maxTxPowerDbm()`
+returns **14 dBm** (25 mW ERP) across the band, and 22 dBm only in sub-band P,
+which allows 500 mW — more than the SX1262 can produce, so there the radio's own
+ceiling is what binds. It is applied at `begin()` and re-applied whenever the
+frequency changes, since moving the carrier can move the limit.
+
+It is deliberately **not** a parameter: there is no legitimate reason to raise
+it, and a parameter is one typo away from transmitting illegally. The old value
+was a flat 22 dBm inherited from the beacon code, roughly six times over the
+limit at 868 MHz.
 
 ## HTTP (`src/http.cpp`)
 

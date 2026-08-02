@@ -29,7 +29,12 @@
 #endif
 #define LORA_CODING_RATE 5
 #define LORA_PREAMBLE_SYMBOLS 8
-#define LORA_TX_POWER 22
+/* 25 mW ERP, which is 14 dBm, is the limit across the SRD band. Sub-band P
+   (869.4-869.65) allows 500 mW - more than the SX1262 can produce - so there
+   the radio's own 22 dBm ceiling is what binds. The old 22 was inherited from
+   the beacon code and was roughly six times over the limit at 868 MHz. */
+#define LORA_TX_POWER_ERP_LIMITED 14
+#define LORA_TX_POWER_HIGH_POWER_BAND 22
 
 /* EN 300 220 expresses the duty cycle as transmit time within an observation
    window, not as a gap between frames, so the governor is a budget rather than
@@ -199,6 +204,17 @@ static uint32_t dutyCycleAllowanceMillis() {
   return LORA_DUTY_CYCLE_WINDOW_MS / dutyCycleDivisor();
 }
 
+/* The power ceiling follows the carrier for the same reason the duty cycle
+   does. It is deliberately not a parameter: there is no legitimate reason to
+   set it higher, and a parameter is one typo away from transmitting illegally. */
+static int8_t maxTxPowerDbm() {
+  int16_t carrier = frequencyTenths();
+  if (carrier >= 8694 && carrier <= 8696) {
+    return LORA_TX_POWER_HIGH_POWER_BAND;
+  }
+  return LORA_TX_POWER_ERP_LIMITED;
+}
+
 static uint8_t defaultTtl() {
   int16_t value = getParameter(PARAM_LORA_TTL);
   if (value < 0 || value > LORA_TTL_MAX) {
@@ -265,7 +281,10 @@ static void printRadioSettings(Print* output) {
   output->print(F(" kHz, SF"));
   output->print(spreadingFactor());
   output->print(F(", duty cycle 1/"));
-  output->println(dutyCycleDivisor());
+  output->print(dutyCycleDivisor());
+  output->print(F(", "));
+  output->print(maxTxPowerDbm());
+  output->println(F(" dBm"));
 }
 
 static void applyRadioSettings(Print* output) {
@@ -279,6 +298,10 @@ static void applyRadioSettings(Print* output) {
   }
   if (state == RADIOLIB_ERR_NONE) {
     state = radio.setSpreadingFactor(appliedSpreadingFactor);
+  }
+  /* the ceiling depends on the sub-band, so moving the carrier can change it */
+  if (state == RADIOLIB_ERR_NONE) {
+    state = radio.setOutputPower(maxTxPowerDbm());
   }
   if (state != RADIOLIB_ERR_NONE) {
     if (output != NULL) {
@@ -924,7 +947,7 @@ void TaskLoraMesh(void* pvParameters) {
 
   int state = radio.begin(frequency(), bandwidth(), spreadingFactor(),
                           LORA_CODING_RATE,
-                          RADIOLIB_SX126X_SYNC_WORD_PRIVATE, LORA_TX_POWER,
+                          RADIOLIB_SX126X_SYNC_WORD_PRIVATE, maxTxPowerDbm(),
                           LORA_PREAMBLE_SYMBOLS);
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("LoRa mesh radio init failed: "));
