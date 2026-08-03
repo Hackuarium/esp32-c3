@@ -178,6 +178,17 @@ The first parameter index travels in the body, so the receiver knows exactly
 which block it is being asked to overwrite. Values go out as int8 when they all
 fit and int16 otherwise — the opcode says which.
 
+**Reading is `ag`, and it reads a block**: `ag42:DA8` asks node 42 for `DA` to
+`DH` and gets them in one RESP. The GET body is `opcode first count`, and
+`handleCommand` has always passed that count to `sendParameterResponse` — it was
+only `ax42:A`, which pins it at 1, that made a read one slot at a time. So a host
+upgrading to `ag` needs new firmware **on the bridge alone**; the nodes it
+questions already answer correctly. A count is capped by
+`LORA_MAX_PARAMETERS_PER_FRAME` (20), which is exactly what fits: 3 echoed
+counter bytes + 2 header + 20 int16 = 45 of the 48-byte body. `ag` cannot be
+broadcast, for the same reason `ax42:A` cannot — every node answering at once is
+a response storm.
+
 ### Telemetry is the same block, sent periodically as DATA
 
 There is no per-sensor frame type. A node broadcasts the parameter window

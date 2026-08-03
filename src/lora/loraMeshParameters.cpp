@@ -47,6 +47,20 @@ static boolean parseParameterIndex(const char** text, uint8_t* index) {
   return true;
 }
 
+/* The "8" of "ac42:DA8" - how many slots follow the first one, 1 when there are
+   no digits at all. Clears *valid when the tail is not a plain number. */
+static uint16_t parseBlockCount(const char* text, boolean* valid) {
+  uint16_t count = 0;
+  uint8_t digits = 0;
+  while (*text >= '0' && *text <= '9') {
+    count = (uint16_t)(count * 10 + (*text - '0'));
+    digits++;
+    text++;
+  }
+  *valid = *text == '\0';
+  return digits == 0 ? 1 : count;
+}
+
 /* "123" or "-5,10,0": the same comma separated form the local serial syntax
    accepts, so the remote command reads like the local one */
 static boolean parseValues(const char* text,
@@ -339,6 +353,56 @@ void processLoraMeshSetCommand(char* paramValue, Print* output) {
   loraMeshSend(destination, LORA_TYPE_CMD, body, length, output);
 }
 
+/* (ag) - read a whole block back in one exchange: ag42:DA8 asks node 42 for DA
+   to DH. The GET body has always carried a count and the receiver has always
+   honoured it; only the (ax) read form, which fixes it at 1, could not say so.
+   One RESP then answers the block, so reading a settings page costs a single
+   round trip instead of one per slot - and only this node needs the new code. */
+void processLoraMeshGetCommand(char* paramValue, Print* output) {
+  const char* text = paramValue;
+  uint8_t destination;
+  if (!parseDestination(&text, &destination, output)) {
+    return;
+  }
+  /* a read has to be addressed: every node answering one broadcast at once is a
+     response storm */
+  if (destination == LORA_ADDRESS_BROADCAST) {
+    output->println(F("A read needs a destination, e.g. ag42:DA8"));
+    return;
+  }
+
+  uint8_t firstParameter;
+  if (!parseParameterIndex(&text, &firstParameter)) {
+    output->println(F("Expected e.g. ag42:DA8"));
+    return;
+  }
+
+  boolean valid = false;
+  uint16_t count = parseBlockCount(text, &valid);
+  if (!valid) {
+    output->println(F("Expected e.g. ag42:DA8"));
+    return;
+  }
+
+  if (count == 0 || count > LORA_MAX_PARAMETERS_PER_FRAME ||
+      (uint16_t)firstParameter + count > MAX_PARAM) {
+    output->println(F("Parameter range out of bounds"));
+    return;
+  }
+
+  uint8_t body[3];
+  body[0] = LORA_CMD_GET_PARAMETERS;
+  body[1] = firstParameter;
+  body[2] = (uint8_t)count;
+  output->print(F("Reading "));
+  output->print(count);
+  output->print(F(" parameter(s) from "));
+  output->print(numberToLabel(firstParameter));
+  output->print(F(" on "));
+  output->println(destination);
+  loraMeshSend(destination, LORA_TYPE_CMD, body, sizeof(body), output);
+}
+
 /* (ac) - copy this node's own values outwards: ac42:C6 pushes C to H to node
    42, ac:C6 pushes them to everyone. */
 void processLoraMeshCopyCommand(char* paramValue, Print* output) {
@@ -354,19 +418,11 @@ void processLoraMeshCopyCommand(char* paramValue, Print* output) {
     return;
   }
 
-  uint16_t count = 0;
-  uint8_t digits = 0;
-  while (*text >= '0' && *text <= '9') {
-    count = (uint16_t)(count * 10 + (*text - '0'));
-    digits++;
-    text++;
-  }
-  if (*text != '\0') {
+  boolean valid = false;
+  uint16_t count = parseBlockCount(text, &valid);
+  if (!valid) {
     output->println(F("Expected e.g. acC6 or ac42:C6"));
     return;
-  }
-  if (digits == 0) {
-    count = 1;
   }
 
   if (count == 0 || count > LORA_MAX_PARAMETERS_PER_FRAME ||

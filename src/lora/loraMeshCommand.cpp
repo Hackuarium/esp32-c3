@@ -75,6 +75,8 @@ static void printLoraMeshHelp(Print* output) {
   output->println(F("    ax42:A123  set A on node 42, wait for an ACK"));
   output->println(F("    ax42:A     read A from node 42"));
   output->println(F("    axC10,20   set C and D on every node"));
+  output->println(F("(ag) read a block of parameters back in one exchange"));
+  output->println(F("    ag42:DA8   read DA to DH from node 42, one answer"));
   output->println(F("(ac) copy this node's own parameters outwards"));
   output->println(F("    ac42:C6    copy C to H to node 42"));
   output->println(F("    ac:C6      copy C to H to every node"));
@@ -148,6 +150,9 @@ void processLoraCommand(char command, char* paramValue, Print* output) {
       break;
     case 'x':
       processLoraMeshSetCommand(paramValue, output);
+      break;
+    case 'g':
+      processLoraMeshGetCommand(paramValue, output);
       break;
     case 'c':
       processLoraMeshCopyCommand(paramValue, output);

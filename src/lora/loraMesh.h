@@ -65,6 +65,7 @@ void loraMeshReloadIdentity();
 void taskLoraMesh();
 void processLoraCommand(char command, char* paramValue, Print* output);
 void processLoraMeshSetCommand(char* paramValue, Print* output);
+void processLoraMeshGetCommand(char* paramValue, Print* output);
 void processLoraMeshCopyCommand(char* paramValue, Print* output);
 
 #endif
