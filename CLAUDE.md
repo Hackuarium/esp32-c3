@@ -117,6 +117,11 @@ only adds keys, and no existing value changes meaning.
 
 ### The mesh wire format (`src/lora/loraFrame.h`)
 
+The full specification — every body layout, a worked hex example and a reference
+decoder for a host reading a bridge's `raw` lines — is in
+[docs/lora-mesh-frame.md](docs/lora-mesh-frame.md). The summary below is what
+matters when changing the firmware.
+
     ctrl(1) src(1) dst(1) counter(3 or 4) | ciphertext | mic(4) | route(2h) | budget,hops(1)
     \___________ authenticated _________/   \_ encrypted _/       \________ mutable _______/
 
