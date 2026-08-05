@@ -43,11 +43,11 @@ void resetParameters() {
   setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
 
 #ifdef GPS_RX
-  /* a tracker is only a node whose broadcast window happens to be the six GPS
-     slots: latitude, longitude, altitude and satellites */
+  /* a tracker is only a node whose broadcast window happens to be the eight GPS
+     slots: latitude, longitude, altitude, satellites, HDOP and fix quality */
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 60);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, PARAM_GPS_LATITUDE);
-  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, 6);
+  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, 8);
 #else
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, 0);

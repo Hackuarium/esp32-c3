@@ -206,8 +206,9 @@ uint8_t loraMeshApplyCommand(const uint8_t* body, uint8_t bodyLength) {
 }
 
 /* A pair of int16 halves is unreadable on a console and useless in a database,
-   so a block that happens to cover the fix is decorated with the degrees. This
-   is the only place in the mesh that knows a parameter means something. */
+   so a block that happens to cover the fix is decorated with the degrees, and
+   with the dilution of precision the position has to be weighted by. This is
+   the only place in the mesh that knows a parameter means something. */
 static void reportGpsFix(Print* json,
                          const uint8_t* body,
                          uint8_t bodyLength) {
@@ -220,25 +221,38 @@ static void reportGpsFix(Print* json,
       loraMeshParameterFromBody(body, bodyLength, PARAM_GPS_LONGITUDE);
   int16_t longitudeHigh =
       loraMeshParameterFromBody(body, bodyLength, PARAM_GPS_LONGITUDE + 1);
-  if (latitudeLow == ERROR_VALUE || latitudeHigh == ERROR_VALUE ||
-      longitudeLow == ERROR_VALUE || longitudeHigh == ERROR_VALUE) {
-    return;
+  if (latitudeLow != ERROR_VALUE && latitudeHigh != ERROR_VALUE &&
+      longitudeLow != ERROR_VALUE && longitudeHigh != ERROR_VALUE) {
+    double latitude =
+        (((int32_t)latitudeLow & 0xFFFF) | ((int32_t)latitudeHigh << 16)) / 1e6;
+    double longitude =
+        (((int32_t)longitudeLow & 0xFFFF) | ((int32_t)longitudeHigh << 16)) /
+        1e6;
+    if (json == NULL) {
+      Serial.print(F("  fix "));
+      Serial.print(latitude, 6);
+      Serial.print(F(", "));
+      Serial.println(longitude, 6);
+    } else {
+      loraBridgeFloat(json, "lat", latitude, 6);
+      loraBridgeFloat(json, "lon", longitude, 6);
+    }
   }
+#endif
 
-  double latitude =
-      (((int32_t)latitudeLow & 0xFFFF) | ((int32_t)latitudeHigh << 16)) / 1e6;
-  double longitude =
-      (((int32_t)longitudeLow & 0xFFFF) | ((int32_t)longitudeHigh << 16)) / 1e6;
-  if (json == NULL) {
-    Serial.print(F("  fix "));
-    Serial.print(latitude, 6);
-    Serial.print(F(", "));
-    Serial.println(longitude, 6);
-  } else {
-    loraBridgeFloat(json, "lat", latitude, 6);
-    loraBridgeFloat(json, "lon", longitude, 6);
+#ifdef PARAM_GPS_HDOP
+  int16_t hdop = loraMeshParameterFromBody(body, bodyLength, PARAM_GPS_HDOP);
+  if (hdop != ERROR_VALUE) {
+    if (json == NULL) {
+      Serial.print(F("  hdop "));
+      Serial.println(hdop / 100.0, 2);
+    } else {
+      loraBridgeFloat(json, "hdop", hdop / 100.0, 2);
+    }
   }
-#else
+#endif
+
+#if !defined(PARAM_GPS_LATITUDE) && !defined(PARAM_GPS_HDOP)
   (void)json;
   (void)body;
   (void)bodyLength;

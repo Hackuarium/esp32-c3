@@ -202,12 +202,20 @@ copy — but as **DATA rather than CMD**, so a receiver *prints* the block inste
 of applying it. A broadcast SET would have every neighbour overwrite its own `G`
 with the tracker's latitude.
 
-That is all a GPS tracker is: `taskGPS` writes the fix into `G`…`L` (latitude
+That is all a GPS tracker is: `taskGPS` writes the fix into `G`…`N` (latitude
 and longitude are int32, each spread over two adjacent int16 slots via
-`setParameterInt32`), and `DF60 DG6 DH6` puts those six on the air. Any future
+`setParameterInt32`), and `DF60 DG6 DH8` puts those eight on the air. Any future
 sensor joins the same way — write parameters, set the window. Adjacency is load
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
+
+The last three of the eight — satellites (`L`), HDOP × 100 (`M`) and the GGA
+fix quality (`N`) — travel with the position because a coordinate alone cannot
+be weighted centrally: nothing else distinguishes a 4-satellite 2D fix from a
+12-satellite one. They are published whenever *either* the location or the
+satellite count updates, so a receiver that is still searching still reports how
+badly it is searching. The bridge decorates the block with a decimal `hdop`
+alongside `lat`/`lon`, the only other place a raw parameter is given a meaning.
 
 The one frame a node sends on its own without being asked to carry anything is
 the HELLO, every `DI` seconds (0 = never, **10800 — three hours — by default**),
@@ -236,7 +244,7 @@ happened.
 | `reject` | the tag did not verify | `length` — pairs with the `raw` line above it |
 | `tx` | any frame leaves | `type dst counter ack` |
 | `rx` | an authentic frame is heard, **including ones not addressed here** | `type src dst counter budget hops rssi snr fresh route body` |
-| `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix |
+| `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix and `hdop` when it covers `M` |
 | `data` | a DATA body with an unknown opcode | `src opcode length` |
 | `cmd` | a remote SET was applied here | `src status` |
 | `noack` | the escalation ladder gave up | `dst counter` |
