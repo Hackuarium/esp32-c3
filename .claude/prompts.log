@@ -733,6 +733,10 @@ set the correct limit for  LORA_TX_POWER 22 exceeds the 25
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/lora/loraMeshCommand.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push
 
+[2026-08-05T17:26:23Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/lora/loraMeshParameters.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+is there a doc about the loraMesh packet ? Otherwise create one
+
 [2026-08-05T17:54:54Z]
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
 need to change the gps task, the device is on GPIO9
@@ -750,5 +754,24 @@ I need the loraMesh to use the GPS.
 
 [2026-08-05T18:01:06Z]
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+commit and push
+
+[2026-08-05T18:59:33Z]
+<ide_selection>The user selected the lines 7 to 7 from /Users/lpatiny/git/hackuarium/esp32-c3/src/taskGPS.cpp:
+GPSSerial
+
+This may or may not be related to the current task.</ide_selection>
+pull remote
+
+[2026-08-05T19:00:56Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+continue
+
+[2026-08-05T19:03:52Z]
+<ide_selection>The user selected the lines 7 to 8 from /Users/lpatiny/git/hackuarium/esp32-c3/src/lora/loraMeshCommand.cpp:
+
+#include "params.h"
+
+This may or may not be related to the current task.</ide_selection>
 commit and push
 
