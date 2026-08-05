@@ -756,6 +756,19 @@ I need the loraMesh to use the GPS.
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push
 
+[2026-08-05T18:02:13Z]
+also save the gps quality and number of satellites. This should be send in the lora packet so that we can better estimate the presition of the location centrally
+
+[2026-08-05T18:55:21Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+Also store altitude in a parameter and send it
+
+[2026-08-05T18:56:40Z]
+How to do to send regularly the coordinates using the lora system ?
+
+[2026-08-05T18:57:21Z]
+commit and push
+
 [2026-08-05T18:59:33Z]
 <ide_selection>The user selected the lines 7 to 7 from /Users/lpatiny/git/hackuarium/esp32-c3/src/taskGPS.cpp:
 GPSSerial
@@ -774,4 +787,8 @@ continue
 
 This may or may not be related to the current task.</ide_selection>
 commit and push
+
+[2026-08-05T19:05:27Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/include/configLoraMesh.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+need to give th possibility to the lora / gps to broadcast regulargly based on a parameter time (default 10s) the coordinates
 

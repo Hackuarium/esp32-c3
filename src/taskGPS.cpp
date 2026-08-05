@@ -21,6 +21,15 @@ static void publishFix() {
   if (gps.satellites.isValid()) {
     setParameter(PARAM_GPS_SATELLITES, (int16_t)gps.satellites.value());
   }
+  if (gps.hdop.isValid()) {
+    /* hdop.value() is already hundredths; a dilution above 327 means the fix is
+       worthless anyway, so saturating rather than wrapping the int16 is fine */
+    uint32_t hdop = gps.hdop.value();
+    setParameter(PARAM_GPS_HDOP, hdop > 32767 ? 32767 : (int16_t)hdop);
+  }
+  if (fixQuality.isValid()) {
+    setParameter(PARAM_GPS_FIX_QUALITY, (int16_t)atoi(fixQuality.value()));
+  }
 }
 
 static void printGpsInfo(Print* output) {
@@ -103,14 +112,32 @@ static void printGpsInfo(Print* output) {
   output->println(gps.failedChecksum());
 }
 
+/* (gr) mirrors the sentences as they arrive. Parsed data cannot distinguish a
+   module that says "no fix" from a wire that carries nothing or garbage, and
+   the GSV lines carry the per-satellite SNR, which is what separates a cold
+   almanac from a deaf antenna. TaskGPS does the echoing: reading the port from
+   the serial task would steal bytes from the parser. */
+static volatile uint32_t rawEchoUntil = 0;
+
 void processGpsCommand(char command, char* paramValue, Print* output) {
-  (void)paramValue;
   switch (command) {
     case 'i':
       printGpsInfo(output);
       break;
+    case 'r': {
+      uint32_t seconds = atoi(paramValue);
+      if (seconds == 0) {
+        seconds = 10;
+      }
+      rawEchoUntil = millis() + seconds * 1000;
+      output->print(F("Echoing raw NMEA for "));
+      output->print(seconds);
+      output->println(F(" s"));
+      break;
+    }
     default:
       output->println(F("(gi) gps info - all parsed data"));
+      output->println(F("(gr) gps raw - echo the NMEA sentences, gr30 for 30 s"));
       break;
   }
 }
@@ -158,6 +185,13 @@ void TaskGPS(void* pvParameters) {
   Serial.println();
   Serial.println(F("=== GPS task starting ==="));
 
+  /* A full NMEA burst at 115200 is well over a kilobyte and this task drains
+     the port every 20 ms, so the default 256-byte driver buffer overflows on a
+     talkative module - and the loss shows up as a failed checksum rather than
+     as an error. Must be set before the first begin(), the driver allocates it
+     there. */
+  GPSSerial.setRxBufferSize(2048);
+
   uint32_t baud = detectGpsBaud();
 
   // RX only: read NMEA sentences coming from the GPS module on GPS_RX
@@ -170,14 +204,28 @@ void TaskGPS(void* pvParameters) {
 
   while (true) {
     while (GPSSerial.available()) {
-      gps.encode((char)GPSSerial.read());
+      char inChar = (char)GPSSerial.read();
+      gps.encode(inChar);
+      if (rawEchoUntil != 0) {
+        Serial.write(inChar);
+      }
+    }
+    if (rawEchoUntil != 0 && (int32_t)(millis() - rawEchoUntil) >= 0) {
+      rawEchoUntil = 0;
+      Serial.println();
+      Serial.println(F("[GPS] raw echo done"));
     }
 
-    if (gps.location.isUpdated()) {
+    /* both flags are read every pass, never short-circuited: a receiver that is
+       still searching updates the satellite count without ever producing a
+       location, and that is exactly the case the central side needs to see */
+    bool locationUpdated = gps.location.isUpdated();
+    bool satellitesUpdated = gps.satellites.isUpdated();
+    if (locationUpdated || satellitesUpdated) {
       publishFix();
     }
 
-    vTaskDelay(100);
+    vTaskDelay(20);
   }
 }
 
