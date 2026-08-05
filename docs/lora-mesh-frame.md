@@ -196,9 +196,14 @@ the tracker's latitude.
 
 Telemetry has therefore no frame type of its own: a node broadcasts the
 parameter window `DG … DG+DH` every `DF` seconds. A GPS tracker is just
-`taskGPS` writing the fix into `G`…`L` plus `DF60 DG6 DH6`. Adjacency is load
+`taskGPS` writing the fix into `G`…`N` plus `DF60 DG6 DH8`. Adjacency is load
 bearing — an int32 spread over two int16 slots only survives the trip because
 both halves sit in the same run.
+
+The window ends with satellites (`L`), HDOP × 100 (`M`) and the GGA fix quality
+(`N`), because a coordinate alone cannot be weighted by whoever collects it:
+nothing else in the block distinguishes a 4-satellite 2D fix from a
+12-satellite one.
 
 A `DATA` body whose first byte is neither `0x01` nor `0x02` is reported as an
 opaque opcode and length.
