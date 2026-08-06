@@ -204,10 +204,31 @@ with the tracker's latitude.
 
 That is all a GPS tracker is: `taskGPS` writes the fix into `G`…`N` (latitude
 and longitude are int32, each spread over two adjacent int16 slots via
-`setParameterInt32`), and `DF60 DG6 DH8` puts those eight on the air. Any future
+`setParameterInt32`), and `DF20 DG6 DH8` puts those eight on the air. Any future
 sensor joins the same way — write parameters, set the window. Adjacency is load
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
+
+**The cadence is a parameter and nothing else.** `resetParameters` writes `DF20`
+when the env defines `GPS_RX`, and that literal is the only place a default is
+decided — there is no build flag, because a firmware carrying its own interval
+would silently disagree with the node it was flashed onto, and the node is the
+one holding the value. Change it with `gt` or `DF` on the running board.
+
+Twenty seconds already spends a good part of the budget: the telemetry frame is
+29 bytes, **823 ms** on the air at the SF12/250 kHz default, so 180 frames an
+hour take **~148 s of the 360 s** sub-band P allows at 10 %. That is 41 % of one
+node's airtime for its own position; the relays, the HELLOs and every other
+node's traffic share what is left of the channel, so `gt60` is the setting to
+reach for as soon as the mesh carries anything else. Going faster is the
+duty-cycle governor's problem rather than a setting.
+
+`gt` is that setting with the window attached: `gt30` broadcasts the fix every
+30 s, `gt0` stops, `gt` alone reports. It writes `DG` and `DH` too, since the
+interval is the only free choice — a `DH` one short sends half a longitude every
+period with nothing looking broken, and the plain `DF30` spelling cannot notice.
+The window it reports is whatever the node holds, so a board carrying an older
+firmware's six-slot window says so.
 
 The last three of the eight — satellites (`L`), HDOP × 100 (`M`) and the GGA
 fix quality (`N`) — travel with the position because a coordinate alone cannot

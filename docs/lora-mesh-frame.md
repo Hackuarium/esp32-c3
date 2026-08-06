@@ -196,7 +196,7 @@ the tracker's latitude.
 
 Telemetry has therefore no frame type of its own: a node broadcasts the
 parameter window `DG … DG+DH` every `DF` seconds. A GPS tracker is just
-`taskGPS` writing the fix into `G`…`N` plus `DF60 DG6 DH8`. Adjacency is load
+`taskGPS` writing the fix into `G`…`N` plus `DF20 DG6 DH8`. Adjacency is load
 bearing — an int32 spread over two int16 slots only survives the trip because
 both halves sit in the same run.
 

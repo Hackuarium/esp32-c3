@@ -835,3 +835,21 @@ No need for migration
 <ide_opened_file>The user opened the file /temp/readonly/Bash tool output (5d291b) in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push
 
+[2026-08-05T19:08:07Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/include/configLoraMesh.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+how to activate the tracker
+
+[2026-08-05T19:09:15Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/lora/loraMeshCommand.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+the configuration of the tracker delay could be done in the 'g' submenu
+
+[2026-08-05T19:13:18Z]
+is there a special kind of packet for coordinates or it is just DATA
+
+[2026-08-06T04:29:42Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskGPS.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+pull remote branch with the new default settings
+
+[2026-08-06T04:34:27Z]
+commit and push
+

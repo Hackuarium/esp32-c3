@@ -112,6 +112,54 @@ static void printGpsInfo(Print* output) {
   output->println(gps.failedChecksum());
 }
 
+#ifdef PARAM_LORA_INTERVAL_SECONDS
+/* (gt) is the whole tracker configuration in one command: the interval is the
+   only free choice, the window is not. Setting DF, DG and DH by hand works
+   just as well, but a wrong DH sends half a longitude, and the node keeps
+   broadcasting it every minute without anything looking broken. */
+static void processTrackerInterval(char* paramValue, Print* output) {
+  if (paramValue[0] != '\0') {
+    int16_t seconds = atoi(paramValue);
+    if (seconds < 0) {
+      output->println(F("Interval must be 0 (never) or a number of seconds"));
+      return;
+    }
+    setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER,
+                        PARAM_GPS_LATITUDE);
+    setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS,
+                        PARAM_GPS_BLOCK_SIZE);
+    setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, seconds);
+  }
+
+  int16_t interval = getParameter(PARAM_LORA_INTERVAL_SECONDS);
+  int16_t first = getParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER);
+  int16_t count = getParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS);
+  if (interval <= 0) {
+    output->println(F("Tracker off"));
+  } else {
+    output->print(F("Tracker every "));
+    output->print(interval);
+    output->println(F(" s"));
+  }
+  /* the window is reported whatever it holds: a node configured by hand, or by
+     an older firmware, is broadcasting something else than the fix */
+  output->print(F("Window: "));
+  if (first >= 0 && first < MAX_PARAM) {
+    output->print(numberToLabel((byte)first));
+  } else {
+    output->print(F("unset"));
+  }
+  output->print(F(" + "));
+  output->print(count);
+  if (first != PARAM_GPS_LATITUDE || count != PARAM_GPS_BLOCK_SIZE) {
+    output->print(F(" - not the GPS block, gt"));
+    output->print(interval > 0 ? interval : 60);
+    output->print(F(" fixes it"));
+  }
+  output->println();
+}
+#endif
+
 /* (gr) mirrors the sentences as they arrive. Parsed data cannot distinguish a
    module that says "no fix" from a wire that carries nothing or garbage, and
    the GSV lines carry the per-satellite SNR, which is what separates a cold
@@ -135,9 +183,17 @@ void processGpsCommand(char command, char* paramValue, Print* output) {
       output->println(F(" s"));
       break;
     }
+#ifdef PARAM_LORA_INTERVAL_SECONDS
+    case 't':
+      processTrackerInterval(paramValue, output);
+      break;
+#endif
     default:
       output->println(F("(gi) gps info - all parsed data"));
       output->println(F("(gr) gps raw - echo the NMEA sentences, gr30 for 30 s"));
+#ifdef PARAM_LORA_INTERVAL_SECONDS
+      output->println(F("(gt) broadcast the fix every gt60 seconds, gt0 stops"));
+#endif
       break;
   }
 }

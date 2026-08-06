@@ -44,10 +44,15 @@ void resetParameters() {
 
 #ifdef GPS_RX
   /* a tracker is only a node whose broadcast window happens to be the eight GPS
-     slots: latitude, longitude, altitude, satellites, HDOP and fix quality */
-  setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 60);
+     slots: latitude, longitude, altitude, satellites, HDOP and fix quality.
+
+     20 s is where a reset leaves the cadence, and the only place it is decided:
+     it is a parameter afterwards, changed with (gt) or DF on a running node,
+     never a build flag - a firmware that hard-coded it would silently disagree
+     with the node it was flashed onto. */
+  setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 20);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, PARAM_GPS_LATITUDE);
-  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, 8);
+  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, PARAM_GPS_BLOCK_SIZE);
 #else
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, 0);

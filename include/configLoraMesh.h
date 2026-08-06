@@ -40,7 +40,7 @@ extern int16_t parameters[MAX_PARAM];
 /* GPS fix, written by taskGPS when the env defines GPS_RX. Latitude and
    longitude are degrees * 1e6, each an int32 spread over two adjacent slots.
    taskGPS only fills these eight: sending them is the generic parameter
-   broadcast's job, so a tracker is "DF60 DG6 DH8", not a special frame type.
+   broadcast's job, so a tracker is "DF20 DG6 DH8", not a special frame type.
 
    Satellites, HDOP and fix quality travel with the fix because a position
    without them cannot be weighted: the receiver has no other way to tell a
@@ -51,6 +51,9 @@ extern int16_t parameters[MAX_PARAM];
 #define PARAM_GPS_SATELLITES 11   // L
 #define PARAM_GPS_HDOP 12         // M - HDOP * 100
 #define PARAM_GPS_FIX_QUALITY 13  // N - GGA field 6, 0 = no fix
+/* what (gt) puts in the broadcast window, derived rather than written twice:
+   the block only works if the window covers it exactly */
+#define PARAM_GPS_BLOCK_SIZE (PARAM_GPS_FIX_QUALITY - PARAM_GPS_LATITUDE + 1)
 
 #define PARAM_RELATIVE_ALTITUDE 15  // P
 #define PARAM_ALTITUDE_GROUND 16    // Q
