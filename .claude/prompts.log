@@ -791,4 +791,47 @@ commit and push
 [2026-08-05T19:05:27Z]
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/include/configLoraMesh.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
 need to give th possibility to the lora / gps to broadcast regulargly based on a parameter time (default 10s) the coordinates
+[2026-08-05T19:55:41Z]
+<ide_selection>The user selected the lines 309 to 309 from /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md:
+| 433.05 – 434.79 MHz | 10 % 
+
+This may or may not be related to the current task.</ide_selection>
+is the lora shied allow 433
+
+[2026-08-05T20:06:18Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+which transmit power on 433 ?
+
+[2026-08-06T03:31:33Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+in the docs add the parameters to use 869.525 with 250khz width and SF12. How long will take a packet and how better it is to current settings
+
+[2026-08-06T03:47:49Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+can we use a uint16 and 0.025 ?
+
+[2026-08-06T03:50:09Z]
+Not sure if we need new function in getParameter setParameter
+
+[2026-08-06T03:52:07Z]
+Ok do the offset approach
+
+[2026-08-06T03:59:42Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+yes
+
+[2026-08-06T04:14:29Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+For now use DC18781    carrier 869.525 MHz
+DD250      bandwidth 250 kHz
+DE12       spreading factor 12
+as default parameters
+
+[2026-08-06T04:21:18Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/docs/lora-mesh-frame.md in the IDE. This may or may not be related to the current task.</ide_opened_file>
+No need for migration
+
+[2026-08-06T04:26:00Z]
+<ide_opened_file>The user opened the file /temp/readonly/Bash tool output (5d291b) in the IDE. This may or may not be related to the current task.</ide_opened_file>
+commit and push
 
