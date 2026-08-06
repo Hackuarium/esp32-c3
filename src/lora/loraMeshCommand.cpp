@@ -54,7 +54,10 @@ void loraMeshBroadcastParameters() {
   uint8_t length = loraMeshEncodeLocalParameters(
       (uint8_t)firstParameter, (uint8_t)count, body, LORA_MAX_BODY_SIZE);
   if (length == 0) {
-    Serial.println(F("Broadcast window out of bounds, check AE and AF"));
+    Serial.print(F("Broadcast window out of bounds, check "));
+    Serial.print(numberToLabel(PARAM_LORA_BROADCAST_FIRST_PARAMETER));
+    Serial.print(F(" and "));
+    Serial.println(numberToLabel(PARAM_LORA_BROADCAST_NB_PARAMETERS));
     return;
   }
 
