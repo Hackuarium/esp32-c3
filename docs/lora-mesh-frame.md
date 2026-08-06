@@ -18,28 +18,28 @@ sources are [loraFrame.h](../src/lora/loraFrame.h) (constants and layout),
  \____________ authenticated ______/  \___ encrypted __/          \______ mutable ______/
 ```
 
-| Field | Bytes | Notes |
-|---|---|---|
-| `ctrl` | 1 | `ver(1) type(3) cntsz(1) spare(3)`, bit 7 down to bit 0 |
-| `src` | 1 | originator, 1–254 |
-| `dst` | 1 | 1–254, or 255 for broadcast |
-| `counter` | 3 or 4 | big-endian, `cntsz` says which |
-| ciphertext | 0–48 | the body, same length as the plaintext (CCM is a stream mode) |
-| `mic` | 4 | AES-128-CCM tag |
-| route | 2 per recorded hop | `address(1) rssi(1)`, 0–4 entries |
-| trailer | 1 | `budget(4) hops(4)`, high nibble first |
+| Field      | Bytes              | Notes                                                         |
+| ---------- | ------------------ | ------------------------------------------------------------- |
+| `ctrl`     | 1                  | `ver(1) type(3) cntsz(1) spare(3)`, bit 7 down to bit 0       |
+| `src`      | 1                  | originator, 1–254                                             |
+| `dst`      | 1                  | 1–254, or 255 for broadcast                                   |
+| `counter`  | 3 or 4             | big-endian, `cntsz` says which                                |
+| ciphertext | 0–48               | the body, same length as the plaintext (CCM is a stream mode) |
+| `mic`      | 4                  | AES-128-CCM tag                                               |
+| route      | 2 per recorded hop | `address(1) rssi(1)`, 0–4 entries                             |
+| trailer    | 1                  | `budget(4) hops(4)`, high nibble first                        |
 
 Minimum overhead is **11 bytes** (6-byte header + 4-byte tag + 1-byte trailer),
 plus 2 for every recorded hop. `LORA_MAX_FRAME_SIZE` is **68**.
 
 ### `ctrl`
 
-| Bit | Name | Meaning |
-|---|---|---|
-| 7 | `ver` | protocol version, currently always 0 |
-| 6–4 | `type` | frame type, see below |
-| 3 | `cntsz` | 0 = 3-byte counter, 1 = 4-byte counter |
-| 2–0 | spare | transmitted as 0 |
+| Bit | Name    | Meaning                                |
+| --- | ------- | -------------------------------------- |
+| 7   | `ver`   | protocol version, currently always 0   |
+| 6–4 | `type`  | frame type, see below                  |
+| 3   | `cntsz` | 0 = 3-byte counter, 1 = 4-byte counter |
+| 2–0 | spare   | transmitted as 0                       |
 
 `ver` is decoded into `LoraFrame.version` but **no receiver checks it yet** — a
 version-1 frame would be parsed as if it were version 0. Anything defining a
@@ -47,16 +47,16 @@ version 1 has to add that test first.
 
 ### Frame types
 
-| Value | Name | Body | Answered with |
-|---|---|---|---|
-| 0 | `HELLO` | empty | nothing |
-| 1 | `DATA` | SET-shaped | nothing |
-| 2 | `DATA_ACK` | SET-shaped | `ACK` (unicast only) |
-| 3 | `ACK` | counter echo + status | — |
-| 4 | `CMD` | opcode-led | `ACK`/`NACK`, or `RESP` for a read |
-| 5 | `RESP` | counter echo + SET-shaped | — |
-| 6 | `NACK` | counter echo + status | — |
-| 7 | `EXT` | reserved | — |
+| Value | Name       | Body                      | Answered with                      |
+| ----- | ---------- | ------------------------- | ---------------------------------- |
+| 0     | `HELLO`    | empty                     | nothing                            |
+| 1     | `DATA`     | SET-shaped                | nothing                            |
+| 2     | `DATA_ACK` | SET-shaped                | `ACK` (unicast only)               |
+| 3     | `ACK`      | counter echo + status     | —                                  |
+| 4     | `CMD`      | opcode-led                | `ACK`/`NACK`, or `RESP` for a read |
+| 5     | `RESP`     | counter echo + SET-shaped | —                                  |
+| 6     | `NACK`     | counter echo + status     | —                                  |
+| 7     | `EXT`      | reserved                  | —                                  |
 
 ### Addresses
 
@@ -136,9 +136,9 @@ values are little-endian.**
 opcode(1) first(1) values(n)
 ```
 
-| Opcode | Meaning |
-|---|---|
-| `0x01` | `SET_PARAMETERS_INT8` — one signed byte per parameter |
+| Opcode | Meaning                                                         |
+| ------ | --------------------------------------------------------------- |
+| `0x01` | `SET_PARAMETERS_INT8` — one signed byte per parameter           |
 | `0x02` | `SET_PARAMETERS_INT16` — two bytes per parameter, little-endian |
 
 The sender picks int8 when every value fits in `-128..127`, so the common case of
@@ -176,11 +176,11 @@ The counter echo lets the requester close its pending request, the same trick
 requestCounter low 24 bits(3, big-endian) status(1)
 ```
 
-| Status | Meaning |
-|---|---|
-| `0x00` | OK |
-| `0x01` | unknown command |
-| `0x02` | bad body |
+| Status | Meaning                       |
+| ------ | ----------------------------- |
+| `0x00` | OK                            |
+| `0x01` | unknown command               |
+| `0x02` | bad body                      |
 | `0x03` | parameter range out of bounds |
 
 An `ACK` or `RESP` goes back with a budget equal to the `hops` the request
@@ -249,7 +249,7 @@ frame    402a070004d2 8b1fa0 b7e01cbd 09a1 21
 **Duplicate suppression and replay defence are the same test.** Each peer entry
 holds `lastCounter` plus a 32-bit IPsec-style sliding window, because flooding
 delivers the same frame by several paths and out of order — a plain
-"greater than" test would drop legitimate frames. A frame that is not *fresh* is
+"greater than" test would drop legitimate frames. A frame that is not _fresh_ is
 neither acted on nor relayed. A peer heard for the first time is accepted at
 face value; that cold entry is the one hole in the design, and it closes with
 the first frame recorded.
@@ -271,11 +271,11 @@ GET is simply answered again, since a read changes nothing.
 The escalation ladder for a frame that expects an ACK (`CMD`, `DATA_ACK`, unicast
 only — broadcasts are never acknowledged):
 
-| Attempt | Budget | Timeout |
-|---|---|---|
-| 0, 1 | 0 (direct) | `2 × (2h+1) × airtime + 200 ms` |
-| 2, 3 | 2 hops | idem |
-| 4 | 4 hops | idem |
+| Attempt | Budget     | Timeout                         |
+| ------- | ---------- | ------------------------------- |
+| 0, 1    | 0 (direct) | `2 × (2h+1) × airtime + 200 ms` |
+| 2, 3    | 2 hops     | idem                            |
+| 4       | 4 hops     | idem                            |
 
 After five attempts the sender gives up and reports `noack`. If the destination
 is not in the peer table, or was last heard over 30 minutes ago, the ladder
@@ -283,7 +283,7 @@ starts at attempt 2 and skips the two direct tries. Only one acknowledged
 request is in flight at a time.
 
 **The counter is both the CCM nonce and the anti-replay sequence, so it must
-never go backwards.** `mesh.counter` in NVS therefore holds a *reservation*: a
+never go backwards.** `mesh.counter` in NVS therefore holds a _reservation_: a
 promise that nothing above it was ever used. A node claims
 `LORA_COUNTER_RESERVATION` (100) at a time and restarts at the bound, so a crash
 mid-block skips forward over counters it may or may not have spent. That is the
@@ -292,48 +292,136 @@ on every boot.
 
 ## Radio and regulatory limits
 
-| Setting | Default | Parameter |
-|---|---|---|
-| Carrier | 868.4 MHz | `DC`, in units of 0.1 MHz (`8684`) |
-| Bandwidth | 125 kHz | `DD`, one of 250 / 125 / 62 (= 62.5) |
-| Spreading factor | SF7 | `DE`, 7–12, anything else falls back to SF7 |
-| Coding rate | 4/5 | fixed |
-| Preamble | 8 symbols | fixed |
-| Sync word | private (0x12) | fixed |
+| Setting          | Default        | Parameter                                    |
+| ---------------- | -------------- | -------------------------------------------- |
+| Carrier          | 869.525 MHz    | `DC`, 25 kHz steps over 400 MHz (`18781`)    |
+| Bandwidth        | 250 kHz        | `DD`, one of 250 / 125 / 62 (= 62.5)         |
+| Spreading factor | SF12           | `DE`, 7–12, anything else falls back to SF12 |
+| Coding rate      | 4/5            | fixed                                        |
+| Preamble         | 8 symbols      | fixed                                        |
+| Sync word        | private (0x12) | fixed                                        |
 
-868.4 sits in EN 300 220 sub-band M and falls in the gap between the mandatory
-LoRaWAN channels at 868.3 and 868.5, so the mesh does not share a channel with
-every LoRaWAN device around. All three settings are re-applied without a reboot
-when the parameter changes.
+`DC` counts 25 kHz steps because that is the channel raster of sub-band P, and
+it divides every EU868 and US915 channel — a 0.1 MHz step could not express
+869.525, the centre of the one wide channel the regulation grants 500 mW.
+Counting from 400 MHz keeps the SX1262's whole 150–960 MHz range inside a signed
+int16, so the carrier stays an ordinary parameter needing no unsigned accessor.
+Firmware before 2026-08 counted 0.1 MHz in this slot. A stored value between
+1500 and 9600 is therefore an old one — unambiguously, because no band this
+radio uses lands in that window under the new encoding — and is **refused, not
+converted**: a node that was never reset falls back to the default rather than
+coming up on 617.1 MHz. Nothing is written back, so setting `DC` yourself is
+still the only thing that changes it.
+
+869.525 is the centre of EN 300 220 sub-band P, the one place in the band that
+allows 500 mW and a 10 % duty cycle, and the only carrier at which a 250 kHz
+channel fills the sub-band exactly (869.400–869.650). It is not a quiet channel:
+a LoRaWAN gateway sends its RX2 downlinks on the same frequency, at 27 dBm.
+`18736` (868.4 MHz, sub-band M) is the alternative — 1 % and 14 dBm, but in the
+gap between the mandatory LoRaWAN channels at 868.3 and 868.5, so it shares a
+channel with nobody. All three settings are re-applied without a reboot when the
+parameter changes.
 
 **The duty cycle follows the carrier** and is not a constant; anything
 unrecognised falls back to the strictest value:
 
-| Sub-band | Range | Duty cycle |
-|---|---|---|
-| — | 433.05 – 434.79 MHz | 10 % |
-| L / M | 865 – 868.6 MHz | 1 % |
-| P | 869.4 – 869.65 MHz | 10 % |
-| Q | 869.7 – 870 MHz | 1 % |
-| K, N, and every gap | — | 0.1 % |
+| Sub-band            | Range               | Duty cycle |
+| ------------------- | ------------------- | ---------- |
+| —                   | 433.05 – 434.79 MHz | 10 %       |
+| L / M               | 865 – 868.6 MHz     | 1 %        |
+| P                   | 869.4 – 869.65 MHz  | 10 %       |
+| Q                   | 869.7 – 870 MHz     | 1 %        |
+| K, N, and every gap | —                   | 0.1 %      |
 
 **It is a budget, not a delay.** EN 300 220 defines the duty cycle as transmit
 time within a one-hour observation window, so the governor is a token bucket:
 `airtimeBudgetMillis` holds the transmit time still available, it is credited
-back at 1/N of real time, and each transmission spends what it costs. At 1 % that
-is 36 s per hour, which the node may burst through — roughly 580 frames of 62 ms
-at SF7/125 kHz — before it has to wait. A fixed post-transmission silence would
-be far stricter than the regulation and would make the retry ladder unusable.
-RadioLib enforces none of this outside LoRaWAN.
+back at 1/N of real time, and each transmission spends what it costs. At the
+default 10 % that is 360 s per hour, which the node may burst through — roughly
+485 frames of 742 ms at SF12/250 kHz — before it has to wait; at 1 % it is 36 s,
+roughly 580 frames of 62 ms at SF7/125 kHz. A fixed post-transmission silence
+would be far stricter than the regulation and would make the retry ladder
+unusable. RadioLib enforces none of this outside LoRaWAN.
 
-**Transmit power follows the carrier too**: 14 dBm (25 mW ERP) across the band,
-22 dBm only in sub-band P, which allows 500 mW — more than the SX1262 can
-produce, so there the radio's own ceiling binds. It is deliberately **not** a
-parameter: there is no legitimate reason to raise it, and a parameter is one
-typo away from transmitting illegally.
+**Transmit power follows the carrier too**: 14 dBm (25 mW ERP) across 863–870,
+22 dBm in sub-band P, which allows 500 mW — more than the SX1262 can produce, so
+there the radio's own ceiling binds — and 10 dBm in 433.05–434.79, which allows
+only 10 mW. It is deliberately **not** a parameter: there is no legitimate reason
+to raise it, and a parameter is one typo away from transmitting illegally.
 
 Every transmission is preceded by listen-before-talk (up to four channel scans
 with a 20–60 ms backoff).
+
+### Why the defaults are the slow ones
+
+```
+DC18781    carrier 869.525 MHz
+DD250      bandwidth 250 kHz
+DE12       spreading factor 12
+```
+
+The three settings are one decision. Sub-band P is the only part of the band
+that allows 500 mW and a 10 % duty cycle, and the regulation lets its
+869.4–869.65 MHz be used either as 25 kHz channels or **as one channel for high
+speed data** — so 250 kHz is not a preference but the only wideband shape
+allowed there, and 869.525 the only centre that fits it. SF12 then buys back the
+3 dB the wider bandwidth costs, and 9.5 dB more on top.
+
+The slots are adjacent, so one frame moves a node that is still on the old
+settings: `ax42:DC18781,250,12`. Its ACK goes out on those old settings — the
+radio is only retuned by the task loop, after the command has been handled — so
+the sender hears the receipt and then follows. Move the sender last.
+`dutyCycleDivisor()` and `maxTxPowerDbm()` both recognise 18776–18786, so the
+10 % budget and the 22 dBm ceiling come with the frequency.
+
+The comparison below is against 868.4 MHz / 125 kHz / SF7, which is what this
+mesh ran on until 2026-08 and what `18736`, `DD125`, `DE7` still selects.
+
+#### What it costs
+
+From `airtimeMillis()` — CR 4/5, 8-symbol preamble, explicit header, CRC on. SF12
+at 250 kHz has a 16.384 ms symbol, just past the 16 ms threshold, so the low data
+rate optimisation is on and the frame is exactly half of SF12 at 125 kHz:
+
+| Frame                       | Bytes | SF7 / 125 kHz | SF12 / 250 kHz |
+| --------------------------- | ----- | ------------- | -------------- |
+| HELLO                       | 11    | 41 ms         | 578 ms         |
+| the `CMD` of the example    | 14    | 46 ms         | 578 ms         |
+| GPS telemetry, 6 parameters | 25    | 62 ms         | 742 ms         |
+| the largest frame           | 68    | 123 ms        | 1479 ms        |
+
+Twelve times the airtime — against ten times the budget, so the number of frames
+an hour holds barely moves:
+
+|                         | SF7 / 125 kHz, 1 % | SF12 / 250 kHz, 10 % |
+| ----------------------- | ------------------ | -------------------- |
+| Transmit time per hour  | 36 s               | 360 s                |
+| 25-byte frames per hour | 583                | 485                  |
+
+Latency is where it is really paid. `ladderTimeout` is a multiple of airtime, so
+for that 25-byte frame one direct attempt waits 1.7 s instead of 0.3 s and the
+full escalation ladder takes 32 s instead of 3.6 s; relay jitter (0…3× airtime)
+grows from 0.19 s to 2.2 s.
+
+#### What it buys
+
+|                | SF7 / 125 kHz | SF12 / 250 kHz | Gain         |
+| -------------- | ------------- | -------------- | ------------ |
+| Transmit power | 14 dBm        | 22 dBm         | +8 dB        |
+| Sensitivity    | −124.5 dBm    | −134.0 dBm     | +9.5 dB      |
+|                |               |                | **+17.5 dB** |
+
+Sensitivity is −174 + 10 log₁₀(BW) + 6 dB noise figure + the demodulator floor
+(−7.5 dB at SF7, −20 dB at SF12), which reproduces the SX1262 datasheet figures.
+Widening to 250 kHz costs 3 dB of noise floor — SF12 at 125 kHz would be
+−137 dBm — but that is not a shape the sub-band allows, and it would double the
+airtime again.
+
+17.5 dB is ×7.5 range in free space and ×2.7 to ×3.8 for a path loss exponent of
+4 to 3, so **about three times the range** in real terrain, for a frame that
+takes twelve times as long and an exchange that answers ten times slower. That
+is the trade the defaults now take; a dense mesh of nodes that already hear each
+other has nothing to gain from it and should go back to 868.4 / 125 / SF7.
 
 ## Decoding a captured frame
 
@@ -343,7 +431,7 @@ capture survives a node that cannot read what it heard. A host can decode those
 bytes with the group key:
 
 ```js
-import { createDecipheriv } from 'node:crypto';
+import { createDecipheriv } from "node:crypto";
 
 export function decodeMeshFrame(frame, key) {
   const trailer = frame[frame.length - 1];
@@ -361,7 +449,8 @@ export function decodeMeshFrame(frame, key) {
   const ctrl = frame[0];
   const headerSize = ctrl & 0x08 ? 7 : 6;
   const header = frame.subarray(0, headerSize);
-  const counter = ctrl & 0x08 ? header.readUInt32BE(3) : header.readUIntBE(3, 3);
+  const counter =
+    ctrl & 0x08 ? header.readUInt32BE(3) : header.readUIntBE(3, 3);
 
   const ciphertext = frame.subarray(headerSize, payloadLength - 4);
   const mic = frame.subarray(payloadLength - 4, payloadLength);
@@ -372,7 +461,7 @@ export function decodeMeshFrame(frame, key) {
   nonce[2] = header[2];
   nonce.writeUInt32BE(counter, 3);
 
-  const decipher = createDecipheriv('aes-128-ccm', key, nonce, {
+  const decipher = createDecipheriv("aes-128-ccm", key, nonce, {
     authTagLength: 4,
   });
   decipher.setAAD(header, { plaintextLength: ciphertext.length });

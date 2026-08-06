@@ -37,9 +37,9 @@ void resetParameters() {
 
   setAndSaveParameter(PARAM_LORA_ROLE, LORA_ROLE_ENDPOINT);
   setAndSaveParameter(PARAM_LORA_TTL, 2);
-  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 7);
-  setAndSaveParameter(PARAM_LORA_FREQUENCY, 8684);
-  setAndSaveParameter(PARAM_LORA_BANDWIDTH, 125);
+  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 12);
+  setAndSaveParameter(PARAM_LORA_FREQUENCY, 18781);  // 869.525 MHz
+  setAndSaveParameter(PARAM_LORA_BANDWIDTH, 250);
   setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
 
 #ifdef GPS_RX

@@ -270,10 +270,27 @@ drop the rest.
 ### Radio settings and the duty cycle
 
 Carrier, bandwidth and spreading factor are all runtime parameters, re-applied
-without a reboot whenever one of them changes. The defaults are **868.4 MHz,
-125 kHz, SF7** — 868.4 is in EN 300 220 sub-band M (1 %) and lands in the gap
-between the mandatory LoRaWAN channels at 868.3 and 868.5, so the mesh does not
-share a channel with every LoRaWAN device around.
+without a reboot whenever one of them changes. The defaults are **869.525 MHz,
+250 kHz, SF12**, and they are one decision rather than three: sub-band P
+(869.4–869.65) is the only part of the band that allows 500 mW and a 10 % duty
+cycle, the regulation lets it be used either as 25 kHz channels or as **one
+channel for high speed data** — so 250 kHz is the only wideband shape allowed
+there and 869.525 the only centre that fits it — and SF12 then buys back the
+3 dB the wider bandwidth costs plus 9.5 dB more. Against 868.4/125/SF7 that is
+**+17.5 dB**, roughly three times the range, for twelve times the airtime per
+frame and an exchange that answers ten times slower. It is not a quiet channel:
+LoRaWAN gateways send their RX2 downlinks there at 27 dBm. `DC18736 DD125 DE7`
+goes back to the old settings — 868.4 sits in the gap between the mandatory
+LoRaWAN channels at 868.3 and 868.5 and shares a channel with nobody.
+
+**`DC` counts 25 kHz steps above 400 MHz**, so the default 869.525 is `18781`
+and 868.4 is `18736`. The step is the raster of sub-band P and the
+origin keeps the SX1262's whole 150–960 MHz range inside a signed int16, so the
+carrier needs no unsigned accessor. It counted 0.1 MHz until 2026-08, so
+`frequencyCode()` refuses a stored 1500…9600 — unambiguously an old value, since
+no band this radio uses lands there in the new encoding — and falls back to the
+default. Nothing is converted or written back: a node that was never reset would
+otherwise read its 8684 as 617.1 MHz, pass the range guard, and disappear.
 
 **The duty cycle follows the frequency** and is not a constant —
 `dutyCycleDivisor()` derives it from the carrier, falling back to the strictest
@@ -291,19 +308,20 @@ value for anything unrecognised:
 time within an observation window — one hour — so the governor is a token
 bucket, not a gap between frames: `airtimeBudgetMillis` holds the transmit time
 still available, `refillAirtimeBudget()` credits it back at 1/N of real time,
-and `transmitFrame` spends it. At 1 % that is **36 s of airtime per hour**,
-which the node may burst through — roughly 580 frames of 62 ms back to back at
-SF7/125 kHz — before it has to wait. Enforcing a fixed post-transmission
+and `transmitFrame` spends it. At the default 10 % that is **360 s of airtime
+per hour**, which the node may burst through — roughly 485 frames of 742 ms back
+to back at SF12/250 kHz — before it has to wait. Enforcing a fixed post-transmission
 silence instead would be far stricter than the regulation and would make a
 retry ladder unusable. `LORA_DUTY_CYCLE_WINDOW_MS` shortens the window if you
 want the node more conservative. RadioLib does not enforce any of this outside
 LoRaWAN.
 
 **Transmit power follows the carrier too**, for the same reason. `maxTxPowerDbm()`
-returns **14 dBm** (25 mW ERP) across the band, and 22 dBm only in sub-band P,
-which allows 500 mW — more than the SX1262 can produce, so there the radio's own
-ceiling is what binds. It is applied at `begin()` and re-applied whenever the
-frequency changes, since moving the carrier can move the limit.
+returns **14 dBm** (25 mW ERP) across 863–870, 22 dBm in sub-band P, which allows
+500 mW — more than the SX1262 can produce, so there the radio's own ceiling is
+what binds — and **10 dBm** in 433.05–434.79, which allows only 10 mW. It is
+applied at `begin()` and re-applied whenever the frequency changes, since moving
+the carrier can move the limit.
 
 It is deliberately **not** a parameter: there is no legitimate reason to raise
 it, and a parameter is one typo away from transmitting illegally. The old value

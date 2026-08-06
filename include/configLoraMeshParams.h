@@ -35,13 +35,18 @@
 #define PARAM_LORA_ROLE 104  // DA
 /* hops allowed for the frames this node originates, 0 = never relayed */
 #define PARAM_LORA_TTL 105  // DB
-/* carrier in units of 0.1 MHz, so 8684 is 868.4 MHz. The whole EU868 SRD band
-   sits on 0.1 MHz boundaries, and 0.1 MHz is the finest step an int16 parameter
-   can carry without overflowing */
+/* carrier as a count of 25 kHz steps above 400 MHz, so 18781 is 869.525 MHz -
+   the default - and 18736 is 868.4. 25 kHz is the raster of that channel and
+   divides every EU868 and US915 one; counting from 400 MHz keeps the SX1262's
+   whole 150-960 MHz range inside a signed int16, so the slot stays an ordinary
+   parameter. Firmware before 2026-08 counted 0.1 MHz here; those values, 1500
+   to 9600, are refused rather than converted, so a node that was never reset
+   runs on the default instead of on 617.1 MHz. */
 #define PARAM_LORA_FREQUENCY 106  // DC
-/* bandwidth in kHz: 250, 125 or 62 (meaning 62.5) */
+/* bandwidth in kHz: 250, 125 or 62 (meaning 62.5) - 250 on the default carrier,
+   which sub-band P allows to be used as a single channel */
 #define PARAM_LORA_BANDWIDTH 107  // DD
-/* 7 to 12, anything else falls back to SF7 */
+/* 7 to 12, anything else falls back to SF12 */
 #define PARAM_LORA_SPREADING_FACTOR 108  // DE
 /* seconds between two periodic parameter broadcasts, 0 = never */
 #define PARAM_LORA_INTERVAL_SECONDS 109  // DF

@@ -17,24 +17,42 @@
 #define LORA_PIN_BUSY 40
 #endif
 
-/* carrier in units of 0.1 MHz, overridable per env. 868.4 sits in EN 300 220
-   sub-band M, which allows 1%, and falls in the gap between the mandatory
-   LoRaWAN channels at 868.3 and 868.5 - so the mesh does not share a channel
-   with every LoRaWAN device in the neighbourhood */
+/* Carrier as a count of 25 kHz steps above 400 MHz, overridable per env, so
+   18781 is 869.525 MHz - the centre of EN 300 220 sub-band P, which allows
+   500 mW and a 10% duty cycle, and which the regulation lets a wideband link
+   use as one 250 kHz channel. That is 869.400 to 869.650 exactly, which is why
+   the carrier sits on a 25 kHz boundary the old 0.1 MHz encoding could not
+   express. The cost is company: a LoRaWAN gateway sends its RX2 downlinks here
+   too, at 27 dBm. 18736 (868.4) is the quiet alternative. */
 #ifndef LORA_FREQUENCY_DEFAULT
-#define LORA_FREQUENCY_DEFAULT 8684
+#define LORA_FREQUENCY_DEFAULT 18781
 #endif
+/* Legacy DC values counted 0.1 MHz and covered 1500 to 9600. No band this radio
+   uses lands there in the new encoding - 433.05-434.79 is 1322 to 1391 and
+   863-870 is 18520 to 18800 - so a stored value in that window is unambiguously
+   an old one, and is refused rather than believed. */
+#define LORA_FREQUENCY_LEGACY_MIN 1500
+#define LORA_FREQUENCY_LEGACY_MAX 9600
+/* 250 kHz is not a preference but what sub-band P allows: its channels are
+   25 kHz, or the whole band as one. SF12 buys back the sensitivity the wider
+   bandwidth costs, and then some. */
 #ifndef LORA_BANDWIDTH_DEFAULT
-#define LORA_BANDWIDTH_DEFAULT 125
+#define LORA_BANDWIDTH_DEFAULT 250
+#endif
+#ifndef LORA_SPREADING_FACTOR_DEFAULT
+#define LORA_SPREADING_FACTOR_DEFAULT 12
 #endif
 #define LORA_CODING_RATE 5
 #define LORA_PREAMBLE_SYMBOLS 8
-/* 25 mW ERP, which is 14 dBm, is the limit across the SRD band. Sub-band P
-   (869.4-869.65) allows 500 mW - more than the SX1262 can produce - so there
-   the radio's own 22 dBm ceiling is what binds. The old 22 was inherited from
-   the beacon code and was roughly six times over the limit at 868 MHz. */
+/* 25 mW ERP, which is 14 dBm, is the limit across the 863-870 SRD band.
+   Sub-band P (869.4-869.65) allows 500 mW - more than the SX1262 can produce -
+   so there the radio's own 22 dBm ceiling is what binds. The 433 MHz band is
+   the other way round: it allows only 10 mW, so 14 dBm would be two and a half
+   times over. The old flat 22 was inherited from the beacon code and was
+   roughly six times over the limit at 868 MHz. */
 #define LORA_TX_POWER_ERP_LIMITED 14
 #define LORA_TX_POWER_HIGH_POWER_BAND 22
+#define LORA_TX_POWER_433_BAND 10
 
 /* EN 300 220 expresses the duty cycle as transmit time within an observation
    window, not as a gap between frames, so the governor is a budget rather than
@@ -140,23 +158,42 @@ static void IRAM_ATTR setReceivedFlag() {
 static uint8_t spreadingFactor() {
   int16_t value = getParameter(PARAM_LORA_SPREADING_FACTOR);
   if (value < 7 || value > 12) {
-    return 7;
+    return LORA_SPREADING_FACTOR_DEFAULT;
   }
   return (uint8_t)value;
 }
 
-/* the carrier in units of 0.1 MHz. The SX1262 tunes 150 to 960 MHz, so anything
-   outside that is an unset or stale parameter rather than a choice */
-static int16_t frequencyTenths() {
+/* The carrier as a count of 25 kHz steps above 400 MHz. 25 kHz is the channel
+   raster of sub-band P and divides every EU868 and US915 channel, so a step
+   that fine is what makes 869.525 - the centre of the one 250 kHz channel the
+   regulation grants 500 mW - expressible at all; 0.1 MHz could only reach
+   869.5, a quarter channel low. Counting from 400 MHz keeps the whole SX1262
+   tuning range, 150 to 960 MHz, inside a plain positive-and-negative int16, so
+   no parameter needs an unsigned accessor.
+
+   The SX1262 tunes 150 to 960 MHz, so anything outside that is an unset or
+   stale parameter rather than a choice. Two windows inside it are rejected as
+   well. 0 is what an untouched NVS key reads and would otherwise mean
+   400.000 MHz, which is in no SRD band; 1500 to 9600 is what firmware before
+   2026-08 wrote here, when the slot counted 0.1 MHz, and a node that was never
+   reset would come up on 617.1 MHz rather than off the air. Nothing is written
+   back - a stale value stays where it is and the node simply runs on the
+   default until someone sets DC. */
+#define LORA_FREQUENCY_CODE_MIN (-10000)  // 150 MHz
+#define LORA_FREQUENCY_CODE_MAX 22400     // 960 MHz
+static int16_t frequencyCode() {
   int16_t value = getParameter(PARAM_LORA_FREQUENCY);
-  if (value < 1500 || value > 9600) {
+  if (value == 0 || value < LORA_FREQUENCY_CODE_MIN ||
+      value > LORA_FREQUENCY_CODE_MAX ||
+      (value >= LORA_FREQUENCY_LEGACY_MIN &&
+       value <= LORA_FREQUENCY_LEGACY_MAX)) {
     return LORA_FREQUENCY_DEFAULT;
   }
   return value;
 }
 
 static float frequency() {
-  return frequencyTenths() / 10.0f;
+  return 400.0f + frequencyCode() * 0.025f;
 }
 
 static float bandwidth() {
@@ -179,17 +216,17 @@ static float bandwidth() {
    recognised falls back to the strictest value rather than the most convenient
    one. RadioLib does not enforce any of this outside LoRaWAN. */
 static uint16_t dutyCycleDivisor() {
-  int16_t carrier = frequencyTenths();
-  if (carrier >= 4305 && carrier <= 4347) {
+  int16_t carrier = frequencyCode();
+  if (carrier >= 1322 && carrier <= 1391) {
     return 10;  // 433.05-434.79 MHz, 10%
   }
-  if (carrier >= 8650 && carrier < 8686) {
+  if (carrier >= 18600 && carrier < 18744) {
     return 100;  // 865.0-868.6 MHz, sub-bands L and M, 1%
   }
-  if (carrier >= 8694 && carrier <= 8696) {
+  if (carrier >= 18776 && carrier <= 18786) {
     return 10;  // 869.4-869.65 MHz, sub-band P, 10%
   }
-  if (carrier >= 8697 && carrier <= 8700) {
+  if (carrier >= 18788 && carrier <= 18800) {
     return 100;  // 869.7-870.0 MHz, sub-band Q, 1%
   }
   return 1000;  // sub-bands K and N, and every gap, 0.1%
@@ -204,9 +241,12 @@ static uint32_t dutyCycleAllowanceMillis() {
    does. It is deliberately not a parameter: there is no legitimate reason to
    set it higher, and a parameter is one typo away from transmitting illegally. */
 static int8_t maxTxPowerDbm() {
-  int16_t carrier = frequencyTenths();
-  if (carrier >= 8694 && carrier <= 8696) {
-    return LORA_TX_POWER_HIGH_POWER_BAND;
+  int16_t carrier = frequencyCode();
+  if (carrier >= 1322 && carrier <= 1391) {
+    return LORA_TX_POWER_433_BAND;  // 433.05-434.79 MHz, 10 mW
+  }
+  if (carrier >= 18776 && carrier <= 18786) {
+    return LORA_TX_POWER_HIGH_POWER_BAND;  // sub-band P, 500 mW
   }
   return LORA_TX_POWER_ERP_LIMITED;
 }
@@ -282,7 +322,7 @@ static boolean canTransmit(uint8_t frameLength) {
 
 static void printRadioSettings(Print* output) {
   output->print(F("Radio: "));
-  output->print(frequency(), 1);
+  output->print(frequency(), 3);
   output->print(F(" MHz, BW "));
   output->print(bandwidth(), 1);
   output->print(F(" kHz, SF"));
