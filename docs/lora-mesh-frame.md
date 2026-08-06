@@ -338,8 +338,8 @@ time within a one-hour observation window, so the governor is a token bucket:
 `airtimeBudgetMillis` holds the transmit time still available, it is credited
 back at 1/N of real time, and each transmission spends what it costs. At the
 default 10 % that is 360 s per hour, which the node may burst through — roughly
-485 frames of 742 ms at SF12/250 kHz — before it has to wait; at 1 % it is 36 s,
-roughly 580 frames of 62 ms at SF7/125 kHz. A fixed post-transmission silence
+437 frames of 823 ms at SF12/250 kHz — before it has to wait; at 1 % it is 36 s,
+roughly 538 frames of 67 ms at SF7/125 kHz. A fixed post-transmission silence
 would be far stricter than the regulation and would make the retry ladder
 unusable. RadioLib enforces none of this outside LoRaWAN.
 
@@ -387,7 +387,7 @@ rate optimisation is on and the frame is exactly half of SF12 at 125 kHz:
 | --------------------------- | ----- | ------------- | -------------- |
 | HELLO                       | 11    | 41 ms         | 578 ms         |
 | the `CMD` of the example    | 14    | 46 ms         | 578 ms         |
-| GPS telemetry, 6 parameters | 25    | 62 ms         | 742 ms         |
+| GPS telemetry, 8 parameters | 29    | 67 ms         | 823 ms         |
 | the largest frame           | 68    | 123 ms        | 1479 ms        |
 
 Twelve times the airtime — against ten times the budget, so the number of frames
@@ -396,12 +396,12 @@ an hour holds barely moves:
 |                         | SF7 / 125 kHz, 1 % | SF12 / 250 kHz, 10 % |
 | ----------------------- | ------------------ | -------------------- |
 | Transmit time per hour  | 36 s               | 360 s                |
-| 25-byte frames per hour | 583                | 485                  |
+| 29-byte frames per hour | 538                | 437                  |
 
 Latency is where it is really paid. `ladderTimeout` is a multiple of airtime, so
-for that 25-byte frame one direct attempt waits 1.7 s instead of 0.3 s and the
-full escalation ladder takes 32 s instead of 3.6 s; relay jitter (0…3× airtime)
-grows from 0.19 s to 2.2 s.
+for that 29-byte frame one direct attempt waits 1.8 s instead of 0.3 s and the
+full escalation ladder takes 36 s instead of 3.8 s; relay jitter (0…3× airtime)
+grows from 0.20 s to 2.5 s.
 
 #### What it buys
 

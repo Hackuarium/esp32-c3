@@ -309,7 +309,7 @@ time within an observation window — one hour — so the governor is a token
 bucket, not a gap between frames: `airtimeBudgetMillis` holds the transmit time
 still available, `refillAirtimeBudget()` credits it back at 1/N of real time,
 and `transmitFrame` spends it. At the default 10 % that is **360 s of airtime
-per hour**, which the node may burst through — roughly 485 frames of 742 ms back
+per hour**, which the node may burst through — roughly 437 frames of 823 ms back
 to back at SF12/250 kHz — before it has to wait. Enforcing a fixed post-transmission
 silence instead would be far stricter than the regulation and would make a
 retry ladder unusable. `LORA_DUTY_CYCLE_WINDOW_MS` shortens the window if you
