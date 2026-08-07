@@ -16,6 +16,16 @@
 #define LORA_PIN_RESET 42
 #define LORA_PIN_BUSY 40
 #endif
+/* The antenna hangs off a PE4259, and that switch takes two control lines:
+   DIO2 drives CTRL and this pin drives /CTRL, so they have to move together and
+   opposite. Leaving it floating does not fail, it attenuates - the receive path
+   still happens to be selected, so a node hears normally and its own transmit
+   only reaches the antenna through the switch's isolation, about 40 dB down.
+   That is invisible on a bench at arm's length and costs a factor of a hundred
+   in range outdoors. */
+#ifndef LORA_PIN_RF_SW
+#define LORA_PIN_RF_SW 38
+#endif
 
 /* Carrier as a count of 25 kHz steps above 400 MHz, overridable per env, so
    18781 is 869.525 MHz - the centre of EN 300 220 sub-band P, which allows
@@ -44,6 +54,23 @@
 #endif
 #define LORA_CODING_RATE 5
 #define LORA_PREAMBLE_SYMBOLS 8
+/* The Wio-SX1262 clocks the radio from an active TCXO supplied by DIO3, and it
+   is a 1.8 V part. RadioLib's begin() defaults this argument to 1.6 V - the
+   lowest step the SX1262 regulator offers - so leaving it out runs the
+   oscillator below spec: it still starts, so begin() reports no error, but the
+   PLL locks to a marginal reference and the transmitted chirp is spectrally
+   smeared. The receiver's correlator then throws most of the energy away, which
+   reads as a weak *and* noisy packet - a fixed ~50 dB below budget with the SNR
+   pinned near 5 dB however close the nodes are. It has to be stated per board,
+   not guessed: a module with a plain crystal needs 0 here instead. */
+#ifndef LORA_TCXO_VOLTAGE
+#define LORA_TCXO_VOLTAGE 1.8f
+#endif
+/* RadioLib's begin() trips the PA over-current protection at 60 mA, which is
+   the SX1261 default; an SX1262 draws about 118 mA at the 22 dBm sub-band P
+   allows, so the ceiling clips the top of the only band worth being in. 140 mA
+   is what the SX1262 resets this register to on its own. */
+#define LORA_PA_CURRENT_LIMIT_MA 140.0f
 /* 25 mW ERP, which is 14 dBm, is the limit across the 863-870 SRD band.
    Sub-band P (869.4-869.65) allows 500 mW - more than the SX1262 can produce -
    so there the radio's own 22 dBm ceiling is what binds. The 433 MHz band is
@@ -349,6 +376,12 @@ static void applyRadioSettings(Print* output) {
   /* the ceiling depends on the sub-band, so moving the carrier can change it */
   if (state == RADIOLIB_ERR_NONE) {
     state = radio.setOutputPower(maxTxPowerDbm());
+  }
+  /* setOutputPower reads the trip point, reconfigures the PA and writes the old
+     value back, so raising it has to follow every power change rather than
+     happen once at startup */
+  if (state == RADIOLIB_ERR_NONE) {
+    state = radio.setCurrentLimit(LORA_PA_CURRENT_LIMIT_MA);
   }
   if (state != RADIOLIB_ERR_NONE) {
     if (output != NULL) {
@@ -1047,7 +1080,7 @@ void TaskLoraMesh(void* pvParameters) {
   int state = radio.begin(frequency(), bandwidth(), spreadingFactor(),
                           LORA_CODING_RATE,
                           RADIOLIB_SX126X_SYNC_WORD_PRIVATE, maxTxPowerDbm(),
-                          LORA_PREAMBLE_SYMBOLS);
+                          LORA_PREAMBLE_SYMBOLS, LORA_TCXO_VOLTAGE);
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("LoRa mesh radio init failed: "));
     Serial.println(state);
@@ -1062,6 +1095,15 @@ void TaskLoraMesh(void* pvParameters) {
   airtimeBudgetMillis = dutyCycleAllowanceMillis();
   budgetUpdatedMillis = millis();
   radio.setDio2AsRfSwitch(true);
+  /* the other half of the switch: driven low while transmitting, high while
+     listening, which is exactly the complement of DIO2 */
+  radio.setRfSwitchPins(LORA_PIN_RF_SW, RADIOLIB_NC);
+  radio.setCurrentLimit(LORA_PA_CURRENT_LIMIT_MA);
+  /* the measured floor sits about 6 dB above what the datasheet claims for this
+     part, and the boosted LNA is the cheapest of that back: a little more
+     current while listening, which neither a mains-powered bridge nor a node
+     that is idle between frames has any reason to save */
+  radio.setRxBoostedGainMode(true);
   radio.setPacketReceivedAction(setReceivedFlag);
   radio.startReceive();
 
