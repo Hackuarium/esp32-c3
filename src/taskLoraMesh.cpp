@@ -740,8 +740,39 @@ static void sendParameterResponse(uint8_t destination,
   }
 }
 
+/* the console answer, sent once the queued command has actually run: same shape
+   as a parameter response, but the payload is already built by the time it gets
+   here because running the command is what produced it */
+static void sendConsoleResponse(const LoraConsoleReply* reply) {
+  uint8_t body[LORA_MAX_BODY_SIZE];
+  body[0] = (uint8_t)(reply->requestCounter >> 16);
+  body[1] = (uint8_t)(reply->requestCounter >> 8);
+  body[2] = (uint8_t)reply->requestCounter;
+  memcpy(body + LORA_RESP_COUNTER_SIZE, reply->body, reply->bodyLength);
+
+  uint8_t buffer[LORA_MAX_FRAME_SIZE];
+  uint8_t length = buildFrame(
+      reply->destination, LORA_TYPE_RESP, reply->budget, nextCounter(), body,
+      (uint8_t)(LORA_RESP_COUNTER_SIZE + reply->bodyLength), buffer);
+  if (length > 0) {
+    transmitFrame(buffer, length);
+  }
+}
+
+/* Runs whatever a remote (ar) asked for, outside the receive path. It is a slow
+   step by design - the command is a whole console command, and a few of them
+   block for seconds - so it sits with the other services in the task loop
+   rather than inside the radio callback. */
+static void serviceConsole() {
+  LoraConsoleReply reply;
+  if (!loraMeshRunQueuedConsole(&reply)) {
+    return;
+  }
+  sendConsoleResponse(&reply);
+}
+
 static void handleResponse(const LoraFrame* frame) {
-  if (frame->bodyLength < LORA_RESP_COUNTER_SIZE + 3) {
+  if (frame->bodyLength < LORA_RESP_COUNTER_SIZE + 1) {
     return;
   }
   uint32_t echoed = ((uint32_t)frame->body[0] << 16) |
@@ -749,9 +780,17 @@ static void handleResponse(const LoraFrame* frame) {
   if (pending.active && (pending.counter & 0xFFFFFFul) == echoed) {
     pending.active = false;
   }
-  loraMeshReportParameters(frame->source,
-                           frame->body + LORA_RESP_COUNTER_SIZE,
-                           frame->bodyLength - LORA_RESP_COUNTER_SIZE);
+
+  const uint8_t* body = frame->body + LORA_RESP_COUNTER_SIZE;
+  uint8_t bodyLength = (uint8_t)(frame->bodyLength - LORA_RESP_COUNTER_SIZE);
+  if (body[0] == LORA_CMD_CONSOLE) {
+    loraMeshReportConsole(frame->source, body, bodyLength);
+    return;
+  }
+  if (bodyLength < 3) {
+    return;
+  }
+  loraMeshReportParameters(frame->source, body, bodyLength);
 }
 
 static void handleCommand(const LoraFrame* frame, boolean duplicate) {
@@ -776,7 +815,20 @@ static void handleCommand(const LoraFrame* frame, boolean duplicate) {
     return;
   }
 
-  uint8_t status = loraMeshApplyCommand(frame->body, frame->bodyLength);
+  /* a console command is queued rather than applied: it runs from the task
+     loop, after this ACK is on the air. A broadcast one is dropped outright -
+     the answer is a frame addressed back to the caller, so every node would
+     transmit its own console at once. */
+  uint8_t status;
+  if (frame->bodyLength >= 1 && frame->body[0] == LORA_CMD_CONSOLE) {
+    status = frame->destination == LORA_ADDRESS_BROADCAST
+                 ? LORA_REASON_UNKNOWN_COMMAND
+                 : loraMeshQueueConsole(frame->source, frame->counter,
+                                        frame->hops, frame->body,
+                                        frame->bodyLength);
+  } else {
+    status = loraMeshApplyCommand(frame->body, frame->bodyLength);
+  }
   peer->acknowledgedCounter = frame->counter;
   peer->acknowledgedStatus = status;
   peer->hasAcknowledged = true;
@@ -1042,6 +1094,7 @@ void TaskLoraMesh(void* pvParameters) {
 
     serviceRelayQueue();
     servicePending();
+    serviceConsole();
 
     uint32_t helloInterval = helloIntervalMillis();
     if (helloInterval > 0 &&

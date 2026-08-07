@@ -9,9 +9,9 @@
 
 /* Parses the "42:" that may prefix a command and leaves text on the rest. An
    empty prefix ("ac:C6") is a deliberate broadcast, so it is not an error. */
-static boolean parseDestination(const char** text,
-                                uint8_t* destination,
-                                Print* output) {
+boolean loraMeshParseDestination(const char** text,
+                                 uint8_t* destination,
+                                 Print* output) {
   const char* colon = strchr(*text, ':');
   *destination = LORA_ADDRESS_BROADCAST;
   if (colon == NULL) {
@@ -305,7 +305,7 @@ void loraMeshReportParameters(uint8_t source,
 void processLoraMeshSetCommand(char* paramValue, Print* output) {
   const char* text = paramValue;
   uint8_t destination;
-  if (!parseDestination(&text, &destination, output)) {
+  if (!loraMeshParseDestination(&text, &destination, output)) {
     return;
   }
 
@@ -375,7 +375,7 @@ void processLoraMeshSetCommand(char* paramValue, Print* output) {
 void processLoraMeshGetCommand(char* paramValue, Print* output) {
   const char* text = paramValue;
   uint8_t destination;
-  if (!parseDestination(&text, &destination, output)) {
+  if (!loraMeshParseDestination(&text, &destination, output)) {
     return;
   }
   /* a read has to be addressed: every node answering one broadcast at once is a
@@ -422,7 +422,7 @@ void processLoraMeshGetCommand(char* paramValue, Print* output) {
 void processLoraMeshCopyCommand(char* paramValue, Print* output) {
   const char* text = paramValue;
   uint8_t destination;
-  if (!parseDestination(&text, &destination, output)) {
+  if (!loraMeshParseDestination(&text, &destination, output)) {
     return;
   }
 

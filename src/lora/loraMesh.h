@@ -48,8 +48,44 @@ void loraMeshPrintInfo(Print* output);
 void loraMeshPrintPeers(Print* output);
 
 /* Applies a received CMD body. Returns a LORA_STATUS_/LORA_REASON_ code, which
-   is what travels back in the ACK or NACK. */
+   is what travels back in the ACK or NACK. Handles the parameter opcodes only:
+   CONSOLE is queued instead of applied, because it runs after its receipt. */
 uint8_t loraMeshApplyCommand(const uint8_t* body, uint8_t bodyLength);
+
+/* Parses the "42:" that may prefix a mesh command and leaves text on the rest.
+   An empty prefix ("ac:C6") is a deliberate broadcast, not an error. */
+boolean loraMeshParseDestination(const char** text,
+                                 uint8_t* destination,
+                                 Print* output);
+
+/* What running a queued console command produced: who asked for it, which
+   request it answers, how far that request travelled, and the RESP payload. */
+struct LoraConsoleReply {
+  uint8_t destination;
+  uint32_t requestCounter;
+  uint8_t budget;
+  uint8_t body[LORA_MAX_BODY_SIZE - LORA_RESP_COUNTER_SIZE];
+  uint8_t bodyLength;
+};
+
+/* Accepts a CONSOLE body for later execution, returning the status its ACK
+   carries. The command is not run here: the caller is the receive path, and a
+   command that reboots or transmits must not do so before its receipt is out. */
+uint8_t loraMeshQueueConsole(uint8_t source,
+                             uint32_t counter,
+                             uint8_t hops,
+                             const uint8_t* body,
+                             uint8_t bodyLength);
+
+/* Runs the queued command, if there is one, and fills reply with what to send
+   back. Returns false when nothing was queued. */
+boolean loraMeshRunQueuedConsole(LoraConsoleReply* reply);
+
+/* Prints the text of a console RESP: a JSON line on a bridge, one readable
+   line anywhere else. */
+void loraMeshReportConsole(uint8_t source,
+                           const uint8_t* body,
+                           uint8_t bodyLength);
 
 /* Reports a received DATA body on the serial console. */
 void loraMeshReportData(uint8_t source, const uint8_t* body, uint8_t bodyLength);
@@ -67,5 +103,6 @@ void processLoraCommand(char command, char* paramValue, Print* output);
 void processLoraMeshSetCommand(char* paramValue, Print* output);
 void processLoraMeshGetCommand(char* paramValue, Print* output);
 void processLoraMeshCopyCommand(char* paramValue, Print* output);
+void processLoraMeshRunCommand(char* paramValue, Print* output);
 
 #endif

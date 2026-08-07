@@ -76,8 +76,9 @@
 
 /* bodies of CMD frames start with an opcode.
 
-   SET: opcode(1) first(1) values(n)   - values are int8 or int16 per the opcode
-   GET: opcode(1) first(1) count(1)
+   SET:     opcode(1) first(1) values(n) - int8 or int16 per the opcode
+   GET:     opcode(1) first(1) count(1)
+   CONSOLE: opcode(1) text(n)            - printable ASCII, no terminator
 
    A GET is answered with a RESP frame rather than an ACK, because the caller
    wants the values, not a receipt:
@@ -85,13 +86,38 @@
    RESP: echoed request counter, low 24 bits(3) opcode(1) first(1) values(n)
 
    The counter echo is what lets the requester close its pending request, the
-   same trick ACK uses. */
+   same trick ACK uses.
+
+   CONSOLE is the one opcode that does not name a parameter: its body is the
+   command an operator would have typed on that node's own port, and it is
+   answered twice - an ACK the moment it is queued, then a RESP carrying what
+   the command printed:
+
+   RESP: echoed counter(3) opcode(1) flags(1) text(n)
+
+   Two answers rather than one because the command runs after the ACK, not
+   before: a node told to reboot never gets to send a RESP, and the receipt is
+   the only thing that can prove the frame arrived at all. The flags byte exists
+   for one bit, LORA_CONSOLE_TRUNCATED, because a reply cut at the frame
+   boundary and a command that simply had little to say are otherwise the same
+   43 bytes - and reading the first as the second is how an operator concludes a
+   node answered when it only started to. */
 #define LORA_CMD_SET_PARAMETERS_INT8 0x01
 #define LORA_CMD_SET_PARAMETERS_INT16 0x02
 #define LORA_CMD_GET_PARAMETERS 0x03
+#define LORA_CMD_CONSOLE 0x04
 #define LORA_RESP_COUNTER_SIZE 3
 /* one frame cannot carry more than this many parameters as int16 */
 #define LORA_MAX_PARAMETERS_PER_FRAME 20
+/* A console exchange is two frames and both are capped by the body, not by the
+   command: what a node prints is unbounded (the parameter dump alone is one
+   line per slot) while 44 bytes already cost ~1.8 s at SF12. So the reply is
+   truncated to one frame and says so, rather than paging a console over a
+   channel that has a duty cycle. */
+#define LORA_CONSOLE_MAX_TEXT (LORA_MAX_BODY_SIZE - 1)
+#define LORA_CONSOLE_MAX_REPLY (LORA_MAX_BODY_SIZE - LORA_RESP_COUNTER_SIZE - 2)
+/* set when the command printed more than the frame could carry */
+#define LORA_CONSOLE_TRUNCATED 0x01
 
 /* A DATA body is a SET body byte for byte - same opcode, same first index, same
    values - so telemetry needs no encoder and no parser of its own. The frame
@@ -105,6 +131,8 @@
 #define LORA_REASON_UNKNOWN_COMMAND 0x01
 #define LORA_REASON_BAD_BODY 0x02
 #define LORA_REASON_OUT_OF_RANGE 0x03
+/* a console command is still waiting to run, and only one slot holds one */
+#define LORA_REASON_BUSY 0x04
 
 struct LoraRouteEntry {
   uint8_t address;

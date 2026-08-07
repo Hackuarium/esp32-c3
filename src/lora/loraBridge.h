@@ -30,6 +30,15 @@ void loraBridgeText(Print* output,
                     const char* key,
                     const __FlashStringHelper* value);
 
+/* The same, for bytes that came from somewhere else: a console reply is
+   whatever another node's Print stream produced, so the quotes, backslashes
+   and newlines in it are escaped. Without that one stray quote from a remote
+   command turns the line into something the host cannot parse. */
+void loraBridgeTextBytes(Print* output,
+                         const char* key,
+                         const char* value,
+                         uint8_t length);
+
 /* A command answered over MQTT or the web page still leaves its JSON copy on
    Serial, so the host watching the port sees every exchange and not only the
    ones it started. Returns the extra stream to write to, or NULL. */

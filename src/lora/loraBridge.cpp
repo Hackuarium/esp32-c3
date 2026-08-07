@@ -79,6 +79,40 @@ void loraBridgeText(Print* output,
   output->print('"');
 }
 
+void loraBridgeTextBytes(Print* output,
+                         const char* key,
+                         const char* value,
+                         uint8_t length) {
+  if (output == NULL) {
+    return;
+  }
+  writeKey(output, key);
+  output->print('"');
+  for (uint8_t i = 0; i < length; i++) {
+    /* unsigned on purpose: char is signed on xtensa, and a byte past 0x7F would
+       then compare as a control character and be escaped from a negative value */
+    uint8_t character = (uint8_t)value[i];
+    if (character == '"' || character == '\\') {
+      output->print('\\');
+      output->print((char)character);
+    } else if (character == '\n') {
+      output->print(F("\\n"));
+    } else if (character == '\t') {
+      output->print(F("\\t"));
+    } else if (character < 0x20 || character >= 0x7F) {
+      /* the mesh only ever carries printable text here, so this is the
+         belt-and-braces branch: escaped rather than dropped, because a byte
+         that should not exist is worth seeing on the host */
+      output->print(F("\\u00"));
+      output->print(character >> 4, HEX);
+      output->print(character & 0x0F, HEX);
+    } else {
+      output->print((char)character);
+    }
+  }
+  output->print('"');
+}
+
 Print* loraBridgeCopy(Print* output) {
   if (!loraMeshIsBridge() || output == &Serial) {
     return NULL;
