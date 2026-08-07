@@ -53,8 +53,8 @@ version 1 has to add that test first.
 | 1     | `DATA`     | SET-shaped                | nothing                            |
 | 2     | `DATA_ACK` | SET-shaped                | `ACK` (unicast only)               |
 | 3     | `ACK`      | counter echo + status     | —                                  |
-| 4     | `CMD`      | opcode-led                | `ACK`/`NACK`, or `RESP` for a read |
-| 5     | `RESP`     | counter echo + SET-shaped | —                                  |
+| 4     | `CMD`      | opcode-led                | `ACK`/`NACK`, `RESP` for a read, both for a console command |
+| 5     | `RESP`     | counter echo + SET-shaped or console text | —                  |
 | 6     | `NACK`     | counter echo + status     | —                                  |
 | 7     | `EXT`      | reserved                  | —                                  |
 
@@ -161,14 +161,48 @@ Answered with a `RESP`, not an `ACK`, because the caller wants the values rather
 than a receipt. A GET addressed to the broadcast address is ignored — every node
 answering at once is a response storm.
 
+### CMD — console
+
+```
+opcode(1)=0x04 text(n)
+```
+
+The one opcode that does not name a parameter: `text` is the command an operator
+would have typed on that node's own port — printable ASCII, lowercase verb
+first, no terminator, at most `LORA_CONSOLE_MAX_TEXT` = **47** bytes. It is what
+`ar42:pr1234` puts on the air, and the only way to reach a *verb* — a reboot, a
+peer dump, a wifi scan — on a node nobody can plug a cable into.
+
+It is answered **twice**: an `ACK` the moment it is queued, then a `RESP`
+carrying what the command printed. Two answers rather than one because the
+command runs *after* the receipt, not before — a node told to reboot never gets
+to send a `RESP`, so the `ACK` is the only thing that can prove the frame
+arrived at all. It also runs outside the receive path: a console command is a
+whole console command, several of them block for seconds, and a few transmit.
+
+Only one is queued at a time; a second arriving before the first has answered is
+`NACK`ed with `0x04`, because the slot holds the request the `RESP` is addressed
+to. A console command sent to the broadcast address is dropped without queueing.
+
 ### RESP
 
 ```
 requestCounter low 24 bits(3, big-endian) | opcode(1) first(1) values(n)
+requestCounter low 24 bits(3, big-endian) | opcode(1)=0x04 flags(1) text(n)
 ```
 
 The counter echo lets the requester close its pending request, the same trick
-`ACK` uses. Everything after it is a SET-shaped block.
+`ACK` uses. The opcode says which of the two follows: a SET-shaped block for a
+parameter read, or the console output for `0x04`.
+
+A console reply is capped at `LORA_CONSOLE_MAX_REPLY` = **43** bytes, and
+`flags` carries one bit, `LORA_CONSOLE_TRUNCATED` = `0x01`, saying it was cut
+there. What a node prints is unbounded — the parameter dump alone is one line
+per slot — while 43 bytes already cost ~1.8 s at SF12, so the answer is
+truncated to one frame rather than paged over a channel with a duty cycle. The
+bit exists because a reply cut at the frame boundary and a command that simply
+had little to say are otherwise the same bytes, and reading the first as the
+second is how an operator concludes a node answered when it only started to.
 
 ### ACK / NACK
 
@@ -178,10 +212,11 @@ requestCounter low 24 bits(3, big-endian) status(1)
 
 | Status | Meaning                       |
 | ------ | ----------------------------- |
-| `0x00` | OK                            |
-| `0x01` | unknown command               |
-| `0x02` | bad body                      |
-| `0x03` | parameter range out of bounds |
+| `0x00` | OK                                        |
+| `0x01` | unknown command                           |
+| `0x02` | bad body                                  |
+| `0x03` | parameter range out of bounds             |
+| `0x04` | busy — a console command is still queued  |
 
 An `ACK` or `RESP` goes back with a budget equal to the `hops` the request
 actually took — a measurement, rather than the guess a countdown would give.

@@ -194,6 +194,39 @@ counter bytes + 2 header + 20 int16 = 45 of the 48-byte body. `ag` cannot be
 broadcast, for the same reason `ax42:A` cannot — every node answering at once is
 a response storm.
 
+### `ar` is the one CMD that is not a parameter
+
+`ar42:pr1234` types `pr1234` on node 42's own console and brings back what it
+printed. It is the only way to reach a **verb** over the air: SET and GET are
+the whole vocabulary otherwise, so before it there was no wire format for a
+reboot, a peer dump or a wifi scan, and a node nobody can plug a cable into
+could only be reconfigured, never operated.
+
+What it sends is the command text itself — printable ASCII, lowercase verb
+first — and what executes it is `printResult`, the same dispatcher the serial
+task uses. That is the point: there is no second menu to keep in step with the
+first, so every command the board grows is remotely reachable the day it lands.
+
+Three things about it are load bearing:
+
+- **It is answered twice**, an ACK when it is queued and a RESP once it has run.
+  The command runs *after* its receipt precisely so `ar42:ub` can work: a node
+  told to reboot never gets to send a RESP, and the ACK is then the only
+  evidence the frame arrived at all.
+- **It runs from the task loop, never from the receive path.** A console command
+  is a whole console command — some block for seconds, some transmit, and `ar`
+  can be nested — so executing it where it arrives would re-enter the radio from
+  inside its own callback. One job is queued at a time; a second is NACKed with
+  `LORA_REASON_BUSY` rather than replacing the request the RESP is addressed to.
+- **The reply is one frame, truncated at 43 bytes**, with a flags bit saying so.
+  What a node prints is unbounded — `ai` alone overruns it — while 43 bytes are
+  already ~1.8 s at SF12. Paging a console over a channel with a duty cycle is
+  not a trade worth making, so `ar42:ai` returns the beginning of the answer and
+  admits it. Anything longer belongs on the node's own port.
+
+`ar` cannot be broadcast: the answer is addressed back to the caller, so a
+broadcast run would have every node transmitting its own console at once.
+
 ### Telemetry is the same block, sent periodically as DATA
 
 There is no per-sensor frame type. A node broadcasts the parameter window
@@ -268,6 +301,8 @@ happened.
 | `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix and `hdop` when it covers `M` |
 | `data` | a DATA body with an unknown opcode | `src opcode length` |
 | `cmd` | a remote SET was applied here | `src status` |
+| `exec` | a remote `ar` command is about to run here | `src cmd` |
+| `console` | an `ar` reply arrives | `src text truncated` — `text` is escaped, so a quote or a newline in a node's output cannot break the line |
 | `noack` | the escalation ladder gave up | `dst counter` |
 | `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr age` |
 
