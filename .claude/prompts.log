@@ -918,3 +918,48 @@ based on the mainPixels code and the control of led strips (only lineS3 kind) we
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/lib/README in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push
 
+[2026-08-08T16:46:24Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/lib/README in the IDE. This may or may not be related to the current task.</ide_opened_file>
+for preview give the option to apply or not brighness, by default do not apply because we see nothing
+
+[2026-08-08T17:04:23Z]
+Take care also about the RGB BRG, etc there is a parameter than gives the color order
+
+[2026-08-08T17:16:21Z]
+Are you sure it is expected to work ? I'm trying with node 4 to have fix color from the graphical itnerface but it does not work.
+
+[2026-08-08T17:22:07Z]
+but solid color and apply should work no ?
+
+[2026-08-08T17:24:05Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/lib/README in the IDE. This may or may not be related to the current task.</ide_opened_file>
+when we slide the brighness it starts to vibrate
+
+[2026-08-08T17:36:31Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+upload the new firmware
+
+[2026-08-08T17:44:15Z]
+Do I need to upload node 4 ?
+
+[2026-08-08T17:46:08Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskLoraMesh.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+Still have problem to send data . It is much too slow
+
+[2026-08-08T18:27:22Z]
+But currently there is no GPS poll by default right ?
+
+[2026-08-08T18:32:52Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+blue magic and other predefined have a background color settings that I do not see in the interface.
+
+[2026-08-08T18:38:20Z]
+Apply still does not change quickly and there are messages. We may have reach the hourly limit but we should just ignore and reset it
+
+[2026-08-08T18:39:29Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+seems in the graphical interface mouving to background color is not implement correctly. It is ewxpected to move back to blue very quickly with blue magic
+
+[2026-08-08T18:56:34Z]
+commit and push everything
+
