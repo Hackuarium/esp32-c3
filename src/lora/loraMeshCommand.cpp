@@ -92,9 +92,9 @@ static void printLoraMeshHelp(Print* output) {
   printParameterHelp(output, PARAM_LORA_TTL,
                      F("hops allowed for frames sent from here, 0 to 7"));
   printParameterHelp(output, PARAM_LORA_SPREADING_FACTOR,
-                     F("spreading factor 7-12, other value = SF12"));
+                     F("spreading factor 7-12, other value = SF9"));
   printParameterHelp(output, PARAM_LORA_FREQUENCY,
-                     F("carrier in 25 kHz over 400 MHz, 18781 = 869.525"));
+                     F("carrier in 25 kHz over 400 MHz, 18736 = 868.4"));
   printParameterHelp(output, PARAM_LORA_BANDWIDTH,
                      F("bandwidth kHz: 250, 125 or 62 (= 62.5)"));
   printParameterHelp(output, PARAM_LORA_HELLO_SECONDS,

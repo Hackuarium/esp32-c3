@@ -28,14 +28,15 @@
 #endif
 
 /* Carrier as a count of 25 kHz steps above 400 MHz, overridable per env, so
-   18781 is 869.525 MHz - the centre of EN 300 220 sub-band P, which allows
-   500 mW and a 10% duty cycle, and which the regulation lets a wideband link
-   use as one 250 kHz channel. That is 869.400 to 869.650 exactly, which is why
-   the carrier sits on a 25 kHz boundary the old 0.1 MHz encoding could not
-   express. The cost is company: a LoRaWAN gateway sends its RX2 downlinks here
-   too, at 27 dBm. 18736 (868.4) is the quiet alternative. */
+   18736 is 868.4 MHz - the gap between the mandatory LoRaWAN channels at 868.3
+   and 868.5, which is what makes it worth having: sub-band M is only 1% and
+   14 dBm, but nothing else transmits there, and a channel to itself is worth
+   more to this mesh than the sub-band P allowance it could be sharing with
+   every LoRaWAN gateway's RX2 downlink. 18781 (869.525) is that alternative:
+   500 mW, 10%, and the one 250 kHz channel the regulation grants - reach for it
+   when a link needs the 8 dB rather than the quiet. */
 #ifndef LORA_FREQUENCY_DEFAULT
-#define LORA_FREQUENCY_DEFAULT 18781
+#define LORA_FREQUENCY_DEFAULT 18736
 #endif
 /* Legacy DC values counted 0.1 MHz and covered 1500 to 9600. No band this radio
    uses lands there in the new encoding - 433.05-434.79 is 1322 to 1391 and
@@ -43,14 +44,19 @@
    an old one, and is refused rather than believed. */
 #define LORA_FREQUENCY_LEGACY_MIN 1500
 #define LORA_FREQUENCY_LEGACY_MAX 9600
-/* 250 kHz is not a preference but what sub-band P allows: its channels are
-   25 kHz, or the whole band as one. SF12 buys back the sensitivity the wider
-   bandwidth costs, and then some. */
+/* 125 kHz is the widest channel that fits between 868.3 and 868.5 without
+   overlapping either, so outside sub-band P the carrier decides the bandwidth
+   as much as the other way round. */
 #ifndef LORA_BANDWIDTH_DEFAULT
-#define LORA_BANDWIDTH_DEFAULT 250
+#define LORA_BANDWIDTH_DEFAULT 125
 #endif
+/* SF9 is where this mesh's two scarce resources meet: 1% of an hour is 36 s of
+   airtime, and a 29-byte telemetry frame costs 226 ms at SF9/125 kHz against
+   1647 ms at SF12 - so SF12 would leave a tracker 21 frames an hour. The 7.5 dB
+   given up against SF12 is roughly half the range in open ground, which is the
+   price of a cadence worth transmitting at all. */
 #ifndef LORA_SPREADING_FACTOR_DEFAULT
-#define LORA_SPREADING_FACTOR_DEFAULT 12
+#define LORA_SPREADING_FACTOR_DEFAULT 9
 #endif
 #define LORA_CODING_RATE 5
 #define LORA_PREAMBLE_SYMBOLS 8
@@ -68,8 +74,8 @@
 #endif
 /* RadioLib's begin() trips the PA over-current protection at 60 mA, which is
    the SX1261 default; an SX1262 draws about 118 mA at the 22 dBm sub-band P
-   allows, so the ceiling clips the top of the only band worth being in. 140 mA
-   is what the SX1262 resets this register to on its own. */
+   allows, so the ceiling clips the top of the band a node moves to when it
+   needs range. 140 mA is what the SX1262 resets this register to on its own. */
 #define LORA_PA_CURRENT_LIMIT_MA 140.0f
 /* 25 mW ERP, which is 14 dBm, is the limit across the 863-870 SRD band.
    Sub-band P (869.4-869.65) allows 500 mW - more than the SX1262 can produce -

@@ -219,8 +219,9 @@ Three things about it are load bearing:
   inside its own callback. One job is queued at a time; a second is NACKed with
   `LORA_REASON_BUSY` rather than replacing the request the RESP is addressed to.
 - **The reply is one frame, truncated at 43 bytes**, with a flags bit saying so.
-  What a node prints is unbounded — `ai` alone overruns it — while 43 bytes are
-  already ~1.8 s at SF12. Paging a console over a channel with a duty cycle is
+  What a node prints is unbounded — `ai` alone overruns it — while that frame
+  already costs ~350 ms of a 36 s hourly budget. Paging a console over a
+  channel with a duty cycle is
   not a trade worth making, so `ar42:ai` returns the beginning of the answer and
   admits it. Anything longer belongs on the node's own port.
 
@@ -242,19 +243,20 @@ sensor joins the same way — write parameters, set the window. Adjacency is loa
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
 
-**The cadence is a parameter and nothing else.** `resetParameters` writes `DF20`
+**The cadence is a parameter and nothing else.** `resetParameters` writes `DF60`
 when the env defines `GPS_RX`, and that literal is the only place a default is
 decided — there is no build flag, because a firmware carrying its own interval
 would silently disagree with the node it was flashed onto, and the node is the
 one holding the value. Change it with `gt` or `DF` on the running board.
 
-Twenty seconds already spends a good part of the budget: the telemetry frame is
-29 bytes, **823 ms** on the air at the SF12/250 kHz default, so 180 frames an
-hour take **~148 s of the 360 s** sub-band P allows at 10 %. That is 41 % of one
-node's airtime for its own position; the relays, the HELLOs and every other
-node's traffic share what is left of the channel, so `gt60` is the setting to
-reach for as soon as the mesh carries anything else. Going faster is the
-duty-cycle governor's problem rather than a setting.
+A minute is not a preference but what the sub-band leaves: the telemetry frame
+is 29 bytes, **226 ms** on the air at the SF9/125 kHz default, so 60 frames an
+hour take **13.6 s of the 36 s** sub-band M allows at 1 %. That is already 38 %
+of one node's airtime for its own position, and the relays, the HELLOs and every
+other node's traffic share what is left of the channel. `gt20` would ask for
+40.7 s — past the whole allowance — and the governor **drops** what it cannot
+pay for rather than sending it late, so a faster cadence does not degrade
+gracefully, it goes missing. `gt` faster than about 30 s belongs in sub-band P.
 
 `gt` is that setting with the window attached: `gt30` broadcasts the fix every
 30 s, `gt0` stops, `gt` alone reports. It writes `DG` and `DH` too, since the
@@ -326,21 +328,27 @@ drop the rest.
 ### Radio settings and the duty cycle
 
 Carrier, bandwidth and spreading factor are all runtime parameters, re-applied
-without a reboot whenever one of them changes. The defaults are **869.525 MHz,
-250 kHz, SF12**, and they are one decision rather than three: sub-band P
-(869.4–869.65) is the only part of the band that allows 500 mW and a 10 % duty
-cycle, the regulation lets it be used either as 25 kHz channels or as **one
-channel for high speed data** — so 250 kHz is the only wideband shape allowed
-there and 869.525 the only centre that fits it — and SF12 then buys back the
-3 dB the wider bandwidth costs plus 9.5 dB more. Against 868.4/125/SF7 that is
-**+17.5 dB**, roughly three times the range, for twelve times the airtime per
-frame and an exchange that answers ten times slower. It is not a quiet channel:
-LoRaWAN gateways send their RX2 downlinks there at 27 dBm. `DC18736 DD125 DE7`
-goes back to the old settings — 868.4 sits in the gap between the mandatory
-LoRaWAN channels at 868.3 and 868.5 and shares a channel with nobody.
+without a reboot whenever one of them changes. The defaults are **868.4 MHz,
+125 kHz, SF9**, and they are one decision rather than three, taken from the
+channel outwards: 868.4 falls in the gap between the mandatory LoRaWAN channels
+at 868.3 and 868.5, so the mesh has it to itself, which also fixes the bandwidth
+at the 125 kHz that fits between them. Sub-band M then allows 1 % and 14 dBm —
+36 s of airtime an hour — and SF9 is what that budget can afford: 226 ms for a
+29-byte frame against 1647 ms at SF12.
 
-**`DC` counts 25 kHz steps above 400 MHz**, so the default 869.525 is `18781`
-and 868.4 is `18736`. The step is the raster of sub-band P and the
+`DC18781 DD250 DE12` is the other end of the trade. Sub-band P (869.4–869.65) is
+the only part of the band that allows 500 mW and a 10 % duty cycle, and the
+regulation lets it be used either as 25 kHz channels or as **one channel for
+high speed data** — so 250 kHz is the only wideband shape allowed there and
+869.525 the only centre that fits it, and the 10 % is what makes SF12 payable.
+That is **+12.5 dB** against the default — 8 dB of transmit power, 7.5 dB of
+processing gain, less 3 dB for the wider channel — so roughly twice the range,
+for 3.6× the airtime per frame and an exchange that answers that much slower. It
+is not a quiet channel: LoRaWAN gateways send their RX2 downlinks there at
+27 dBm.
+
+**`DC` counts 25 kHz steps above 400 MHz**, so the default 868.4 is `18736`
+and 869.525 is `18781`. The step is the raster of sub-band P and the
 origin keeps the SX1262's whole 150–960 MHz range inside a signed int16, so the
 carrier needs no unsigned accessor. It counted 0.1 MHz until 2026-08, so
 `frequencyCode()` refuses a stored 1500…9600 — unambiguously an old value, since
@@ -364,9 +372,10 @@ value for anything unrecognised:
 time within an observation window — one hour — so the governor is a token
 bucket, not a gap between frames: `airtimeBudgetMillis` holds the transmit time
 still available, `refillAirtimeBudget()` credits it back at 1/N of real time,
-and `transmitFrame` spends it. At the default 10 % that is **360 s of airtime
-per hour**, which the node may burst through — roughly 437 frames of 823 ms back
-to back at SF12/250 kHz — before it has to wait. Enforcing a fixed post-transmission
+and `transmitFrame` spends it. At the default 1 % that is **36 s of airtime per
+hour**, which the node may burst through — roughly 159 frames of 226 ms back to
+back at SF9/125 kHz — before it has to wait, and a frame it cannot pay for is
+dropped rather than delayed. Enforcing a fixed post-transmission
 silence instead would be far stricter than the regulation and would make a
 retry ladder unusable. `LORA_DUTY_CYCLE_WINDOW_MS` shortens the window if you
 want the node more conservative. RadioLib does not enforce any of this outside
