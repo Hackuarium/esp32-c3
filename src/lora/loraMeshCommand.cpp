@@ -73,6 +73,7 @@ static void printLoraMeshHelp(Print* output) {
   output->println(F("(ap) peer table"));
   output->println(F("(ah) broadcast a HELLO now"));
   output->println(F("(az) forget every peer"));
+  output->println(F("(ad) give back a full hour of airtime budget"));
   output->println(F("(ax) set or read a parameter over the mesh"));
   output->println(F("    axA123     set A to 123 on every node"));
   output->println(F("    ax42:A123  set A on node 42, wait for an ACK"));
@@ -153,6 +154,10 @@ void processLoraCommand(char command, char* paramValue, Print* output) {
     case 'z':
       loraPeerClear();
       output->println(F("Peer table cleared"));
+      break;
+    case 'd':
+      loraMeshResetAirtimeBudget();
+      output->println(F("Airtime budget refilled"));
       break;
     case 'x':
       processLoraMeshSetCommand(paramValue, output);

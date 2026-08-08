@@ -468,16 +468,26 @@ static boolean expectsAcknowledge(uint8_t type) {
   return type == LORA_TYPE_CMD || type == LORA_TYPE_DATA_ACK;
 }
 
-/* The ladder: try direct twice, then ask for two relayed hops, then four. A
-   retry always reuses the same counter, so the receiver can tell "the ACK was
-   lost" from "he sent it again" - and because the budget sits in the trailer,
-   outside the authenticated data, escalating rewrites one byte instead of
-   re-encrypting. */
+/* The ladder: try direct, then ask for two relayed hops, then four. A retry
+   always reuses the same counter, so the receiver can tell "the ACK was lost"
+   from "he sent it again" - and because the budget sits in the trailer, outside
+   the authenticated data, escalating rewrites one byte instead of re-encrypting.
+
+   Three attempts, one per rung, rather than doubling up the first two. The
+   ladder holds the single confirmed-request slot for its whole length, so its
+   duration is what every other addressed command waits for: at SF9 the doubled
+   version ran 10.5 s for a short frame and 18 s for a full one, which was long
+   enough that a poller on a ten second timer refused nearly everything else the
+   mesh had to say. Losing the duplicates costs a retransmission on a single
+   dropped ACK; keeping all three rungs costs nothing, because the reach of the
+   mesh is the top one. */
+#define LORA_LADDER_ATTEMPTS 3
+
 static uint8_t ladderTtl(uint8_t attempt) {
-  if (attempt < 2) {
+  if (attempt < 1) {
     return 0;
   }
-  if (attempt < 4) {
+  if (attempt < 2) {
     return 2;
   }
   return 4;
@@ -578,6 +588,11 @@ static void reportReception(const LoraFrame* frame,
   loraBridgeEnd(json);
 }
 
+void loraMeshResetAirtimeBudget() {
+  airtimeBudgetMillis = dutyCycleAllowanceMillis();
+  budgetUpdatedMillis = millis();
+}
+
 boolean loraMeshSend(uint8_t destination,
                      uint8_t type,
                      const uint8_t* body,
@@ -644,10 +659,10 @@ boolean loraMeshSend(uint8_t destination,
   pending.output = output;
   pending.active = true;
 
-  /* skip the two direct attempts when the peer is not a fresh neighbour */
+  /* skip the direct attempt when the peer is not a fresh neighbour */
   LoraPeer* peer = loraPeerFind(destination);
   if (peer == NULL || millis() - peer->lastHeardMillis > 30ul * 60ul * 1000ul) {
-    pending.attempt = 2;
+    pending.attempt = 1;
     loraFrameSetBudget(pending.frame, pending.frameLength,
                       ladderTtl(pending.attempt));
   }
@@ -1005,7 +1020,7 @@ static void servicePending() {
   if (!pending.active || (int32_t)(millis() - pending.dueMillis) < 0) {
     return;
   }
-  if (pending.attempt >= 5) {
+  if (pending.attempt >= LORA_LADDER_ATTEMPTS) {
     pending.active = false;
     Print* output = pending.output == NULL ? &Serial : pending.output;
     output->print(F("No ACK from "));

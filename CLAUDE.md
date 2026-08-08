@@ -79,6 +79,36 @@ the scales live in `froniusDisplay.cpp` here and in
 `frontend/src/pages/home/components/energyLed/ledScale.ts` in the
 `lpatiny/solar.patiny.com` repo (usually cloned at `~/git/lpatiny/`).
 
+## The decoration programs have a second implementation
+
+`src/pixels/` is mirrored in TypeScript at `frontend/src/utils/pixels/` in the
+`lpatiny/loramesh-monitoring` repo (usually cloned at `~/git/lpatiny/`), so a
+scene for the Christmas decorations can be watched in a browser before it is
+broadcast over the mesh — the decorations are outdoors and the channel allows
+tens of seconds of transmission an hour, so getting it wrong costs two round
+trips and a ladder. Five programs are ported: **rain (1), rgb (2), comet (3),
+wave (4) and line (11)**, plus `getColor`, `ColorHSV`, `decreaseColor`,
+`updateMapping`, the byte order `updateType` packs `CA` into, and the current
+limiter of `TaskPixels`.
+
+**Keep the two in step.** Changing any of those, or the meaning of a slot in
+`include/configPixels.h`, silently makes that preview lie — it is a copy, not a
+shared source. The port is faithful down to the parts that look like defects:
+the 12-bit palette expanding by a shift so `0xf` is 240, `updateRGB` filling all
+`MAX_LED` regardless of `BI`×`BJ` and so tripping the 10 A limiter on any
+length, and `updateLine` addressing the buffer directly rather than through
+`getLedIndex`.
+
+**`CA` alone does not determine what a strip shows**, which is the one thing
+that side cannot mirror from here. `updateType` makes `CA` the byte of the wire
+each channel is packed into; the LED never reads it, and decodes the wire in the
+order its own silicon expects. So the visible colour is the strip's own order
+composed with the inverse of `CA` — and no parameter records what the LEDs are.
+The fleet is genuinely mixed: `resetLine` writes `NEO_RGB` for the garlands,
+`pr`/`ps` write `NEO_GRB` for the panels. The monitoring page therefore asks the
+operator what the strip is, separately from `CA`, and previews the permutation
+a mismatch produces.
+
 ## The two LoRa stacks
 
 They share nothing but the SX1262 and the `(a)` serial menu, and a board builds
@@ -191,6 +221,15 @@ separate CMAC.
   frames, paid for by burning 100 counters on every boot.
 - `cntsz` flips permanently once the counter passes 2²⁴. The nonce is always
   built from the zero-extended 32-bit value, so the widening cannot collide.
+- **The retry ladder is three attempts, one per rung** — direct, two relayed
+  hops, then four (`LORA_LADDER_ATTEMPTS`). It holds the node's single
+  confirmed-request slot for its whole length, so its duration is what every
+  other addressed command waits for before being refused with `A confirmed
+  request is already in flight`. The first two rungs used to be doubled, which
+  ran 10.5 s for a short frame at SF9 and 18 s for a full one — long enough that
+  a host polling on a ten second timer refused nearly everything else the mesh
+  had to say. A node not heard from in the last half hour skips the direct rung
+  and starts at two hops.
 - **A relay verifies the MIC before forwarding**, so only authentic group
   traffic is ever amplified. It then dedups on `(src, counter)`, waits a random
   0…3× airtime, and cancels its copy if it hears two other nodes relay the same
@@ -208,7 +247,7 @@ separate CMAC.
   storm.
 
 `axC6` broadcasts parameters C through H; `ax42:C6` sends them to node 42 and
-waits for an ACK through the escalation ladder (direct ×2, 2 hops ×2, 4 hops).
+waits for an ACK through the escalation ladder (direct, 2 hops, 4 hops).
 The first parameter index travels in the body, so the receiver knows exactly
 which block it is being asked to overwrite. Values go out as int8 when they all
 fit and int16 otherwise — the opcode says which.
@@ -397,6 +436,14 @@ value for anything unrecognised:
 | N | 868.7 – 869.2 MHz | 0.1 % |
 | P | 869.4 – 869.65 MHz | 10 % |
 | Q | 869.7 – 870 MHz | 1 % |
+
+**`ad` hands the whole window back.** The bucket is the node's own bookkeeping,
+and a poller left on a short interval empties it in an evening — after which the
+node transmits at the refill rate, one second of airtime per hundred at 1 %, and
+every command queues behind the last. `loraMeshResetAirtimeBudget` forgets the
+spending, which is what makes a bench session usable again; it changes nothing
+about what EN 300 220 allows. Reachable over the air as `ar42:ad`, like any
+other console verb.
 
 **It is a budget, not a delay.** EN 300 220 defines the duty cycle as transmit
 time within an observation window — one hour — so the governor is a token

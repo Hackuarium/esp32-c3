@@ -47,6 +47,16 @@ int16_t loraMeshParameterFromBody(const uint8_t* body,
 void loraMeshPrintInfo(Print* output);
 void loraMeshPrintPeers(Print* output);
 
+/* Hands the node back a full hour's transmit allowance.
+
+   The governor is a token bucket over a one hour window, so a node that has
+   spent its budget - a poller left on a short interval will do it in an evening
+   - then transmits at the refill rate, which at 1 % is one second of airtime
+   per hundred. Every later frame queues behind that, and a command that used to
+   take half a second takes twenty. This forgets the spending; it does not
+   change what EN 300 220 allows, so it is a bench tool, not a setting. */
+void loraMeshResetAirtimeBudget();
+
 /* Applies a received CMD body. Returns a LORA_STATUS_/LORA_REASON_ code, which
    is what travels back in the ACK or NACK. Handles the parameter opcodes only:
    CONSOLE is queued instead of applied, because it runs after its receipt. */
