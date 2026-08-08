@@ -465,4 +465,26 @@ void processLoraMeshCopyCommand(char* paramValue, Print* output) {
   }
   loraMeshSend(destination, LORA_TYPE_CMD, body, length, output);
 }
+
+/* The defaults of the reserved block live here rather than in a main file
+   because a board joining the mesh is expected to add two lines, not to copy a
+   block of settings that then drifts from the ones every other node uses.
+
+   The identity - the address and the group key - is deliberately untouched: it
+   is what puts the node on the mesh, and a reset that wiped it would take a
+   node nobody can reach off the air for good. The broadcast window is left
+   empty too: what a node has to say is the board's business, and a tracker
+   overrides it right after calling this. */
+void loraMeshResetParameters() {
+  setAndSaveParameter(PARAM_LORA_ROLE, LORA_ROLE_ENDPOINT);
+  setAndSaveParameter(PARAM_LORA_TTL, 2);
+  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 9);
+  setAndSaveParameter(PARAM_LORA_FREQUENCY, 18736);  // 868.4 MHz
+  setAndSaveParameter(PARAM_LORA_BANDWIDTH, 125);
+  setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
+
+  setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
+  setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, 0);
+  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, 0);
+}
 #endif

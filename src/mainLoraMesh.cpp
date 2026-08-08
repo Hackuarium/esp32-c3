@@ -6,6 +6,7 @@ void taskBlink();
 void taskSerial();
 void taskGPS();
 void taskLoraMesh();
+void loraMeshResetParameters();
 void taskAnalogInput();
 void taskBMP280();
 void taskAHTx0();
@@ -35,12 +36,7 @@ void resetParameters() {
     setAndSaveParameter(i, ERROR_VALUE);
   }
 
-  setAndSaveParameter(PARAM_LORA_ROLE, LORA_ROLE_ENDPOINT);
-  setAndSaveParameter(PARAM_LORA_TTL, 2);
-  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 9);
-  setAndSaveParameter(PARAM_LORA_FREQUENCY, 18736);  // 868.4 MHz
-  setAndSaveParameter(PARAM_LORA_BANDWIDTH, 125);
-  setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
+  loraMeshResetParameters();
 
 #ifdef GPS_RX
   /* a tracker is only a node whose broadcast window happens to be the eight GPS
@@ -59,14 +55,7 @@ void resetParameters() {
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 60);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, PARAM_GPS_LATITUDE);
   setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, PARAM_GPS_BLOCK_SIZE);
-#else
-  setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
-  setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER, 0);
-  setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS, 0);
 #endif
-
-  /* the address and the group key stay untouched: they are the node identity,
-     and a reset that silently wiped them would take the node off the mesh */
 
   setQualifier(7275);
 }

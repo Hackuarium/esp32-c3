@@ -98,7 +98,30 @@ Two lines. In the board's `config<Kind>.h`:
     #include "./configLoraMeshParams.h"
 
 and `taskLoraMesh();` in its setup. That is all — the header brings
-`THR_LORA`, `THR_LORA_MESH`, the role constants and the parameters.
+`THR_LORA`, `THR_LORA_MESH`, the role constants and the parameters. Defaults for
+the block come from `loraMeshResetParameters()`, called from the board's own
+`resetParameters()`, so a second board joining does not copy a list of settings
+that then drifts from what every other node runs.
+
+**`taskLoraMesh()` also writes those defaults when the block was never written**,
+because a board that joins with two lines must not need a `ur` as well — on a
+board that has a configuration of its own, a reset wipes it. An untouched NVS
+key reads **0, not `ERROR_VALUE`**, so unset cannot be recognised slot by slot:
+0 is a legitimate `DB` and a legitimate `DI`, and a node that came up on those
+two would relay nothing it originates and never appear in a peer table. The
+radio triple — `DC`, `DD`, `DE` — is what says the block is untouched, since no
+carrier at no bandwidth and no spreading factor is not a choice anyone made.
+
+A board that only *sometimes* carries a radio makes the include conditional
+instead — the pixels config takes the mesh on `-D TASK_LORA_MESH`, which is what
+separates `lineS3lora` from `lineS3`. That flag belongs in **`build_flags`, not
+`build_src_flags`**: `lib/hack` allocates `parameters[MAX_PARAM]` and prints the
+`(a)` menu, so a library that still saw 104 would have the mesh block written
+past the end of the array.
+
+On the XIAO ESP32S3 the radio is on the default SPI bus, whose **SCK is GPIO7 —
+the D8 that `lineS3` drives its pixels from**, so a combined board moves the
+strip (`lineS3lora` uses D0). GPIO8 and GPIO9 go the same way.
 
 **The mesh owns parameters 104–113 (`DA`…`DJ`) on every board.** The code refers
 to parameters only by name, so each config *could* pick its own slots — and that
@@ -108,6 +131,13 @@ the next one. 104–113 is the one range free in every config here, which is why
 `MAX_PARAM` is 114 wherever the mesh is enabled. A board that sets a smaller
 `MAX_PARAM` after including the header fails to compile rather than writing past
 `parameters[]`.
+
+The **GPS block does not travel as easily**: `configLoraMesh.h` puts the fix at
+6–13, which on the pixels board is `PARAM_BLUE` through `PARAM_INT_TEMPERATURE_A`,
+and nothing below 104 there offers eight adjacent free slots. A pixels tracker
+would have to reserve its own range above the mesh block (114–121, `DK`…`DR`) —
+and a bridge decorates `lat`/`lon` from *its own* `PARAM_GPS_LATITUDE`, so it
+would then only decode fixes from boards numbered like itself.
 
 `DJ` is spare on purpose. Parameters are persisted in NVS **under
 their letter** (`NVS.setInt(numberToLabel(i), …)`), so renumbering one silently

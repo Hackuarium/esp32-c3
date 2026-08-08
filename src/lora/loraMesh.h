@@ -98,6 +98,11 @@ void loraMeshBroadcastParameters();
    changed one of them, so a node can be provisioned without a reboot */
 void loraMeshReloadIdentity();
 
+/* Writes the defaults of the reserved 104 to 113 block. Every board that joins
+   the mesh calls this from its own resetParameters(), so the block has one set
+   of defaults instead of one per main file. */
+void loraMeshResetParameters();
+
 void taskLoraMesh();
 void processLoraCommand(char command, char* paramValue, Print* output);
 void processLoraMeshSetCommand(char* paramValue, Print* output);

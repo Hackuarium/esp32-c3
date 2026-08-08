@@ -4,7 +4,19 @@
 
 #define MAX_LED 1024
 
+/* -D TASK_LORA_MESH in the env puts a pixels board on the private mesh: the
+   header brings the task, the (a) menu and the reserved 104 to 113 block, and
+   supplies the MAX_PARAM that covers it. Nothing here moves, because the pixels
+   parameters stop at 103 - which is exactly why the mesh reserves that range.
+   The flag belongs in build_flags rather than build_src_flags: lib/hack
+   allocates parameters[MAX_PARAM], so the library has to see the same value as
+   src or the mesh block would be written past the end of the array. */
+#ifdef TASK_LORA_MESH
+#include "./configLoraMeshParams.h"
+#else
 #define MAX_PARAM 104
+#endif
+
 extern int16_t parameters[MAX_PARAM];
 
 #define PARAM_TEMPERATURE 0  // A

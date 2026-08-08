@@ -1255,7 +1255,31 @@ void loraMeshPrintInfo(Print* output) {
   loraMeshPrintPeers(output);
 }
 
+/* A board joins the mesh by adding two lines to its config, so it has to be
+   able to join without a parameter reset too - and on a board that has one, a
+   reset wipes everything else it was configured for. An untouched NVS key reads
+   0, not ERROR_VALUE, which is why the block cannot be recognised as unset slot
+   by slot: 0 is a legitimate DB (originate frames nobody relays) and a
+   legitimate DI (never announce itself), and those are exactly the two a node
+   would then be stuck with, silently absent from every peer table.
+
+   The radio settings are the exception, since no carrier, no bandwidth and no
+   spreading factor is not a configuration anyone chose. All three reading 0 is
+   therefore the one unambiguous signature of a block that was never written,
+   and it is the only case that is filled in. A stale or deliberate value is
+   left alone: the accessors already fall back for each of them individually. */
+static void applyDefaultsIfNeverWritten() {
+  if (getParameter(PARAM_LORA_FREQUENCY) != 0 ||
+      getParameter(PARAM_LORA_BANDWIDTH) != 0 ||
+      getParameter(PARAM_LORA_SPREADING_FACTOR) != 0) {
+    return;
+  }
+  Serial.println(F("LoRa mesh parameters unset, writing the defaults"));
+  loraMeshResetParameters();
+}
+
 void taskLoraMesh() {
+  applyDefaultsIfNeverWritten();
   xSemaphoreLoraMesh = xSemaphoreCreateRecursiveMutexStatic(&xMutexBufferLoraMesh);
   xTaskCreatePinnedToCore(TaskLoraMesh, "TaskLoraMesh",
                           8192,  // This stack size can be checked & adjusted

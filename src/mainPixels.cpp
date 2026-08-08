@@ -18,6 +18,8 @@ void taskOTA();
 void taskMDNS();
 void taskInternalTemperature();
 void taskWebserver();
+void taskLoraMesh();
+void loraMeshResetParameters();
 
 void setupPixels() {
   setParameter(PARAM_STATUS, 0);
@@ -26,6 +28,10 @@ void setupPixels() {
   taskPixels();
 
   taskSerial();
+
+#ifdef THR_LORA_MESH
+  taskLoraMesh();
+#endif
 
   taskOTA();  // incompatible with Lolin32 ??
               // taskMDNS();  // incompatible with taskOTA !
@@ -62,6 +68,10 @@ void resetParameters() {
   for (byte i = 0; i < MAX_PARAM; i++) {
     setAndSaveParameter(i, ERROR_VALUE);
   }
+
+#ifdef THR_LORA_MESH
+  loraMeshResetParameters();
+#endif
 
   setQualifier(16961);
 }
