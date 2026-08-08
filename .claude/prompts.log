@@ -880,3 +880,23 @@ commit and push
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskLoraMesh.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push
 
+[2026-08-07T21:03:59Z]
+is the repeater working ?
+
+[2026-08-08T08:26:45Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskLoraMesh.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+currently the default is sf7 seems to me. How much we win using sf9 (difference in time and distance achieved)
+
+[2026-08-08T08:31:04Z]
+set this as default in the firmware 
+
+And use SF9
+
+[2026-08-08T08:57:45Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskLoraMesh.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+what is the minimal signal we can catch with lora reliably
+
+[2026-08-08T09:20:47Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskLoraMesh.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+commit and push
+
