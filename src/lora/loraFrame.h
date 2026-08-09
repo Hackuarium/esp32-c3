@@ -106,6 +106,30 @@
 #define LORA_CMD_SET_PARAMETERS_INT16 0x02
 #define LORA_CMD_GET_PARAMETERS 0x03
 #define LORA_CMD_CONSOLE 0x04
+
+/* SET, but as a list of runs instead of one: the body is a sequence of
+   first(1) header(1) values..., repeated until it is exhausted, where the
+   header is the count with bit 7 set when the values are int16.
+
+   A SET names one first slot and a list of values, so writing anything with a
+   hole in it - a scene touches BB to BO and skips the two geometry slots -
+   costs one frame per run, each with its own acknowledged round trip. Runs put
+   the whole thing in one frame and skip the holes exactly, without having to
+   know what is in them: the alternative is carrying the current value across
+   the gap, which needs the node to have reported it first.
+
+   A node that predates this opcode answers LORA_REASON_UNKNOWN_COMMAND rather
+   than misreading it, so a sender falls back to one frame per run - and a
+   single-run SET still goes out in the old shape, which every node understands. */
+#define LORA_CMD_SET_PARAMETER_RUNS 0x05
+
+/* In a run header: the values are int16 rather than int8. */
+#define LORA_RUN_INT16 0x80
+#define LORA_RUN_COUNT_MASK 0x7F
+
+/* Runs one body may carry. A run is at least three bytes, so the body would
+   hold more; this is what the console command parses into. */
+#define LORA_MAX_RUNS_PER_FRAME 8
 #define LORA_RESP_COUNTER_SIZE 3
 /* one frame cannot carry more than this many parameters as int16 */
 #define LORA_MAX_PARAMETERS_PER_FRAME 20

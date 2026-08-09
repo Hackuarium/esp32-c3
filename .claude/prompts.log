@@ -963,3 +963,16 @@ seems in the graphical interface mouving to background color is not implement co
 [2026-08-08T18:56:34Z]
 commit and push everything
 
+[2026-08-08T19:46:38Z]
+how many lora packet should we send to change the program ? Can we send just one with enough parameters ?
+
+[2026-08-08T20:07:04Z]
+Change the protocol to allow to repeat after a comma again a new parameter if it is not done. Like that we can always skip any holes
+
+[2026-08-08T20:33:02Z]
+yes proceed
+
+[2026-08-09T03:24:11Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/lora/loraMeshParameters.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+commit and push
+

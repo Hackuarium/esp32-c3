@@ -267,3 +267,74 @@ void setQualifier(int16_t value) {
 int getQualifier() {
   return NVS.getInt("q");
 }
+/* The parameter grammar, in one place. A letter (or two) names a slot, an
+   optional number gives it a value, and a comma either steps to the next slot
+   or - when a letter follows it - starts somewhere else entirely. */
+uint8_t parseParameterAssignments(const char* text,
+                                  ParameterAssignment* out,
+                                  uint8_t maxCount,
+                                  uint8_t* wireAddress) {
+  *wireAddress = 0;
+  uint8_t count = 0;
+  uint16_t slot = 0;
+  boolean haveSlot = false;
+
+  /* digits before the first letter address an I2C device, not a parameter */
+  if (*text >= '0' && *text <= '9') {
+    uint16_t address = 0;
+    while (*text >= '0' && *text <= '9') {
+      address = (uint16_t)(address * 10 + (*text - '0'));
+      text++;
+    }
+    if (*text < 'A' || *text > 'Z') {
+      return 0;
+    }
+    *wireAddress = (uint8_t)address;
+  }
+
+  while (*text != '\0') {
+    if (*text >= 'A' && *text <= 'Z') {
+      uint16_t letters = 0;
+      uint8_t letterCount = 0;
+      while (*text >= 'A' && *text <= 'Z' && letterCount < 2) {
+        letters = (uint16_t)(letters * 26 + (*text - 'A' + 1));
+        letterCount++;
+        text++;
+      }
+      if (letters == 0 || letters > MAX_PARAM) {
+        return 0;
+      }
+      slot = (uint16_t)(letters - 1);
+      haveSlot = true;
+    }
+    if (!haveSlot || count >= maxCount || slot >= MAX_PARAM) {
+      return 0;
+    }
+
+    out[count].slot = (uint8_t)slot;
+    out[count].hasValue = false;
+    out[count].value = 0;
+    if ((*text >= '0' && *text <= '9') || *text == '-') {
+      char* end = NULL;
+      long value = strtol(text, &end, 10);
+      if (end == text || value < -32768 || value > 32767) {
+        return 0;
+      }
+      out[count].hasValue = true;
+      out[count].value = (int16_t)value;
+      text = end;
+    }
+    count++;
+
+    if (*text == '\0') {
+      break;
+    }
+    if (*text != ',') {
+      return 0;
+    }
+    text++;
+    /* a bare comma steps to the neighbouring slot; a letter after it does not */
+    slot++;
+  }
+  return count;
+}

@@ -63,36 +63,6 @@ static uint16_t parseBlockCount(const char* text, boolean* valid) {
 
 /* "123" or "-5,10,0": the same comma separated form the local serial syntax
    accepts, so the remote command reads like the local one */
-static boolean parseValues(const char* text,
-                           int16_t* values,
-                           uint8_t maximum,
-                           uint8_t* count) {
-  *count = 0;
-  if (*text == '\0') {
-    return true;
-  }
-  while (true) {
-    if (*count >= maximum) {
-      return false;
-    }
-    char* end = NULL;
-    long value = strtol(text, &end, 10);
-    if (end == text || value < -32768 || value > 32767) {
-      return false;
-    }
-    values[*count] = (int16_t)value;
-    (*count)++;
-    text = end;
-    if (*text == '\0') {
-      return true;
-    }
-    if (*text != ',') {
-      return false;
-    }
-    text++;
-  }
-}
-
 /* Lays out opcode, first index and the values themselves. int8 is used when
    every value fits, so the common case of small settings costs one byte each
    instead of two - the opcode tells the receiver which it is looking at. */
@@ -125,6 +95,52 @@ static uint8_t encodeValues(uint8_t firstParameter,
       out[length++] = lowByte(values[i]);
       out[length++] = highByte(values[i]);
     }
+  }
+  return length;
+}
+
+/* The same layout repeated: first, then the count with bit 7 telling int16 from
+   int8, then the values. Each run picks its own width, so a scene whose colours
+   need 255 does not force two bytes onto the settings that fit in one. */
+static uint8_t encodeRuns(const uint8_t* firsts,
+                          const uint8_t* counts,
+                          uint8_t runCount,
+                          const int16_t* values,
+                          uint8_t* out,
+                          uint8_t outSize) {
+  if (outSize < 1) {
+    return 0;
+  }
+  out[0] = LORA_CMD_SET_PARAMETER_RUNS;
+  uint8_t length = 1;
+  uint8_t valueIndex = 0;
+
+  for (uint8_t run = 0; run < runCount; run++) {
+    uint8_t count = counts[run];
+    boolean wide = false;
+    for (uint8_t i = 0; i < count; i++) {
+      int16_t value = values[valueIndex + i];
+      if (value < -128 || value > 127) {
+        wide = true;
+        break;
+      }
+    }
+    uint16_t needed = 2u + (wide ? (uint16_t)count * 2u : count);
+    if (length + needed > outSize) {
+      return 0;
+    }
+    out[length++] = firsts[run];
+    out[length++] = (uint8_t)(count | (wide ? LORA_RUN_INT16 : 0));
+    for (uint8_t i = 0; i < count; i++) {
+      int16_t value = values[valueIndex + i];
+      if (wide) {
+        out[length++] = lowByte(value);
+        out[length++] = highByte(value);
+      } else {
+        out[length++] = (uint8_t)(int8_t)value;
+      }
+    }
+    valueIndex += count;
   }
   return length;
 }
@@ -177,11 +193,62 @@ int16_t loraMeshParameterFromBody(const uint8_t* body,
   return bodyValueAt(body, number - body[1]);
 }
 
+/* Walks the runs of a LORA_CMD_SET_PARAMETER_RUNS body, applying them only on
+   the second pass. A body that is malformed half way through would otherwise
+   leave the node with half a scene and a NACK saying it failed, which is worse
+   than either outcome on its own. */
+static uint8_t applyParameterRuns(const uint8_t* body,
+                                  uint8_t bodyLength,
+                                  boolean apply) {
+  uint8_t index = 1;
+  while (index < bodyLength) {
+    if ((uint16_t)index + 2 > bodyLength) {
+      return LORA_REASON_BAD_BODY;
+    }
+    uint8_t first = body[index];
+    uint8_t header = body[index + 1];
+    uint8_t count = header & LORA_RUN_COUNT_MASK;
+    boolean wide = (header & LORA_RUN_INT16) != 0;
+    index += 2;
+
+    if (count == 0) {
+      return LORA_REASON_BAD_BODY;
+    }
+    uint16_t needed = wide ? (uint16_t)count * 2u : count;
+    if ((uint16_t)index + needed > bodyLength) {
+      return LORA_REASON_BAD_BODY;
+    }
+    if ((uint16_t)first + count > MAX_PARAM) {
+      return LORA_REASON_OUT_OF_RANGE;
+    }
+    if (apply) {
+      for (uint8_t i = 0; i < count; i++) {
+        int16_t value =
+            wide ? (int16_t)((uint16_t)body[index + i * 2] |
+                             ((uint16_t)body[index + i * 2 + 1] << 8))
+                 : (int16_t)(int8_t)body[index + i];
+        setAndSaveParameter(first + i, value);
+      }
+    }
+    index += needed;
+  }
+  return LORA_STATUS_OK;
+}
+
 uint8_t loraMeshApplyCommand(const uint8_t* body, uint8_t bodyLength) {
   if (bodyLength < 3) {
     return LORA_REASON_BAD_BODY;
   }
   uint8_t opcode = body[0];
+
+  if (opcode == LORA_CMD_SET_PARAMETER_RUNS) {
+    uint8_t status = applyParameterRuns(body, bodyLength, false);
+    if (status != LORA_STATUS_OK) {
+      return status;
+    }
+    return applyParameterRuns(body, bodyLength, true);
+  }
+
   uint8_t firstParameter = body[1];
   uint8_t payloadLength = bodyLength - 2;
 
@@ -309,20 +376,52 @@ void processLoraMeshSetCommand(char* paramValue, Print* output) {
     return;
   }
 
-  uint8_t firstParameter;
-  if (!parseParameterIndex(&text, &firstParameter)) {
-    output->println(F("Expected e.g. axA123, ax42:A123 or ax42:A"));
+  /* the same parser the serial console uses, so a command means the same thing
+     typed on a port and sent through the mesh */
+  ParameterAssignment items[MAX_PARAM_ASSIGNMENTS];
+  uint8_t wireAddress = 0;
+  uint8_t itemCount =
+      parseParameterAssignments(text, items, MAX_PARAM_ASSIGNMENTS, &wireAddress);
+  if (itemCount == 0 || wireAddress != 0) {
+    output->println(F("Expected e.g. axA123, ax42:BB1,17,1,A1,2,3 or ax42:A"));
     return;
   }
 
+  uint8_t firstParameter = items[0].slot;
+  boolean isRead = !items[0].hasValue;
+
+  /* consecutive slots become one run; a jump starts the next */
+  uint8_t firsts[LORA_MAX_RUNS_PER_FRAME];
+  uint8_t counts[LORA_MAX_RUNS_PER_FRAME];
   int16_t values[LORA_MAX_PARAMETERS_PER_FRAME];
+  uint8_t runCount = 0;
   uint8_t count = 0;
-  if (!parseValues(text, values, LORA_MAX_PARAMETERS_PER_FRAME, &count)) {
-    output->println(F("Expected e.g. axA123, ax42:A123 or ax42:A"));
-    return;
+  if (!isRead) {
+    for (uint8_t i = 0; i < itemCount; i++) {
+      if (!items[i].hasValue) {
+        output->println(F("A read takes one slot, e.g. ax42:A"));
+        return;
+      }
+      boolean continues = runCount > 0 &&
+                          items[i].slot ==
+                              (uint16_t)firsts[runCount - 1] + counts[runCount - 1];
+      if (continues) {
+        counts[runCount - 1]++;
+      } else {
+        if (runCount >= LORA_MAX_RUNS_PER_FRAME) {
+          output->println(F("Too many runs for one frame"));
+          return;
+        }
+        firsts[runCount] = items[i].slot;
+        counts[runCount] = 1;
+        runCount++;
+      }
+      values[i] = items[i].value;
+    }
+    count = counts[0];
   }
 
-  if (count == 0) {
+  if (isRead) {
     /* no value means a read, and a read has to be addressed: every node
        answering one broadcast at once is a response storm */
     if (destination == LORA_ADDRESS_BROADCAST) {
@@ -341,24 +440,32 @@ void processLoraMeshSetCommand(char* paramValue, Print* output) {
     return;
   }
 
-  if ((uint16_t)firstParameter + count > MAX_PARAM) {
-    output->println(F("Parameter range out of bounds"));
-    return;
-  }
-
   uint8_t body[LORA_MAX_BODY_SIZE];
+  /* one run goes out in the shape every node has always understood; only a
+     write with a hole in it needs the opcode that predates nothing */
   uint8_t length =
-      encodeValues(firstParameter, values, count, body, LORA_MAX_BODY_SIZE);
+      runCount > 1
+          ? encodeRuns(firsts, counts, runCount, values, body,
+                       LORA_MAX_BODY_SIZE)
+          : encodeValues(firstParameter, values, count, body,
+                         LORA_MAX_BODY_SIZE);
   if (length == 0) {
     output->println(F("Too many parameters for one frame"));
     return;
   }
 
   output->print(F("Setting "));
-  output->print(numberToLabel(firstParameter));
-  output->print(F(" and "));
-  output->print(count - 1);
-  output->print(F(" more on "));
+  for (uint8_t run = 0; run < runCount; run++) {
+    if (run > 0) {
+      output->print(F(", "));
+    }
+    output->print(numberToLabel(firsts[run]));
+    if (counts[run] > 1) {
+      output->print('+');
+      output->print(counts[run] - 1);
+    }
+  }
+  output->print(F(" on "));
   if (destination == LORA_ADDRESS_BROADCAST) {
     output->println(F("every node"));
   } else {

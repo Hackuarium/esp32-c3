@@ -1,4 +1,36 @@
+#pragma once
+
 #include "config.h"
+
+/* The most slots one console command may name. A LoRa frame holds 20 values,
+   and a command typed on a port has no reason to be longer. */
+#define MAX_PARAM_ASSIGNMENTS 20
+
+/* One slot a console command named, and the value it gave it.
+
+   "A1,2,3" is three of these, "A1,C3" is two on unrelated slots, and a bare "A"
+   is one with no value at all - a read. This is the whole grammar of the
+   parameter console, and it is shared: the serial port applies the assignments
+   where it stands, and the mesh (ax) groups them into runs and puts them in a
+   frame. Two parsers for one syntax is how the two drift apart. */
+typedef struct {
+  /* Zero-based parameter index. */
+  uint8_t slot;
+  /* False for a read: "A" prints the slot, "A1" stores 1 in it. */
+  boolean hasValue;
+  int16_t value;
+} ParameterAssignment;
+
+/* Reads a parameter command into assignments.
+
+   Handles the I2C form too: "55D123" is slot D on wire device 55, which is why
+   the address comes back rather than being refused - the digits before a letter
+   are a device, the digits after it a value.
+   Returns the number of assignments, or 0 when the text is not one. */
+uint8_t parseParameterAssignments(const char* text,
+                                  ParameterAssignment* out,
+                                  uint8_t maxCount,
+                                  uint8_t* wireAddress);
 
 boolean getParameterBit(byte number, byte bitToRead);
 boolean setParameterBit(byte number, byte bitToSet);

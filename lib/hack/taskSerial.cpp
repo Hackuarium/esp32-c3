@@ -79,91 +79,37 @@ void TaskSerial(void* pvParameters) {
 */
 
 void printResult(char* data, Print* output) {
-  bool theEnd = false;
-  uint8_t paramCurrent = 0;  // Which parameter are we defining
-  char paramValue[SERIAL_MAX_PARAM_VALUE_LENGTH];
-  paramValue[0] = '\0';
-  uint8_t paramValuePosition = 0;
-  uint8_t i = 0;
-  bool inValue = false;
-  bool afterComma = false;
-  uint8_t wireTargetAddress = 0;  // used for the command like '55D123'
-
-  while (!theEnd) {
-    byte inChar = data[i];
-    i++;
-    if (i == SERIAL_BUFFER_LENGTH)
-      theEnd = true;
-    if (inChar == '\0') {
-      theEnd = true;
-    } else if ((inChar > 47 && inChar < 58) || inChar == '-' ||
-               inValue) {  // a number (could be negative)
-      if (paramValuePosition < SERIAL_MAX_PARAM_VALUE_LENGTH) {
-        paramValue[paramValuePosition] = inChar;
-        paramValuePosition++;
-        if (paramValuePosition < SERIAL_MAX_PARAM_VALUE_LENGTH) {
-          paramValue[paramValuePosition] = '\0';
-        }
-      }
-    } else if (inChar > 64 &&
-               inChar < 92) {  // an UPPERCASE character so we define the field
-      // we extend however the code to allow 2 letters fields !!!
-      if (afterComma) {
-        // if there is a letter after a comma it means we don't have something
-        // like A1,2,3 but rather A1,C3
-        afterComma = false;
-        paramCurrent = 0;
-      }
-      if (paramCurrent > 0 && !afterComma) {
-        paramCurrent *= 26;
-      } else {  // do we have a number before the uppercase ????
-        if (paramValuePosition > 0) {
-          // we have a target I2C device
-          wireTargetAddress = atoi(paramValue);
-          paramValuePosition = 0;
-          paramValue[paramValuePosition] = '\0';
-        }
-      }
-      paramCurrent += inChar - 64;
-      if (paramCurrent > MAX_PARAM && wireTargetAddress == 0) {
-        paramCurrent = 0;
-      }
-    }
-
-    if (inChar == ',' || theEnd) {  // store value and increment
-      afterComma = true;
-      if (paramCurrent > 0) {
-        if (paramValuePosition > 0) {
-          if (wireTargetAddress > 0) {
+  /* A lowercase first character is a verb; everything from the third is its
+     argument, since a verb is one or two letters. Anything else is a parameter
+     command, and those are parsed by the library so that the mesh reads the
+     same syntax the same way. */
+  if (data[0] < 'a' || data[0] > 'z') {
+    ParameterAssignment items[MAX_PARAM_ASSIGNMENTS];
+    uint8_t wireTargetAddress = 0;
+    uint8_t count = parseParameterAssignments(data, items, MAX_PARAM_ASSIGNMENTS,
+                                              &wireTargetAddress);
+    for (uint8_t i = 0; i < count; i++) {
+      ParameterAssignment* item = &items[i];
+      if (wireTargetAddress > 0) {
 #ifdef THR_WIRE_MASTER
-            wireWriteIntRegister(wireTargetAddress, paramCurrent - 1,
-                                 atoi(paramValue));
+        if (item->hasValue) {
+          wireWriteIntRegister(wireTargetAddress, item->slot, item->value);
+        }
+        output->println(wireReadIntRegister(wireTargetAddress, item->slot));
 #endif
-          } else {
-            setAndSaveParameter(paramCurrent - 1, atoi(paramValue));
-          }
-        }
-        if (wireTargetAddress > 0) {
-#ifdef THR_WIRE_MASTER
-          output->println(
-              wireReadIntRegister(wireTargetAddress, paramCurrent - 1));
-#endif
-        } else {
-          output->println(parameters[paramCurrent - 1]);
-        }
-        if (paramCurrent <= MAX_PARAM) {
-          paramCurrent++;
-          paramValuePosition = 0;
-          paramValue[0] = '\0';
-        }
+        continue;
       }
+      if (item->hasValue) {
+        setAndSaveParameter(item->slot, item->value);
+      }
+      /* printed after storing, so a value the firmware clamped reports the
+         truth rather than what was asked for */
+      output->println(parameters[item->slot]);
     }
-    // we may have one or 2 lowercasee
-    if (data[0] > 96 && data[0] < 123 &&
-        (i > 1 || data[1] < 97 || data[1] > 122)) {
-      inValue = true;
-    }
+    return;
   }
+
+  char* paramValue = data[1] == '\0' ? data + 1 : data + 2;
 
   // we will process the commands, it means it starts with lowercase
   switch (data[0]) {

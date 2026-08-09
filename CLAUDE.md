@@ -246,6 +246,29 @@ separate CMAC.
 - Broadcasts are never acknowledged — 255 nodes answering one frame is an ACK
   storm.
 
+**A write with holes in it is one frame, not one per run.** `ax42:BB1,17,1,A1,2,3`
+is the console syntax the decoration pages always used — a letter after a comma
+starts a new slot instead of stepping to the next — and it now survives onto the
+air. `LORA_CMD_SET_PARAMETER_RUNS` carries a sequence of `first(1) header(1)
+values…`, where the header is the count with bit 7 set when the values need
+int16, so each run picks its own width. A scene touching `BB`…`BO` with the two
+geometry slots skipped is **21 body bytes in one frame**, against 34 for the
+same command as text, 30 for carrying the gap values across to make one run, and
+three acknowledged round trips for one frame per run. Runs are validated in full
+before any of them is applied, so a truncated body cannot leave half a scene
+behind a NACK.
+
+**One parser reads that syntax, in `lib/hack/params.cpp`.**
+`parseParameterAssignments` is what the serial console and the mesh both call —
+the console applies the assignments where it stands, `processLoraMeshSetCommand`
+groups them into runs and encodes them. Two parsers for one grammar is how a
+command comes to mean different things depending on how it arrived.
+
+**A node that predates the opcode NACKs with `LORA_REASON_UNKNOWN_COMMAND`**
+rather than misreading it, so this is the one protocol change that needs the
+*receiving* boards flashed. A single-run write still goes out in the old shape,
+which every node understands.
+
 `axC6` broadcasts parameters C through H; `ax42:C6` sends them to node 42 and
 waits for an ACK through the escalation ladder (direct, 2 hops, 4 hops).
 The first parameter index travels in the body, so the receiver knows exactly
