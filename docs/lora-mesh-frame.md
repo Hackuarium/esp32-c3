@@ -241,6 +241,13 @@ The window ends with satellites (`L`), HDOP × 100 (`M`) and the GGA fix quality
 nothing else in the block distinguishes a 4-satellite 2D fix from a
 12-satellite one.
 
+A board built with `BLE_SCAN` extends the same run by one: the median RSSI of
+the Bluetooth device it was told to watch sits at `O`, immediately after the fix
+quality, and the window becomes `DG6 DH9`. That placement is the whole reason it
+is at 14 and not somewhere more convenient — a signal strength in a slot that
+does not touch the fix would need a frame of its own, and the two readings only
+mean something together. It costs 2 bytes and 21 ms of airtime a frame.
+
 A `DATA` body whose first byte is neither `0x01` nor `0x02` is reported as an
 opaque opcode and length.
 
@@ -406,6 +413,22 @@ fixes the bandwidth at the 125 kHz that fits between them. SF9 is then what a
 reporting every minute spends 13.6 s of the hour. The same frame at SF12 costs
 1647 ms, and the whole allowance would buy 21 frames.
 
+**The cadence is what the sub-band chooses, not the operator.** For the 31-byte
+frame that carries a fix and a beacon RSSI, at 247 ms:
+
+| `gt` | Frames per hour | Airtime | Against the 36 s of sub-band M |
+| ---- | --------------- | ------- | ------------------------------ |
+| 60   | 60              | 14.8 s  | 41 %                           |
+| 30   | 120             | 29.6 s  | 82 % — no room left to relay   |
+| 25   | 144             | 35.6 s  | 99 % — the practical floor     |
+| 10   | 360             | 88.9 s  | **247 % — two frames in three are dropped** |
+
+The governor drops what it cannot pay for rather than sending it late, so past
+that floor a faster cadence does not degrade, it goes missing — and the loss is
+silent unless a bridge is counting. Anything under ~25 s belongs in sub-band P,
+where the same frame costs 124 ms at SF9/250 kHz and 10 s spends 44.6 s of the
+360 s that 10 % allows — 12 %, with room for the mesh to still work.
+
 Moving to sub-band P instead —
 
 ```
@@ -439,6 +462,7 @@ rate optimisation is on and the frame is exactly half of SF12 at 125 kHz:
 | HELLO                       | 11    | 144 ms        | 578 ms         |
 | the `CMD` of the example    | 14    | 165 ms        | 578 ms         |
 | GPS telemetry, 8 parameters | 29    | 226 ms        | 823 ms         |
+| the same plus a beacon RSSI | 31    | 247 ms        | 906 ms         |
 | the largest frame           | 68    | 411 ms        | 1479 ms        |
 
 3.6× the airtime — against ten times the budget, so sub-band P carries almost

@@ -57,6 +57,13 @@ void loraMeshPrintPeers(Print* output);
    change what EN 300 220 allows, so it is a bench tool, not a setting. */
 void loraMeshResetAirtimeBudget();
 
+/* What broadcasting `count` parameters every `intervalSeconds` would spend over
+   an hour, as a percentage of what this carrier's duty cycle allows. Anything
+   over 100 is not a slower mesh but a silent one: the governor drops the frames
+   it cannot pay for rather than sending them late, so the cadence has to be
+   checked where it is set, not discovered in a field. 0 when nothing is sent. */
+uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds);
+
 /* Applies a received CMD body. Returns a LORA_STATUS_/LORA_REASON_ code, which
    is what travels back in the ACK or NACK. Handles the parameter opcodes only:
    CONSOLE is queued instead of applied, because it runs after its receipt. */

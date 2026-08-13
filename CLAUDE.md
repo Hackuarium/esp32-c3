@@ -335,6 +335,12 @@ sensor joins the same way — write parameters, set the window. Adjacency is loa
 bearing: an int32 only survives the trip because both halves sit in the same
 run of slots.
 
+**The Bluetooth observer is the first sensor that joined that way**, and it is
+why the window is `PARAM_TELEMETRY_FIRST` and `PARAM_TELEMETRY_BLOCK_SIZE`
+rather than a GPS constant: `taskBLE` writes a beacon's RSSI into `O`, the slot
+straight after the fix quality, so a board built with `BLE_SCAN` broadcasts
+`DG6 DH9` and one run carries both. See *The Bluetooth observer* below.
+
 **The cadence is a parameter and nothing else.** `resetParameters` writes `DF60`
 when the env defines `GPS_RX`, and that literal is the only place a default is
 decided — there is no build flag, because a firmware carrying its own interval
@@ -349,6 +355,24 @@ other node's traffic share what is left of the channel. `gt20` would ask for
 40.7 s — past the whole allowance — and the governor **drops** what it cannot
 pay for rather than sending it late, so a faster cadence does not degrade
 gracefully, it goes missing. `gt` faster than about 30 s belongs in sub-band P.
+
+**`gt` now says so itself**, because on an endpoint nothing prints when a frame
+is dropped — the automatic sends report to `loraMeshSilent()`, so an over-budget
+cadence is invisible until a bridge is counting, which is the wrong place and
+usually the wrong day to find out. It prints the cost as a percentage of the
+duty cycle and, past 100 %, what fraction will go missing and the two ways out:
+
+    gt10
+    Tracker every 10 s
+    Window: G + 9
+    Airtime: 247% of the duty cycle
+    Over budget - 60% of frames will be dropped
+    Either gt25, or move to sub-band P with DC18781,250
+
+The number comes from `loraMeshBroadcastBudgetPercent`, which rebuilds the frame
+the broadcast would send and prices it through the same `airtimeMillis` and
+`dutyCycleDivisor` the governor uses — so it follows the carrier, and moving to
+sub-band P changes the verdict rather than needing the advice rewritten.
 
 `gt` is that setting with the window attached: `gt30` broadcasts the fix every
 30 s, `gt0` stops, `gt` alone reports. It writes `DG` and `DH` too, since the
@@ -392,13 +416,14 @@ happened.
 | `reject` | the tag did not verify | `length` — pairs with the `raw` line above it |
 | `tx` | any frame leaves | `type dst counter ack` |
 | `rx` | an authentic frame is heard, **including ones not addressed here** | `type src dst counter budget hops rssi snr fresh route body` |
-| `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix and `hdop` when it covers `M` |
+| `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix, `hdop` when it covers `M` and `rssi` when it covers `O` |
 | `data` | a DATA body with an unknown opcode | `src opcode length` |
 | `cmd` | a remote SET was applied here | `src status` |
 | `exec` | a remote `ar` command is about to run here | `src cmd` |
 | `console` | an `ar` reply arrives | `src text truncated` — `text` is escaped, so a quote or a newline in a node's output cannot break the line |
 | `noack` | the escalation ladder gave up | `dst counter` |
 | `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr age` |
+| `ble` | every `T` seconds on a bridge built with `BLE_SCAN`, one line per device heard in that window | `addr rssi best adv type`, plus `phy` and `ext` under `CONFIG_BT_NIMBLE_EXT_ADV`, `name` when the device advertises one and `tx` when it publishes a TX Power |
 
 Every packet therefore produces **two lines**: `raw` before anything is trusted,
 then `rx` (or `reject`). A bridge with no key, or the wrong one, still logs every
@@ -492,6 +517,208 @@ It is deliberately **not** a parameter: there is no legitimate reason to raise
 it, and a parameter is one typo away from transmitting illegally. The old value
 was a flat 22 dBm inherited from the beacon code, roughly six times over the
 limit at 868 MHz.
+
+## The Bluetooth observer (`b`, `src/taskBLE.cpp`)
+
+`-D BLE_SCAN=1` in an env turns on `THR_BLE`, which starts `taskBLE` and the
+`(b)` serial menu. Two envs carry it, and they are the two halves of one job:
+
+- **`[env:loraBridge]`** — mesh + BLE, **no GPS**. What a bridge runs. It emits
+  a `ble` JSON line per device per sweep, which is how a tag gets *identified*.
+- **`[env:loraBeacon]`** — `loraGPS` + BLE. The tracker. It monitors the one tag
+  it was told to and reports the RSSI beside its fix.
+
+**Identification is the whole reason the bridge listens.** A VespaFinder tag
+advertises an anonymous address among thirty other anonymous addresses, so the
+operator holds the tag against the bridge, takes the address off the strongest
+line, and hands it to the tracker with the remote console — no cable, no reflash:
+
+    ar42:bs3c:1a:cc:36:ad:10     node 42 now monitors that tag
+    ar42:bk                      calibrate it, tag held at 1 m from node 42
+    ar42:bi                      what node 42 hears, and how far it thinks it is
+
+That works because `bs` is an ordinary console verb and `ar` runs console verbs —
+nothing had to be added to the wire format for it.
+
+**The bridge has no GPS on purpose, and that is what keeps it off the air.**
+`PARAM_TELEMETRY_FIRST` is only defined when `THR_GPS` is, so a BLE listener
+without a receiver has no broadcast window at all: it reports down the serial
+port it is already plugged into rather than spending a duty cycle to tell the
+host something the host is holding the other end of.
+
+**The feed is one line per device per sweep, never per advertisement.** A single
+tag produces hundreds a minute and two dozen devices would saturate 115200 baud
+and starve the mesh's own JSON — the host would be reading Bluetooth while the
+packets it exists to record went unwritten. `T` sets the sweep (0 = off, 10 s by
+default). `adv` and `best` reset at each sweep, so a line describes its window;
+`best` is the strongest sample in it, which is the one to identify by, being the
+least obstructed path and what a tag held against the bridge produces.
+
+Each entry is copied out under the mutex and printed outside it: a sweep is
+several kilobytes at 115200 baud, and holding the lock across that would stall
+the scan callback for as long as the printing takes.
+
+It never connects to anything. It scans continuously — window equal to
+interval, `setMaxResults(0)` so NimBLE keeps no results of its own — and the
+advertisement callback does both jobs at once: it keeps a 24-entry table of what
+is around, so `bl` can list it and `bs3` can pick the third line without anyone
+knowing an address in advance, and when the advertisement comes from the
+selected device its RSSI goes into `O`.
+
+    bl          list what is being heard, * marks the selected one
+    bs3         monitor line 3 of that list
+    bsaa:bb:…   monitor an address directly, whether or not it is in the list
+    bk          calibrate: this signal is 1 m    bk500  …is 5 m
+    bi          selection, signal, range model, scan state
+    bc          clear the list      bz  stop monitoring
+
+**What it was built for is ranging [VespaFinder](https://www.robor-nature.eu/en/solutions/asian-hornet/)
+tags** — BLE transmitters glued to an Asian hornet so it can be followed back
+to its nest. So `bl` and `bi` also print an estimated distance, from the
+log-distance model `d = 10 ^ ((R − rssi) / S)` with `R` the RSSI at one metre
+and `S` the path loss exponent × 10.
+
+`R` is **left unset on purpose and is not broadcast**. No datasheet publishes
+what these tags transmit, a VFT80 does not transmit like a VFT160, and the
+reference includes the antenna and the body of the insect it is glued to — so
+it is measured against the tag in hand with `bk`, never assumed. Until it is,
+no distance is printed at all: an uncalibrated one is a number that reads like
+a measurement while pointing at the wrong field. `bk500` calibrates at a paced
+five metres, which is far easier to set up outdoors than exactly one, and
+solves the same model backwards.
+
+**Never calibrate closer than about a metre.** 2.4 GHz is a 12.5 cm wavelength,
+so a tag held at 5 cm is inside the near field, where the log-distance model
+this uses does not apply at all — a reference taken there extrapolates wrong at
+every range that matters. One metre is eight wavelengths and is comfortably far
+field, which is the whole reason `bk` means one metre.
+
+Calibrate in the medium you will search. Against the −97 dBm floor, a 1 m
+reference of −64 dBm gives ~45 m in the open (`S20`) but ~13 m through
+vegetation (`S30`) — the exponent moves the working radius further than any
+antenna does.
+
+Both constants stay **off the wire** (17 and 18, after the telemetry block):
+they are properties of the receiver, so a host holding them once derives the
+distance from the dBm itself, and neither is worth 2 bytes in every frame.
+
+Treat the number as *warmer or colder*, not as a measurement. RSSI through a
+hedge reads like RSSI across twice the open field, and a hornet turns its own
+body between the tag and the antenna several times a second — which is what the
+median is for. What finds a nest is the reading that keeps falling as you walk.
+
+Four things are load bearing:
+
+- **The RSSI is written with `setParameter`, never `setAndSaveParameter`.** An
+  advertisement arrives several times a second and NVS is good for about
+  100 000 writes; the periodic broadcast reads the parameter array, not flash.
+- **The selection lives in NVS under `ble.mac`, as an address.** Six bytes do
+  not fit in an int16, so it cannot be a parameter — and a table index would
+  point at a different device after every reboot, so `bs3` is resolved to an
+  address at the moment it is typed and the index is never stored.
+- **What is reported is the median of the last eleven samples**, via the
+  `getMedianInt11` already in `lib/hack`. A motionless beacon swings ten dB
+  between two advertisements, and the frame that carries the reading goes out
+  once a minute — a single sample would be whichever one happened to land last.
+  The ring is primed with the first sample seen, so the median is defined from
+  the first advertisement rather than after eleven.
+- **Extended advertising is on (`CONFIG_BT_NIMBLE_EXT_ADV`), and it is not
+  free.** Without it NimBLE calls `ble_gap_disc` and hears only legacy PDUs on
+  the 1M PHY, so a BLE 5 extended advertiser is invisible at any distance —
+  which is exactly how a tag sitting 5 cm from the antenna came to be
+  unfindable. With it NimBLE calls `ble_gap_ext_disc` with scan params for the
+  1M **and** Coded PHYs, so it also reaches long-range advertisers, at about
+  −104 dBm against −97. The cost is that the controller time-slices between the
+  two PHYs, so a legacy 1M tag is dwelt on roughly half as long as before. The
+  feed carries `phy` so that trade can be settled from data rather than
+  argued: a device only ever heard on PHY 3 is one a legacy scan would lose
+  entirely.
+- **It also changed what "a busy place" means**, which is why the table is 256
+  and not 48. At 48 one office produced 275 distinct addresses in six sweeps —
+  every slot turning over every sweep, so a device could be heard and never
+  survive to be reported. That does not lose the weakest signal, it loses an
+  arbitrary one, which to somebody hunting a specific tag is indistinguishable
+  from the tag not being there.
+- **The sensitivity floor is a cliff, not a fade**, and it is worth knowing
+  where it is: about **−97 dBm** on the 1M PHY, ~−104 on Coded. RSSI only
+  exists for a packet that decoded, so there is no faint-but-present region
+  below it. Measured across 443 devices the tail runs flat through the low 90s
+  (28 devices at −92, 11 at −97) and then collapses to 4, 3, 1 at −98, −99,
+  −100 — the datasheet number showing itself in the capture.
+- **The TX Power AD field is shown but never used as the calibration.** It is
+  the radiated power, not the RSSI at a metre, and converting between them means
+  assuming a path loss the receiver is trying to measure. Many tags do not
+  advertise it at all, so `bi` reports it as information about the model.
+- **Silence is reported as `ERROR_VALUE`, not as the last value heard.** After
+  `BLE_BEACON_TIMEOUT_MS` (30 s) the slot goes unset and the bridge omits `rssi`
+  entirely. The measurement is proximity, so "I cannot hear it" is an answer;
+  a stale −71 dBm is a lie, and −32768 arriving as a number is how an averaged
+  track ends up hundreds of dB below anything real.
+
+The scan is restarted from the task loop whenever `isScanning()` goes false: the
+NimBLE host resets on its own errors and comes back idle, and a tracker nobody
+can plug a cable into has to notice that itself.
+
+## The beacon (`[env:bleBeacon]`, `src/taskBLEBeacon.cpp`)
+
+The other half of the observer, on a **XIAO ESP32C3** that does nothing else:
+`KIND_BLE_BEACON`, `include/configBleBeacon.h`, `src/mainBleBeacon.cpp`. It
+exists because the thing being hunted cannot be borrowed — a VespaFinder tag is
+glued to a hornet — so `bs`, `bk` and the range model had nothing to be
+exercised against. It is a tag that can be told what to be, and it says on the
+air what it is.
+
+Three parameters, and the advertising set is rebuilt whenever one changes, since
+a beacon at the far end of a field is not somewhere you go to reboot:
+
+    A18     dBm, -27 to +18            A-12 emulates a weak tag
+    B100    ms between advertisements  B20 is the shortest allowed
+    C3      1 = 1M legacy, 3 = coded   the numbering of the feed's phy
+
+**`bi` is the only verb, because the three settings are parameters.** A `bp` /
+`bt` / `by` that only wrote one slot each would be a second spelling of `A`,
+`B` and `C` — a grammar to keep in step with itself for nothing, since the task
+compares the parameters against what it last applied and picks up a change
+whoever made it. That also means an out-of-range value is caught on the way
+*out* rather than on the way in: `C2` stores, and the next boot treats the
+block as never written and puts the three defaults back, since the PHY slot is
+the tell (below).
+
+Defaults are **coded PHY at +18 dBm every 100 ms**, which is the loudest and
+furthest this board can be — roughly 25 dB over a phone advertising on 1M, which
+is the difference between across a room and across a field.
+
+- **+18 dBm is where the chip stops, and it is also where the law does.**
+  `esp_power_level_t` is a 3 dB ladder from −27 to +18, and EN 300 328 allows
+  20 dBm EIRP at 2.4 GHz — the antenna is worth a couple of those. So a value
+  between two rungs is rounded **down**, never up, and the ceiling is a clamp
+  rather than an error. Unlike the mesh's transmit power this *is* a parameter:
+  emulating a quiet tag is the point, and the top of the range is legal.
+- **PHY 1 means legacy, not just 1M.** Legacy PDUs exist only on 1M, and being
+  seen by a phone or any pre-BLE5 scanner is the whole reason to ask for that
+  PHY — an *extended* advertisement on 1M is no more visible to them than a
+  coded one. `C3` is ~7 dB further and invisible to anything not running an
+  extended scan, which `bi` says rather than leaving it to be discovered.
+- **The interval changes nothing about range and everything about being found.**
+  A listener only hears the windows its own sweep covers, so a beacon somebody
+  is walking towards should repeat several times a second. It also sets how fast
+  the observer's reading follows: that reading is the median of eleven samples,
+  which is ~1 s of them at `B100` and ~11 s at `B1000` — long enough that a
+  slow beacon still reports where it used to be.
+- **It publishes the TX Power AD field**, so the observer's `bi` reports what it
+  radiates. That is honest here and only here: the field is radiated power, and
+  the observer still refuses to use it as a calibration.
+- **The PHY parameter is what says the block was never written.** An untouched
+  NVS key reads 0, not `ERROR_VALUE`, and 0 dBm is a legitimate power — but 0 is
+  not a PHY anyone chose. Same tell as the mesh's radio triple.
+
+`processBleCommand` is defined by *either* `taskBLE.cpp` or `taskBLEBeacon.cpp`,
+never both — `THR_BLE` and `THR_BLE_BEACON` are mutually exclusive, and the `(b)`
+menu in `lib/hack` dispatches on either.
+
+Pair it with a listener by holding it against the bridge and reading the address
+off the strongest `ble` line, exactly like a real tag; `bi` prints the `bs…`
+command to type on the other board.
 
 ## HTTP (`src/http.cpp`)
 

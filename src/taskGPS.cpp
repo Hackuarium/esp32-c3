@@ -3,6 +3,9 @@
 #include <TinyGPSPlus.h>
 
 #include "params.h"
+#ifdef THR_LORA_MESH
+#include "lora/loraMesh.h"
+#endif
 
 HardwareSerial GPSSerial(1);
 TinyGPSPlus gps;
@@ -125,9 +128,9 @@ static void processTrackerInterval(char* paramValue, Print* output) {
       return;
     }
     setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER,
-                        PARAM_GPS_LATITUDE);
+                        PARAM_TELEMETRY_FIRST);
     setAndSaveParameter(PARAM_LORA_BROADCAST_NB_PARAMETERS,
-                        PARAM_GPS_BLOCK_SIZE);
+                        PARAM_TELEMETRY_BLOCK_SIZE);
     setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, seconds);
   }
 
@@ -151,12 +154,31 @@ static void processTrackerInterval(char* paramValue, Print* output) {
   }
   output->print(F(" + "));
   output->print(count);
-  if (first != PARAM_GPS_LATITUDE || count != PARAM_GPS_BLOCK_SIZE) {
-    output->print(F(" - not the GPS block, gt"));
+  if (first != PARAM_TELEMETRY_FIRST || count != PARAM_TELEMETRY_BLOCK_SIZE) {
+    output->print(F(" - not the telemetry block, gt"));
     output->print(interval > 0 ? interval : 60);
     output->print(F(" fixes it"));
   }
   output->println();
+
+  /* A cadence the sub-band cannot pay for does not arrive late, it does not
+     arrive: the governor drops what it cannot afford, and on an endpoint
+     nothing prints when it does. Said here, where the interval is chosen,
+     rather than found out in a field. */
+  uint16_t percent = loraMeshBroadcastBudgetPercent((uint8_t)count, interval);
+  if (percent > 0) {
+    output->print(F("Airtime: "));
+    output->print(percent);
+    output->println(F("% of the duty cycle"));
+    if (percent > 100) {
+      output->print(F("Over budget - "));
+      output->print(100 - 10000ul / percent);
+      output->println(F("% of frames will be dropped"));
+      output->print(F("Either gt"));
+      output->print((int32_t)interval * percent / 100 + 1);
+      output->println(F(", or move to sub-band P with DC18781,250"));
+    }
+  }
 }
 #endif
 

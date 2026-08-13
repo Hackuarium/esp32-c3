@@ -330,6 +330,27 @@ static uint32_t airtimeMillis(uint8_t frameLength) {
   return (uint32_t)(total + 1);
 }
 
+uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds) {
+  if (count == 0 || intervalSeconds <= 0) {
+    return 0;
+  }
+  /* the same frame loraMeshBroadcastParameters builds: a 6-byte header while
+     the counter is 24 bit, the SET body, the tag, and a 1-byte trailer with no
+     route entries yet because this node is the origin */
+  uint32_t frameLength = 6 + 2 + 2ul * count + LORA_MIC_SIZE + 1;
+  if (frameLength > LORA_MAX_FRAME_SIZE) {
+    return 0;
+  }
+  uint32_t perHour = (LORA_DUTY_CYCLE_WINDOW_MS / 1000ul) / intervalSeconds;
+  uint32_t spent = perHour * airtimeMillis((uint8_t)frameLength);
+  uint32_t allowance = dutyCycleAllowanceMillis();
+  if (allowance == 0) {
+    return 0;
+  }
+  uint32_t percent = spent * 100ul / allowance;
+  return percent > 65535ul ? 65535 : (uint16_t)percent;
+}
+
 /* Credits the airtime the window has given back since the last check. The
    leftover milliseconds stay on the clock instead of being rounded away, so a
    long run of small refills does not drift. Unsigned arithmetic makes the

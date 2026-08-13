@@ -66,6 +66,9 @@ void printHelp(Print* output) {
 #elif defined(THR_LORA)
   output->println(F("lor(a)WAN"));
 #endif
+#if defined(THR_BLE) || defined(THR_BLE_BEACON)
+  output->println(F("(b)luetooth"));
+#endif
   output->println(F("(f)s"));
 #ifdef THR_GPS
   output->println(F("(g)ps"));

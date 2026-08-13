@@ -1,4 +1,4 @@
-#include <Arduino.h>
+einclude<Arduino.h>
 
 #define WIRE_SDA SDA
 #define WIRE_SCL SCL
@@ -9,7 +9,7 @@
 #define THR_ONEWIRE 3
 #define THR_LORA 1
 
-extern SemaphoreHandle_t xSemaphoreWire;
+    extern SemaphoreHandle_t xSemaphoreWire;
 
 #define ANALOG_SLEEP 1000
 #define ANALOG_INPUTS \

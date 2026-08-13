@@ -275,10 +275,12 @@ uint8_t loraMeshApplyCommand(const uint8_t* body, uint8_t bodyLength) {
 /* A pair of int16 halves is unreadable on a console and useless in a database,
    so a block that happens to cover the fix is decorated with the degrees, and
    with the dilution of precision the position has to be weighted by. This is
-   the only place in the mesh that knows a parameter means something. */
-static void reportGpsFix(Print* json,
-                         const uint8_t* body,
-                         uint8_t bodyLength) {
+   the only place in the mesh that knows a parameter means something - which is
+   also why the beacon RSSI is named here rather than left as its letter: the
+   same slot is a weight on the pixels board. */
+static void reportTelemetry(Print* json,
+                            const uint8_t* body,
+                            uint8_t bodyLength) {
 #ifdef PARAM_GPS_LATITUDE
   int16_t latitudeLow =
       loraMeshParameterFromBody(body, bodyLength, PARAM_GPS_LATITUDE);
@@ -319,7 +321,23 @@ static void reportGpsFix(Print* json,
   }
 #endif
 
-#if !defined(PARAM_GPS_LATITUDE) && !defined(PARAM_GPS_HDOP)
+#ifdef PARAM_BLE_RSSI
+  int16_t rssi = loraMeshParameterFromBody(body, bodyLength, PARAM_BLE_RSSI);
+  /* absent rather than sent as -32768: the beacon being out of range is a
+     reading of its own, and a number the host would have to know to exclude is
+     how an averaged track ends up hundreds of dB below anything real */
+  if (rssi != ERROR_VALUE) {
+    if (json == NULL) {
+      Serial.print(F("  rssi "));
+      Serial.println(rssi);
+    } else {
+      loraBridgeInt(json, "rssi", rssi);
+    }
+  }
+#endif
+
+#if !defined(PARAM_GPS_LATITUDE) && !defined(PARAM_GPS_HDOP) && \
+    !defined(PARAM_BLE_RSSI)
   (void)json;
   (void)body;
   (void)bodyLength;
@@ -362,7 +380,7 @@ void loraMeshReportParameters(uint8_t source,
     Serial.println();
   }
 
-  reportGpsFix(json, body, bodyLength);
+  reportTelemetry(json, body, bodyLength);
   loraBridgeEnd(json);
 }
 

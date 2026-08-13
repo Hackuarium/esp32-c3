@@ -24,6 +24,12 @@ void printSpecificHelp(Print* output);
 void processGpsCommand(char command, char* paramValue, Print* output);
 #endif
 
+/* the (b) menu is served by whichever side of Bluetooth the board is: the
+   observer in taskBLE.cpp, or the beacon in taskBLEBeacon.cpp */
+#if defined(THR_BLE) || defined(THR_BLE_BEACON)
+void processBleCommand(char command, char* paramValue, Print* output);
+#endif
+
 void TaskSerial(void* pvParameters) {
   Serial.begin(115200);
   while (true) {
@@ -116,6 +122,11 @@ void printResult(char* data, Print* output) {
 #ifdef THR_LORA
     case 'a':
       processLoraCommand(data[1], paramValue, output);
+      break;
+#endif
+#if defined(THR_BLE) || defined(THR_BLE_BEACON)
+    case 'b':
+      processBleCommand(data[1], paramValue, output);
       break;
 #endif
     case 'h':

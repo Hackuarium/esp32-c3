@@ -14,7 +14,6 @@ void taskDHT22();
 void taskMQTT();
 void taskPixels();
 void taskOutput();
-void taskBluetooth();
 void taskOneWire();
 void taskServo();
 void taskSPIFSLogger();
@@ -61,7 +60,6 @@ void setupExample() {
   // taskUptime();
   taskWire();
   taskSPIFSLogger();
-  // taskBluetooth();
   taskBlink();
 
   vTaskDelay(30 * 1000);  // waiting 30s before normal operation
