@@ -13,6 +13,35 @@ TinyGPSPlus gps;
 // GGA field 6 is the fix quality (0 = no fix); the module talks GN (multi-GNSS)
 TinyGPSCustom fixQuality(gps, "GNGGA", 6);
 
+/* How long a position stays worth sending after the receiver last produced one.
+   A GGA arrives about once a second, so thirty missed sentences is not a gap in
+   the stream, it is a receiver that has stopped solving - while the slowest
+   cadence anyone sets here is a minute, where a fix a few seconds old is
+   exactly what the frame is meant to carry. */
+#ifndef GPS_FIX_MAX_AGE_MS
+#define GPS_FIX_MAX_AGE_MS 30000ul
+#endif
+
+/* Whether the coordinates in the parameters are where this node is now.
+
+   publishFix() only writes a location TinyGPSPlus calls valid, which is what
+   keeps a half-parsed sentence out of the parameters - and it is also why the
+   last good fix stays in those slots for ever once the receiver stops solving.
+   isValid() does not lapse either: it answers for the last position ever seen,
+   not for a current one. So the age of that position is the only thing that
+   separates a tracker standing still, which re-solves every second, from one
+   that went indoors an hour ago; the fix quality is read too because a GGA that
+   says 0 has already given the answer without waiting for the age to run out. */
+boolean gpsHasCurrentFix() {
+  if (!gps.location.isValid() || gps.location.age() > GPS_FIX_MAX_AGE_MS) {
+    return false;
+  }
+  if (fixQuality.isValid() && atoi(fixQuality.value()) == 0) {
+    return false;
+  }
+  return true;
+}
+
 static void publishFix() {
   if (gps.location.isValid()) {
     setParameterInt32(PARAM_GPS_LATITUDE, (int32_t)(gps.location.lat() * 1e6));
@@ -176,7 +205,7 @@ static void processTrackerInterval(char* paramValue, Print* output) {
       output->println(F("% of frames will be dropped"));
       output->print(F("Either gt"));
       output->print((int32_t)interval * percent / 100 + 1);
-      output->println(F(", or move to sub-band P with DC18781,250"));
+      output->println(F(", or DC18781,250 if this node left sub-band P"));
     }
   }
 }

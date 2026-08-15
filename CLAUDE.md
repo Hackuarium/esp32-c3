@@ -142,6 +142,13 @@ two would relay nothing it originates and never appear in a peer table. The
 radio triple — `DC`, `DD`, `DE` — is what says the block is untouched, since no
 carrier at no bandwidth and no spreading factor is not a choice anyone made.
 
+**The three radio values it writes are the macros the accessors fall back to**,
+`LORA_FREQUENCY_DEFAULT` / `LORA_BANDWIDTH_DEFAULT` /
+`LORA_SPREADING_FACTOR_DEFAULT` in `configLoraMeshParams.h` — one declaration
+each, because a reset writing its own literals would put a fresh board on a
+different channel from the one an unwritten board falls back to, and the two
+would never hear each other.
+
 A board that only *sometimes* carries a radio makes the include conditional
 instead — the pixels config takes the mesh on `-D TASK_LORA_MESH`, which is what
 separates `lineS3lora` from `lineS3`. That flag belongs in **`build_flags`, not
@@ -226,9 +233,9 @@ separate CMAC.
   confirmed-request slot for its whole length, so its duration is what every
   other addressed command waits for before being refused with `A confirmed
   request is already in flight`. The first two rungs used to be doubled, which
-  ran 10.5 s for a short frame at SF9 and 18 s for a full one — long enough that
-  a host polling on a ten second timer refused nearly everything else the mesh
-  had to say. A node not heard from in the last half hour skips the direct rung
+  ran 10.5 s for a short frame at SF9/125 kHz and 18 s for a full one — long
+  enough that a host polling on a ten second timer refused nearly everything
+  else the mesh had to say. A node not heard from in the last half hour skips the direct rung
   and starts at two hops.
 - **A relay verifies the MIC before forwarding**, so only authentic group
   traffic is ever amplified. It then dedups on `(src, counter)`, waits a random
@@ -347,14 +354,16 @@ decided — there is no build flag, because a firmware carrying its own interval
 would silently disagree with the node it was flashed onto, and the node is the
 one holding the value. Change it with `gt` or `DF` on the running board.
 
-A minute is not a preference but what the sub-band leaves: the telemetry frame
-is 29 bytes, **226 ms** on the air at the SF9/125 kHz default, so 60 frames an
-hour take **13.6 s of the 36 s** sub-band M allows at 1 %. That is already 38 %
-of one node's airtime for its own position, and the relays, the HELLOs and every
-other node's traffic share what is left of the channel. `gt20` would ask for
-40.7 s — past the whole allowance — and the governor **drops** what it cannot
-pay for rather than sending it late, so a faster cadence does not degrade
-gracefully, it goes missing. `gt` faster than about 30 s belongs in sub-band P.
+A minute is what the sub-band leaves room to change: the telemetry frame is
+29 bytes, **114 ms** on the air at the SF9/250 kHz default, so 60 frames an hour
+take **6.8 s of the 360 s** sub-band P allows at 10 % — under 2 % of one node's
+airtime for its own position, with the relays, the HELLOs and every other node's
+traffic sharing the rest. `gt10` is 41 s, still an eighth of the budget, so on
+the default carrier a tracker is paced by what is worth knowing rather than by
+the regulation. On 868.4 MHz the same frame costs 226 ms against a 36 s
+allowance, where a minute is **13.6 s — 38 %** and `gt20` asks for more than the
+whole hour: the governor **drops** what it cannot pay for rather than sending it
+late, so a faster cadence there does not degrade gracefully, it goes missing.
 
 **`gt` now says so itself**, because on an endpoint nothing prints when a frame
 is dropped — the automatic sends report to `loraMeshSilent()`, so an over-budget
@@ -367,12 +376,40 @@ duty cycle and, past 100 %, what fraction will go missing and the two ways out:
     Window: G + 9
     Airtime: 247% of the duty cycle
     Over budget - 60% of frames will be dropped
-    Either gt25, or move to sub-band P with DC18781,250
+    Either gt25, or DC18781,250 if this node left sub-band P
 
 The number comes from `loraMeshBroadcastBudgetPercent`, which rebuilds the frame
 the broadcast would send and prices it through the same `airtimeMillis` and
 `dutyCycleDivisor` the governor uses — so it follows the carrier, and moving to
 sub-band P changes the verdict rather than needing the advice rewritten.
+
+**A position is not broadcast when there is none.** `publishFix()` only writes a
+location TinyGPSPlus calls valid, which is what keeps a half-parsed sentence out
+of the parameters — and it is also why the last good fix stays in those slots for
+ever once the receiver stops solving. A tracker carried indoors would otherwise
+go on announcing the doorway it last saw the sky from, every `DF` seconds,
+indistinguishably from a node standing there, and at `gt5` that is a quarter of
+the duty cycle spent saying something untrue. So `loraMeshBroadcastParameters()`
+asks `gpsHasCurrentFix()` first and holds the frame, printing once on each
+transition:
+
+    LoRa mesh started, address 1, counter 20600, key set
+    No GPS fix, holding the broadcast
+
+Three things about that test. **The age of the fix is what decides it**, not
+`isValid()`, which answers for the last position ever seen and never lapses;
+`GPS_FIX_MAX_AGE_MS` is 30 s, about thirty missed GGA sentences, while the
+slowest cadence anyone sets is a minute — so a tracker standing still, which
+re-solves every second, is never held. A GGA reporting quality 0 is taken as the
+answer immediately rather than waiting the age out. **It applies only when the
+window actually carries the coordinates** (`DG`/`DH` covering `G`…`J`): the
+broadcast is generic, and a board sending a temperature has nothing to do with a
+fix. And **nothing else is suppressed** — HELLO keeps its own interval, so a node
+with no position still appears in every peer table.
+
+The satellite count and the fix quality cannot be sent on their own to say
+"still searching": they sit in the same run as the position, so the frame is all
+of it or none of it.
 
 `gt` is that setting with the window attached: `gt30` broadcasts the fix every
 30 s, `gt0` stops, `gt` alone reports. It writes `DG` and `DH` too, since the
@@ -445,27 +482,32 @@ drop the rest.
 ### Radio settings and the duty cycle
 
 Carrier, bandwidth and spreading factor are all runtime parameters, re-applied
-without a reboot whenever one of them changes. The defaults are **868.4 MHz,
-125 kHz, SF9**, and they are one decision rather than three, taken from the
-channel outwards: 868.4 falls in the gap between the mandatory LoRaWAN channels
-at 868.3 and 868.5, so the mesh has it to itself, which also fixes the bandwidth
-at the 125 kHz that fits between them. Sub-band M then allows 1 % and 14 dBm —
-36 s of airtime an hour — and SF9 is what that budget can afford: 226 ms for a
-29-byte frame against 1647 ms at SF12.
+without a reboot whenever one of them changes. The defaults are **869.525 MHz,
+250 kHz, SF9**, and they are one decision rather than three, taken from the duty
+cycle backwards: sub-band P (869.4–869.65) is the only part of the band that
+allows 500 mW and 10 % — 360 s of airtime an hour, and the radio's own 22 dBm
+instead of the 14 dBm the rest of the band permits. The regulation lets P be
+used either as 25 kHz channels or as **one channel for high speed data**, and
+869.4–869.65 is exactly 250 kHz, so the bandwidth follows the carrier and 869.525
+is the only centre that fits. SF9 is then what the budget can afford without
+spending it: 114 ms for a 29-byte frame, over three thousand an hour.
 
-`DC18781 DD250 DE12` is the other end of the trade. Sub-band P (869.4–869.65) is
-the only part of the band that allows 500 mW and a 10 % duty cycle, and the
-regulation lets it be used either as 25 kHz channels or as **one channel for
-high speed data** — so 250 kHz is the only wideband shape allowed there and
-869.525 the only centre that fits it, and the 10 % is what makes SF12 payable.
-That is **+12.5 dB** against the default — 8 dB of transmit power, 7.5 dB of
-processing gain, less 3 dB for the wider channel — so roughly twice the range,
-for 3.6× the airtime per frame and an exchange that answers that much slower. It
-is not a quiet channel: LoRaWAN gateways send their RX2 downlinks there at
-27 dBm.
+**Airtime is what this mesh runs out of first**, which is what chooses P: a
+tracker reporting every 10 s spends 45 s of the hour, 12 % of the allowance here
+and 247 % of the 1 % a quieter sub-band grants — it does not fit there at any
+spreading factor. The price is company, since 869.525 is also every LoRaWAN
+gateway's RX2 downlink, at 27 dBm.
 
-**`DC` counts 25 kHz steps above 400 MHz**, so the default 868.4 is `18736`
-and 869.525 is `18781`. The step is the raster of sub-band P and the
+`DC18736 DD125 DE9` is the other end of the trade: 868.4 falls in the gap between
+the mandatory LoRaWAN channels at 868.3 and 868.5, so the mesh has that channel
+to itself, at 125 kHz — the widest that fits between them. It gives up 8 dB of
+transmit power and nine tenths of the airtime, and takes 3 dB of sensitivity back
+from the narrower channel: **−5 dB net**, for the quiet. `DE12` on the default
+carrier is the opposite move, **+7.5 dB** for 7.3× the airtime per frame, worth
+making only for a link that will not otherwise close.
+
+**`DC` counts 25 kHz steps above 400 MHz**, so the default 869.525 is `18781`
+and 868.4 is `18736`. The step is the raster of sub-band P and the
 origin keeps the SX1262's whole 150–960 MHz range inside a signed int16, so the
 carrier needs no unsigned accessor. It counted 0.1 MHz until 2026-08, so
 `frequencyCode()` refuses a stored 1500…9600 — unambiguously an old value, since
@@ -487,8 +529,8 @@ value for anything unrecognised:
 
 **`ad` hands the whole window back.** The bucket is the node's own bookkeeping,
 and a poller left on a short interval empties it in an evening — after which the
-node transmits at the refill rate, one second of airtime per hundred at 1 %, and
-every command queues behind the last. `loraMeshResetAirtimeBudget` forgets the
+node transmits at the refill rate, one second of airtime per ten at the default
+10 %, and every command queues behind the last. `loraMeshResetAirtimeBudget` forgets the
 spending, which is what makes a bench session usable again; it changes nothing
 about what EN 300 220 allows. Reachable over the air as `ar42:ad`, like any
 other console verb.
@@ -497,9 +539,9 @@ other console verb.
 time within an observation window — one hour — so the governor is a token
 bucket, not a gap between frames: `airtimeBudgetMillis` holds the transmit time
 still available, `refillAirtimeBudget()` credits it back at 1/N of real time,
-and `transmitFrame` spends it. At the default 1 % that is **36 s of airtime per
-hour**, which the node may burst through — roughly 159 frames of 226 ms back to
-back at SF9/125 kHz — before it has to wait, and a frame it cannot pay for is
+and `transmitFrame` spends it. At the default 10 % that is **360 s of airtime per
+hour**, which the node may burst through — roughly 3157 frames of 114 ms back to
+back at SF9/250 kHz — before it has to wait, and a frame it cannot pay for is
 dropped rather than delayed. Enforcing a fixed post-transmission
 silence instead would be far stricter than the regulation and would make a
 retry ladder unusable. `LORA_DUTY_CYCLE_WINDOW_MS` shortens the window if you

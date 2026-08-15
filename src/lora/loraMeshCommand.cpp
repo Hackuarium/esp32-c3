@@ -40,6 +40,44 @@ void loraMeshReportData(uint8_t source,
   Serial.println(F(" byte(s)"));
 }
 
+#ifdef GPS_RX
+boolean gpsHasCurrentFix();
+
+/* A position is the one thing in this block that goes stale without changing.
+   The coordinates keep their last good value for ever once the receiver stops
+   solving, so a tracker taken indoors would go on announcing the doorway it
+   last saw the sky from, every DF seconds, indistinguishably from a node
+   standing there - and at DF5 that is a quarter of the duty cycle spent saying
+   something untrue. It is only skipped when the window actually carries the
+   coordinates: the broadcast is generic, and a board sending a temperature has
+   nothing to do with a fix. The satellite count and the fix quality are in the
+   same run as the position, so they cannot be sent on their own to say "still
+   searching" - the frame is all of it or none of it.
+
+   Nothing else is suppressed: HELLO keeps its own interval, so the node stays
+   in every peer table while it has no position to report. */
+static boolean broadcastWindowIsUsable(int16_t firstParameter, int16_t count) {
+  boolean carriesPosition = firstParameter <= PARAM_GPS_LATITUDE &&
+                            firstParameter + count >= PARAM_GPS_LONGITUDE + 2;
+  if (!carriesPosition) {
+    return true;
+  }
+  static boolean announced = false;
+  if (!gpsHasCurrentFix()) {
+    if (!announced) {
+      announced = true;
+      Serial.println(F("No GPS fix, holding the broadcast"));
+    }
+    return false;
+  }
+  if (announced) {
+    announced = false;
+    Serial.println(F("GPS fix back, broadcasting again"));
+  }
+  return true;
+}
+#endif
+
 /* The periodic broadcast: the same block a manual (ac) would copy, sent as DATA
    so every neighbour prints it rather than overwriting its own parameters. */
 void loraMeshBroadcastParameters() {
@@ -49,6 +87,11 @@ void loraMeshBroadcastParameters() {
       count > LORA_MAX_PARAMETERS_PER_FRAME) {
     return;
   }
+#ifdef GPS_RX
+  if (!broadcastWindowIsUsable(firstParameter, count)) {
+    return;
+  }
+#endif
 
   uint8_t body[LORA_MAX_BODY_SIZE];
   uint8_t length = loraMeshEncodeLocalParameters(

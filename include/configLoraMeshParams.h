@@ -35,16 +35,17 @@
 #define PARAM_LORA_ROLE 104  // DA
 /* hops allowed for the frames this node originates, 0 = never relayed */
 #define PARAM_LORA_TTL 105  // DB
-/* carrier as a count of 25 kHz steps above 400 MHz, so 18736 is 868.4 MHz -
-   the default - and 18781 is 869.525. 25 kHz is the raster of sub-band P and
+/* carrier as a count of 25 kHz steps above 400 MHz, so 18781 is 869.525 MHz -
+   the default - and 18736 is 868.4. 25 kHz is the raster of sub-band P and
    divides every EU868 and US915 channel; counting from 400 MHz keeps the
    SX1262's whole 150-960 MHz range inside a signed int16, so the slot stays an
    ordinary parameter. Firmware before 2026-08 counted 0.1 MHz here; those
    values, 1500 to 9600, are refused rather than converted, so a node that was
    never reset runs on the default instead of on 617.1 MHz. */
 #define PARAM_LORA_FREQUENCY 106  // DC
-/* bandwidth in kHz: 250, 125 or 62 (meaning 62.5) - 125 on the default carrier,
-   the widest that fits between the LoRaWAN channels at 868.3 and 868.5 */
+/* bandwidth in kHz: 250, 125 or 62 (meaning 62.5) - 250 on the default carrier,
+   which is the whole of sub-band P; 125 is what fits between the LoRaWAN
+   channels at 868.3 and 868.5 */
 #define PARAM_LORA_BANDWIDTH 107  // DD
 /* 7 to 12, anything else falls back to SF9 */
 #define PARAM_LORA_SPREADING_FACTOR 108  // DE
@@ -64,6 +65,21 @@
 
 /* 113 (DJ) is reserved for the mesh */
 #define LORA_MESH_MAX_PARAM 114
+
+/* The radio a node comes up on, here rather than beside the accessors because
+   loraMeshResetParameters() writes these same three slots: a reset that wrote
+   its own literals would put a fresh board on a different channel from the one
+   an unwritten board falls back to, and the two would never hear each other.
+   Overridable per env, like every other default in this header. */
+#ifndef LORA_FREQUENCY_DEFAULT
+#define LORA_FREQUENCY_DEFAULT 18781  // 869.525 MHz, the centre of sub-band P
+#endif
+#ifndef LORA_BANDWIDTH_DEFAULT
+#define LORA_BANDWIDTH_DEFAULT 250  // the whole of sub-band P as one channel
+#endif
+#ifndef LORA_SPREADING_FACTOR_DEFAULT
+#define LORA_SPREADING_FACTOR_DEFAULT 9  // what the 10% affords without spending it
+#endif
 
 #define LORA_ROLE_ENDPOINT 0
 #define LORA_ROLE_REPEATER 1

@@ -248,6 +248,17 @@ is at 14 and not somewhere more convenient — a signal strength in a slot that
 does not touch the fix would need a frame of its own, and the two readings only
 mean something together. It costs 2 bytes and 21 ms of airtime a frame.
 
+**The broadcast is held while the fix is not current.** The coordinates keep
+their last good value for ever once the receiver stops solving — `publishFix()`
+writes only a location TinyGPSPlus calls valid — so a tracker taken indoors would
+repeat the last place it saw the sky, every `DF` seconds, looking exactly like a
+node standing there. `loraMeshBroadcastParameters()` therefore checks
+`gpsHasCurrentFix()`: a position older than `GPS_FIX_MAX_AGE_MS` (30 s, about
+thirty missed GGA sentences), or a GGA reporting quality 0, holds the frame and
+prints `No GPS fix, holding the broadcast` once. It applies only when the window
+covers `G`…`J`, so a board broadcasting something other than a fix is untouched,
+and HELLO is never suppressed — a node with no position stays in the peer tables.
+
 A `DATA` body whose first byte is neither `0x01` nor `0x02` is reported as an
 opaque opcode and length.
 
@@ -337,8 +348,8 @@ on every boot.
 
 | Setting          | Default        | Parameter                                   |
 | ---------------- | -------------- | ------------------------------------------- |
-| Carrier          | 868.4 MHz      | `DC`, 25 kHz steps over 400 MHz (`18736`)   |
-| Bandwidth        | 125 kHz        | `DD`, one of 250 / 125 / 62 (= 62.5)        |
+| Carrier          | 869.525 MHz    | `DC`, 25 kHz steps over 400 MHz (`18781`)   |
+| Bandwidth        | 250 kHz        | `DD`, one of 250 / 125 / 62 (= 62.5)        |
 | Spreading factor | SF9            | `DE`, 7–12, anything else falls back to SF9 |
 | Coding rate      | 4/5            | fixed                                       |
 | Preamble         | 8 symbols      | fixed                                       |
@@ -356,15 +367,15 @@ converted**: a node that was never reset falls back to the default rather than
 coming up on 617.1 MHz. Nothing is written back, so setting `DC` yourself is
 still the only thing that changes it.
 
-868.4 MHz sits in the gap between the mandatory LoRaWAN channels at 868.3 and
-868.5, so the mesh shares it with nobody, and 125 kHz is the widest channel that
-fits there without spilling into either. `18781` (869.525 MHz) is the
-alternative: the centre of EN 300 220 sub-band P, the one place in the band that
-allows 500 mW and a 10 % duty cycle, and the only carrier at which a 250 kHz
-channel fills the sub-band exactly (869.400–869.650). It buys 8 dB of transmit
-power and ten times the airtime, and costs the quiet — a LoRaWAN gateway sends
-its RX2 downlinks on the same frequency, at 27 dBm. All three settings are
-re-applied without a reboot when the parameter changes.
+869.525 MHz is the centre of EN 300 220 sub-band P, the one place in the band
+that allows 500 mW and a 10 % duty cycle, and the only carrier at which a 250 kHz
+channel fills the sub-band exactly (869.400–869.650) — which is why the bandwidth
+is not a separate decision. It costs the quiet: a LoRaWAN gateway sends its RX2
+downlinks on the same frequency, at 27 dBm. `18736` (868.4 MHz) is the
+alternative, in the gap between the mandatory LoRaWAN channels at 868.3 and
+868.5, where the mesh shares the channel with nobody and 125 kHz is the widest
+that fits without spilling into either — for 1 % of the hour and 14 dBm. All
+three settings are re-applied without a reboot when the parameter changes.
 
 **The duty cycle follows the carrier** and is not a constant; anything
 unrecognised falls back to the strictest value:
@@ -381,22 +392,63 @@ unrecognised falls back to the strictest value:
 time within a one-hour observation window, so the governor is a token bucket:
 `airtimeBudgetMillis` holds the transmit time still available, it is credited
 back at 1/N of real time, and each transmission spends what it costs. At the
-default 1 % that is 36 s per hour, which the node may burst through — roughly
-159 frames of 226 ms at SF9/125 kHz — before it has to wait; in sub-band P it is
-360 s, roughly 437 frames of 823 ms at SF12/250 kHz. A fixed post-transmission
+default 10 % that is 360 s per hour, which the node may burst through — roughly
+3157 frames of 114 ms at SF9/250 kHz — before it has to wait; on a 1 % carrier it
+is 36 s, roughly 158 frames of 227 ms at SF9/125 kHz. A fixed post-transmission
 silence would be far stricter than the regulation and would make the retry
 ladder unusable. RadioLib enforces none of this outside LoRaWAN.
 
 **Transmit power follows the carrier too**: 14 dBm (25 mW ERP) across 863–870,
 22 dBm in sub-band P, which allows 500 mW — more than the SX1262 can produce, so
 there the radio's own ceiling binds — and 10 dBm in 433.05–434.79, which allows
-only 10 mW. It is deliberately **not** a parameter: there is no legitimate reason
-to raise it, and a parameter is one typo away from transmitting illegally.
+only 10 mW. On the default carrier the node therefore transmits at **22 dBm, and
+there is nothing above it**: `SX1262::checkOutputPower` refuses anything over 22,
+so the legal 500 mW is out of reach of the part whatever is asked of it. It is
+deliberately **not** a parameter: there is no legitimate reason to raise it, and
+a parameter is one typo away from transmitting illegally.
 
 Every transmission is preceded by listen-before-talk (up to four channel scans
 with a 20–60 ms backoff).
 
-### Why these three, and what the alternative buys
+### Why these three, and what the alternatives buy
+
+```
+DC18781    carrier 869.525 MHz
+DD250      bandwidth 250 kHz
+DE9        spreading factor 9
+```
+
+The three settings are one decision, taken from the duty cycle backwards.
+869.525 MHz is the centre of sub-band P, which allows 10 % and 500 mW — 360 s of
+airtime an hour, and the radio's own 22 dBm rather than the 14 dBm the rest of
+the band permits. That also fixes the bandwidth: the regulation allows P as
+25 kHz channels or as one wideband channel, and 869.400–869.650 is exactly
+250 kHz, so the channel fills the sub-band edge to edge. SF9 is then what the
+budget can afford without spending it: a 29-byte telemetry frame costs 114 ms, so
+the hour pays for over three thousand of them.
+
+**Airtime, not link budget, is what this mesh runs out of first.** For the
+31-byte frame that carries a fix and a beacon RSSI, at 124 ms:
+
+| `gt` | Frames per hour | Airtime | Against the 360 s of sub-band P | On 868.4 MHz, against 36 s |
+| ---- | --------------- | ------- | ------------------------------- | -------------------------- |
+| 60   | 60              | 7.4 s   | 2 %                             | 41 %                       |
+| 30   | 120             | 14.9 s  | 4 %                             | 82 % — no room to relay    |
+| 25   | 144             | 17.9 s  | 5 %                             | 99 % — the practical floor |
+| 10   | 360             | 44.6 s  | 12 %                            | **247 % — two frames in three are dropped** |
+| 5    | 720             | 89.3 s  | 25 %                            | —                          |
+| 2    | 1800            | 223.2 s | 62 %                            | —                          |
+
+The governor drops what it cannot pay for rather than sending it late, so past
+the floor a faster cadence does not degrade, it goes missing — and the loss is
+silent unless a bridge is counting. That right-hand column is the whole argument
+for the default: a tracker reporting every 10 s does not fit in a 1 % sub-band at
+any spreading factor, and fits four times over in P.
+
+The cost is the company. 869.525 **is** the RX2 downlink of every LoRaWAN gateway
+in range, sending at 27 dBm; the mesh's private sync word means neither side
+decodes the other, but a busy gateway is still a channel busy. When the quiet is
+worth more than the allowance —
 
 ```
 DC18736    carrier 868.4 MHz
@@ -404,99 +456,69 @@ DD125      bandwidth 125 kHz
 DE9        spreading factor 9
 ```
 
-The three settings are one decision, taken from the duty cycle backwards.
-868.4 MHz is in sub-band M, which allows 1 % and 14 dBm — 36 s of airtime an
-hour — and the carrier is chosen for the company it does not keep: it falls in
-the gap between the mandatory LoRaWAN channels at 868.3 and 868.5, which also
-fixes the bandwidth at the 125 kHz that fits between them. SF9 is then what a
-36 s budget can afford: a 29-byte telemetry frame costs 226 ms, so a tracker
-reporting every minute spends 13.6 s of the hour. The same frame at SF12 costs
-1647 ms, and the whole allowance would buy 21 frames.
+— 868.4 MHz falls in the gap between the mandatory LoRaWAN channels at 868.3 and
+868.5, where nothing else transmits and 125 kHz is the widest channel that fits
+without spilling into either. It costs 8 dB of transmit power and nine tenths of
+the airtime, and buys 3 dB of sensitivity back from the narrower channel: **−5 dB
+net**, and a cadence no faster than about 25 s.
 
-**The cadence is what the sub-band chooses, not the operator.** For the 31-byte
-frame that carries a fix and a beacon RSSI, at 247 ms:
+The other direction is `DE12` on the same carrier, when a link will not close at
+all: +7.5 dB, for a frame that takes 906 ms instead of 124 and an exchange that
+answers six times slower.
 
-| `gt` | Frames per hour | Airtime | Against the 36 s of sub-band M |
-| ---- | --------------- | ------- | ------------------------------ |
-| 60   | 60              | 14.8 s  | 41 %                           |
-| 30   | 120             | 29.6 s  | 82 % — no room left to relay   |
-| 25   | 144             | 35.6 s  | 99 % — the practical floor     |
-| 10   | 360             | 88.9 s  | **247 % — two frames in three are dropped** |
+The slots are adjacent, so one frame moves a node: `ax42:DC18736,125,9`. Its ACK
+goes out on the old settings — the radio is only retuned by the task loop, after
+the command has been handled — so the sender hears the receipt and then follows.
+Move the sender last. `dutyCycleDivisor()` and `maxTxPowerDbm()` both recognise
+18776–18786, so the 10 % budget and the 22 dBm ceiling come with the frequency,
+and leaving that window takes both away.
 
-The governor drops what it cannot pay for rather than sending it late, so past
-that floor a faster cadence does not degrade, it goes missing — and the loss is
-silent unless a bridge is counting. Anything under ~25 s belongs in sub-band P,
-where the same frame costs 124 ms at SF9/250 kHz and 10 s spends 44.6 s of the
-360 s that 10 % allows — 12 %, with room for the mesh to still work.
-
-Moving to sub-band P instead —
-
-```
-DC18781    carrier 869.525 MHz
-DD250      bandwidth 250 kHz
-DE12       spreading factor 12
-```
-
-— is the other end of the same trade: 500 mW and 10 % make SF12 affordable, so
-the link budget gains 8 dB of transmit power and 7.5 dB of processing gain
-against 3 dB lost to the wider channel, some **12.5 dB in total**, which is
-roughly twice the range. It is paid for in latency and in neighbours: one frame
-takes 823 ms rather than 226, and the channel is shared with every LoRaWAN
-gateway's RX2 downlink at 27 dBm.
-
-The slots are adjacent, so one frame moves a node: `ax42:DC18781,250,12`. Its
-ACK goes out on the old settings — the radio is only retuned by the task loop,
-after the command has been handled — so the sender hears the receipt and then
-follows. Move the sender last. `dutyCycleDivisor()` and `maxTxPowerDbm()` both
-recognise 18776–18786, so the 10 % budget and the 22 dBm ceiling come with the
-frequency.
-
-#### What it costs
+#### What each one costs
 
 From `airtimeMillis()` — CR 4/5, 8-symbol preamble, explicit header, CRC on. SF12
 at 250 kHz has a 16.384 ms symbol, just past the 16 ms threshold, so the low data
 rate optimisation is on and the frame is exactly half of SF12 at 125 kHz:
 
-| Frame                       | Bytes | SF9 / 125 kHz | SF12 / 250 kHz |
-| --------------------------- | ----- | ------------- | -------------- |
-| HELLO                       | 11    | 144 ms        | 578 ms         |
-| the `CMD` of the example    | 14    | 165 ms        | 578 ms         |
-| GPS telemetry, 8 parameters | 29    | 226 ms        | 823 ms         |
-| the same plus a beacon RSSI | 31    | 247 ms        | 906 ms         |
-| the largest frame           | 68    | 411 ms        | 1479 ms        |
+| Frame                       | Bytes | **SF9 / 250 kHz** | SF9 / 125 kHz | SF12 / 250 kHz |
+| --------------------------- | ----- | ----------------- | ------------- | -------------- |
+| HELLO                       | 11    | 73 ms             | 145 ms        | 578 ms         |
+| the `CMD` of the example    | 14    | 83 ms             | 165 ms        | 578 ms         |
+| GPS telemetry, 8 parameters | 29    | 114 ms            | 227 ms        | 824 ms         |
+| the same plus a beacon RSSI | 31    | 124 ms            | 247 ms        | 906 ms         |
+| the largest frame           | 68    | 206 ms            | 411 ms        | 1479 ms        |
 
-3.6× the airtime — against ten times the budget, so sub-band P carries almost
-three times as many frames an hour despite each one being slower:
+Against the budget each carrier grants, for that 29-byte frame:
 
-|                         | SF9 / 125 kHz, 1 % | SF12 / 250 kHz, 10 % |
-| ----------------------- | ------------------ | -------------------- |
-| Transmit time per hour  | 36 s               | 360 s                |
-| 29-byte frames per hour | 159                | 437                  |
+|                         | **SF9 / 250 kHz, 10 %** | SF9 / 125 kHz, 1 % | SF12 / 250 kHz, 10 % |
+| ----------------------- | ----------------------- | ------------------ | -------------------- |
+| Transmit time per hour  | 360 s                   | 36 s               | 360 s                |
+| 29-byte frames per hour | 3157                    | 158                | 436                  |
 
-Latency is where the slow profile is really paid. `ladderTimeout` is a multiple
-of airtime, so for that 29-byte frame one direct attempt waits 1.85 s instead of
-0.65 s and the full escalation ladder takes 35.6 s instead of 10.5 s; relay
-jitter (0…3× airtime) grows from 0.68 s to 2.5 s.
+Latency follows airtime the same way. `ladderTimeout` is
+`2 × (2 × hops + 1) × airtime + 200 ms` over a 0/2/4-hop ladder, so that frame
+waits 0.43 s on the direct attempt and 4.0 s for the whole escalation, against
+0.65 s / 7.4 s on 868.4 and 1.85 s / 25.3 s at SF12. Relay jitter (0…3× airtime)
+is 0…0.34 s at the default and 0…2.5 s at SF12.
 
-#### What it buys
+#### What each one buys
 
-|                | SF9 / 125 kHz | SF12 / 250 kHz | Gain         |
-| -------------- | ------------- | -------------- | ------------ |
-| Transmit power | 14 dBm        | 22 dBm         | +8 dB        |
-| Sensitivity    | −129.5 dBm    | −134.0 dBm     | +4.5 dB      |
-|                |               |                | **+12.5 dB** |
+|                | **SF9 / 250 kHz** | SF9 / 125 kHz | SF12 / 250 kHz |
+| -------------- | ----------------- | ------------- | -------------- |
+| Transmit power | 22 dBm            | 14 dBm        | 22 dBm         |
+| Sensitivity    | −126.5 dBm        | −129.5 dBm    | −134.0 dBm     |
+| Against the default | —            | **−5 dB**     | **+7.5 dB**    |
 
 Sensitivity is −174 + 10 log₁₀(BW) + 6 dB noise figure + the demodulator floor
 (−12.5 dB at SF9, −20 dB at SF12), which reproduces the SX1262 datasheet
-figures. Widening to 250 kHz costs 3 dB of noise floor — SF12 at 125 kHz would
-be −137 dBm — but that is not a shape the sub-band allows, and it would double
-the airtime again.
+figures. Widening to 250 kHz costs 3 dB of noise floor — SF12 at 125 kHz would be
+−137 dBm — but that is not a shape sub-band P allows, and it would double the
+airtime again.
 
-12.5 dB is ×4.2 range in free space and ×2.1 to ×2.6 for a path loss exponent of
-4 to 3, so **about twice the range** in real terrain, for a frame that takes
-3.6 times as long, an exchange that answers 3.4 times slower, and a channel
-shared with LoRaWAN. A mesh whose nodes already hear each other has nothing to
-gain from it; one with a link that will not close has nowhere else to go.
+7.5 dB is ×2.4 range in free space and ×1.5 to ×1.8 for a path loss exponent of 4
+to 3, so the SF12 end is worth reaching for only when a link actually will not
+close: it is 7.3 times the airtime per frame for range a mesh whose nodes already
+hear each other does not need. Read a node's reported margin against the row it
+is running before spending any of it.
 
 ## Decoding a captured frame
 

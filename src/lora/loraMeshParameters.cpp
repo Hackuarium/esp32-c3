@@ -603,9 +603,10 @@ void processLoraMeshCopyCommand(char* paramValue, Print* output) {
 void loraMeshResetParameters() {
   setAndSaveParameter(PARAM_LORA_ROLE, LORA_ROLE_ENDPOINT);
   setAndSaveParameter(PARAM_LORA_TTL, 2);
-  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR, 9);
-  setAndSaveParameter(PARAM_LORA_FREQUENCY, 18736);  // 868.4 MHz
-  setAndSaveParameter(PARAM_LORA_BANDWIDTH, 125);
+  setAndSaveParameter(PARAM_LORA_SPREADING_FACTOR,
+                      LORA_SPREADING_FACTOR_DEFAULT);
+  setAndSaveParameter(PARAM_LORA_FREQUENCY, LORA_FREQUENCY_DEFAULT);
+  setAndSaveParameter(PARAM_LORA_BANDWIDTH, LORA_BANDWIDTH_DEFAULT);
   setAndSaveParameter(PARAM_LORA_HELLO_SECONDS, LORA_HELLO_SECONDS_DEFAULT);
 
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 0);
