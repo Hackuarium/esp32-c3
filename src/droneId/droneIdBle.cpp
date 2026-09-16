@@ -6,6 +6,7 @@
 #include "droneIdBle.h"
 #include "droneIdFrames.h"
 #include "droneIdQueue.h"
+#include "droneIdSurvey.h"
 
 /* Advertisements are cheap and a drone repeats its position once a second, so
    the scan runs at full duty: window equal to interval. Anything less and the
@@ -49,6 +50,7 @@ class DroneIdScanCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     DroneCapture capture;
     uint8_t bodyLength = 0;
     const uint8_t* advertisement = advertised->getPayload();
+    droneIdSurveyAdvertisement(advertisement, length);
     const uint8_t* body =
         droneIdFindBluetoothPayload(advertisement, length, &bodyLength);
     if (body == NULL) {

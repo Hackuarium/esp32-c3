@@ -7,6 +7,7 @@
 
 #include "droneIdFrames.h"
 #include "droneIdQueue.h"
+#include "droneIdSurvey.h"
 #include "droneIdWifi.h"
 #include "params.h"
 
@@ -79,6 +80,7 @@ static void receiveFrame(void* buffer, wifi_promiscuous_pkt_type_t type) {
   const uint8_t* payload = NULL;
   uint8_t source = DRONE_SOURCE_WIFI_BEACON;
   if (subtype == WIFI_SUBTYPE_BEACON) {
+    droneIdSurveyBeacon(frame, length);
     payload = droneIdFindBeaconPayload(frame, length, &payloadLength);
   } else if (subtype == WIFI_SUBTYPE_ACTION) {
     payload = droneIdFindNanPayload(frame, length, &payloadLength);

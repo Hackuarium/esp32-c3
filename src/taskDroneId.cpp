@@ -4,6 +4,7 @@
 #include "droneId/droneIdFeed.h"
 #include "droneId/droneIdQueue.h"
 #include "droneId/droneIdReport.h"
+#include "droneId/droneIdSurvey.h"
 #include "droneId/droneIdTable.h"
 #include "droneId/droneIdWifi.h"
 #include "params.h"
@@ -165,6 +166,16 @@ void processDroneCommand(char command, char* paramValue, Print* output) {
       printLastPayload(output, false);
       printLastPayload(output, true);
       break;
+    case 'v':
+      /* a toggle rather than a parameter: it is what somebody standing next to
+         an aircraft turns on for a minute, not a setting a deployed board
+         keeps. */
+      if (paramValue[0] != '\0') {
+        droneIdSurveyEnable(atoi(paramValue) != 0);
+        droneIdSurveyReset();
+      }
+      droneIdSurveyPrint(output);
+      break;
     case 'c':
       droneIdTableReset();
       setParameter(PARAM_DRONE_COUNT, 0);
@@ -176,6 +187,8 @@ void processDroneCommand(char command, char* paramValue, Print* output) {
       output->println(F("(dd) everything one of them said, dd0"));
       output->println(
           F("(dh) the last payload accepted, and the last refused"));
+      output->println(
+          F("(dv) what else is on the air - dv1 starts, dv0 stops"));
       output->println(F("(dc) clear the drone list"));
       printParameterHelp(output, PARAM_DRONE_BLE_SECONDS,
                          F("seconds per cycle on Bluetooth, 0 = never"));
