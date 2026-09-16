@@ -32,7 +32,7 @@
    surviving to be reported. A table that evicts faster than it reports does
    not lose the weakest signal, it loses an arbitrary one - which for somebody
    hunting a specific tag is indistinguishable from the tag not being there. */
-#define BLE_MAX_DEVICES 256
+#define BLE_MAX_DEVICES 255
 #define BLE_ADDRESS_LENGTH 18  // "aa:bb:cc:dd:ee:ff"
 #define BLE_NAME_LENGTH 21
 #define BLE_SELECTION_KEY "ble.mac"
@@ -247,8 +247,8 @@ static void printAge(Print* output, uint32_t lastSeenMillis) {
 }
 
 /* The log-distance path loss model, which is the only one a single receiver can
-   run: rssi = reference - 10 n log10(d), so d = 10 ^ ((reference - rssi) / 10n).
-   With the exponent stored ten times too large the 10 n cancels into it.
+   run: rssi = reference - 10 n log10(d), so d = 10 ^ ((reference - rssi) /
+   10n). With the exponent stored ten times too large the 10 n cancels into it.
 
    It is an estimate of an estimate. RSSI through a hedge reads like RSSI across
    twice the open field, and a tag on a hornet turns its own body between the
@@ -296,7 +296,8 @@ static void printBleList(Print* output) {
   }
   for (uint8_t i = 0; i < deviceCount; i++) {
     BleDevice* device = &devices[i];
-    output->print(strcasecmp(device->address, selectedAddress) == 0 ? '*' : ' ');
+    output->print(strcasecmp(device->address, selectedAddress) == 0 ? '*'
+                                                                    : ' ');
     output->print(i);
     output->print(' ');
     output->print(device->address);
@@ -320,7 +321,8 @@ static void printBleList(Print* output) {
 static void printBleInfo(Print* output) {
   output->println(F("=== Bluetooth ==="));
   output->print(F("Scanning: "));
-  output->println(bleScan != NULL && bleScan->isScanning() ? F("yes") : F("no"));
+  output->println(bleScan != NULL && bleScan->isScanning() ? F("yes")
+                                                           : F("no"));
 
   if (!bleTake()) {
     output->println(F("Bluetooth busy"));
@@ -426,8 +428,8 @@ static uint32_t reportIntervalMillis() {
 }
 
 /* One entry is copied out under the mutex and printed outside it: a sweep is
-   several kilobytes at 115200 baud, and holding the lock across that would stall
-   the scan callback for as long as it takes to print. */
+   several kilobytes at 115200 baud, and holding the lock across that would
+   stall the scan callback for as long as it takes to print. */
 static void reportDevices() {
   if (!loraMeshIsBridge()) {
     return;
@@ -539,7 +541,8 @@ static void processBleSelect(char* paramValue, Print* output) {
     bleGive();
     if (addressRotates(address, type)) {
       output->println(F("Warning: private address, it will rotate and this"));
-      output->println(F("will then track nothing. Use a tag with a fixed one."));
+      output->println(
+          F("will then track nothing. Use a tag with a fixed one."));
     }
     return;
   }
@@ -634,7 +637,8 @@ void processBleCommand(char command, char* paramValue, Print* output) {
     default:
       output->println(F("(bi) info - selection, signal, range model"));
       output->println(F("(bl) list the devices heard"));
-      output->println(F("(bs) monitor one of them, bs3 or bsaa:bb:cc:dd:ee:ff"));
+      output->println(
+          F("(bs) monitor one of them, bs3 or bsaa:bb:cc:dd:ee:ff"));
       output->println(F("(bk) calibrate the range: bk at 1 m, bk500 at 5 m"));
       output->println(F("(bc) clear the device list"));
       output->println(F("(bz) stop monitoring, forget the selection"));
@@ -684,8 +688,8 @@ void TaskBLE(void* pvParameters) {
     }
 
     if (bleTake()) {
-      if (selectedEverSeen && millis() - selectedLastSeenMillis >
-                                  (uint32_t)BLE_BEACON_TIMEOUT_MS) {
+      if (selectedEverSeen &&
+          millis() - selectedLastSeenMillis > (uint32_t)BLE_BEACON_TIMEOUT_MS) {
         forgetBeaconSignal();
       }
       bleGive();

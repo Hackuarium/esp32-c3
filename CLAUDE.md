@@ -12,10 +12,19 @@ PlatformIO is not on `PATH`. Use the full path:
     ~/.platformio/penv/bin/pio run -e <env>
     ~/.platformio/penv/bin/pio run -e <env> -t upload
 
-`default_envs = loraMesh`, so a bare `pio run -t upload` targets a mesh node.
+`default_envs = lineS3lora`, so a bare `pio run -t upload` targets the pixels
+board that is also a mesh node.
 
 **Always build before claiming a firmware change works.** A build is ~12 s once
 the toolchain is warm.
+
+There is one host test, and it covers the drone tracker's frame parsing:
+
+    ~/.platformio/penv/bin/pio test -e native
+
+`[env:native]` empties the inherited `framework` and `lib_deps` - a host builds
+neither Arduino nor two dozen board libraries - and `build_src_filter` picks out
+the single source file that needs no Arduino. See § The drone watcher.
 
 ### Devices
 
@@ -461,6 +470,10 @@ happened.
 | `noack` | the escalation ladder gave up | `dst counter` |
 | `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr age` |
 | `ble` | every `T` seconds on a bridge built with `BLE_SCAN`, one line per device heard in that window | `addr rssi best adv type`, plus `phy` and `ext` under `CONFIG_BT_NIMBLE_EXT_ADV`, `name` when the device advertises one and `tx` when it publishes a TX Power |
+| `drone` | every `Q` seconds per transmitter, on a bridge built with `THR_DRONE_ID`, while an aircraft is being heard | `addr via uas status lat lon alt height heightRef speed vspeed heading hacc vacc rssi ch` — the unknown ones omitted rather than sent as the standard's -1000 |
+| `pilot` | the operator's position arrives, or moves more than `M` metres | `addr via uas lat lon alt source category class rssi` |
+| `ident` | an aircraft is first identified, or renames itself | `addr via uas idType uaType operator selfId version` |
+| `lost` | a transmitter is dropped after `E` seconds of silence | `addr via uas seen silent messages best` |
 
 Every packet therefore produces **two lines**: `raw` before anything is trusted,
 then `rx` (or `reject`). A bridge with no key, or the wrong one, still logs every
@@ -474,6 +487,12 @@ Serial** (`loraBridgeCopy`), so the host sees exchanges it did not start.
 
 A bridge does not relay — `isRepeater()` is still only role 1. Set `AI1` on the
 nodes that should extend range and `AI2` on the one plugged into the machine.
+
+The four drone lines are the exception to "a bridge is an endpoint that only
+relays what it hears": they are what *this* board heard on 2.4 GHz, and on a
+bridge they **replace** the console blocks rather than joining them — the same
+trade `loraMeshReportData` makes. `di` says which of the two a board is doing,
+because a port that has gone quiet otherwise reads as a dead radio.
 
 Human lines and JSON lines can still interleave on a bridge: typing `ai` on its
 serial port prints the human block. A host should keep the lines that parse and
@@ -761,6 +780,120 @@ menu in `lib/hack` dispatches on either.
 Pair it with a listener by holding it against the bridge and reading the address
 off the strongest `ble` line, exactly like a real tag; `bi` prints the `bs…`
 command to type on the other board.
+
+## The drone watcher (`d`, `[env:droneTracker]`, `src/droneId/`)
+
+`KIND_DRONE_TRACKER`, `include/configDroneTracker.h`, `src/mainDroneTracker.cpp`.
+A XIAO ESP32S3 with the Wio-SX1262 that listens for drone Remote ID. It is a
+mesh node too - `configDroneTracker.h` takes `configLoraMeshParams.h` the way
+CLAUDE.md's two-line recipe says, so the block at 104 to 113 and `MAX_PARAM`
+114 arrive with it, and the drone parameters sit at 0 to 5 well clear. Three
+radios, of which only Bluetooth and Wi-Fi compete: LoRa is a separate chip at
+868 MHz. The mesh earns its place through `ar`, which runs a console command on
+another node - so `ar42:dl` lists what node 42 can see from where it stands,
+and no new frame type was needed for it. The full
+reference — the four transports, the console, the parameters — is in
+[docs/drone-remote-id.md](docs/drone-remote-id.md); what follows is what matters
+when changing the firmware.
+
+**The decoding is not ours.** `lib/opendroneid/` is
+[opendroneid-core-c](https://github.com/opendroneid/opendroneid-core-c) vendored
+unmodified at commit `6484f26`, Apache-2.0, and it owns every byte of the
+message format. It is vendored rather than named in `lib_deps` because **nothing
+in the opendroneid organisation is packaged for PlatformIO or the Arduino
+Library Manager** — no `library.json` or `library.properties` in any of its nine
+repositories, so a `lib_deps` git URL clones it and then fails to build: the
+headers in `libopendroneid/` never reach the include path, and `libmav2odid/` is
+compiled too and wants MAVLink. `lib/tinyexpr` is here for the same reason.
+Do not edit those files; what this project adds lives in `src/droneId/`.
+
+Three `ODID_*` build flags configure it, and they are in **`build_flags`, not
+`build_src_flags`** — the latter never reaches `lib/`. `ODID_AUTH_MAX_PAGES=9`
+is a floor, not a preference: `checkPackContent()` refuses a whole message pack
+carrying more authentication pages than that, and a pack holds at most nine
+messages, so anything smaller would throw away an aircraft's position because of
+signature pages this board does not read.
+
+**Four transports, one message format.** Bluetooth 4 legacy advertising carries
+exactly one 25-byte message, because the service data structure fills all 31
+bytes a legacy payload has; Bluetooth 5 Long Range carries a pack of up to nine;
+Wi-Fi puts a pack in a beacon's vendor element or in a NAN action frame. Both
+Bluetooth methods arrive through one scan — `CONFIG_BT_NIMBLE_EXT_ADV` makes
+NimBLE call `ble_gap_ext_disc()` with the same parameters for the uncoded and
+the coded PHY, so there is nothing to configure for BT5.
+
+**Both radios are one radio, so they take turns.** `A` seconds of Bluetooth then
+`B` seconds of Wi-Fi (7 and 3), with the scan stopped and the receiver closed at
+each handover — Espressif rates Wi-Fi promiscuous receive alongside Bluetooth as
+supported but *unstable*, and with Wi-Fi idle the arbiter hands the radio to
+Bluetooth, so an explicit slice is the only one that holds. Either at 0 gives
+the whole radio to the other.
+
+Four things are load bearing:
+
+- **A scan started with duration 0 is not endless under extended advertising.**
+  NimBLE turns 0 into `BLE_HS_FOREVER`, then divides by 10 for the extended
+  API's 10 ms units, where the parameter is 16 bits — so it truncates to about
+  524 seconds and the controller stops. `droneIdBleListen()` is called every
+  loop and restarts it; a receiver that started once would go deaf after nine
+  minutes with nothing looking wrong.
+- **`setAdvertisedDeviceCallbacks(cb, true)` is what turns the duplicate filter
+  off**, and without it an aircraft's identity would arrive once and its
+  position never — one address reports once, and Remote ID sends five different
+  message types from one address.
+- **`decodeOpenDroneID()` takes no length.** For a pack it casts to a 228-byte
+  struct and reads `3 + 25 * MsgPackSize` before any of its own checks run, so
+  `droneIdDecode()` bounds the buffer first. A nine-message pack over Bluetooth
+  5 is a separate case and is caught earlier: past 229 bytes the controller
+  splits the report, NimBLE 1.4.3 does not reassemble, so neither fragment is a
+  valid AD structure and the walk drops both — `droneIdBle.cpp` counts those
+  itself, since they never reach the decoder to be counted as refused.
+- **The frame parsing is testable, and tested.** `src/droneId/droneIdFrames.cpp`
+  is the one file here with no `config.h` and no `THR_DRONE_ID` guard, so it
+  builds on a host: locating the payload is where an off-by-one decodes garbage
+  as a position, and `pio test -e native` runs it against real frames from the
+  reference transmitter, frozen in `test/test_droneid_frames/fixtures.h`.
+- **Neither radio callback prints.** The Wi-Fi one runs inside the driver task,
+  where a hundred bytes at 115200 baud is nine milliseconds of lost frames; the
+  Bluetooth one runs on the NimBLE host task with a 4 kB stack. Both filter,
+  copy into `droneIdQueue` and return; `TaskDroneId` decodes and prints.
+
+**One row is one transmitter, not one aircraft.** A drone on both radios uses a
+different address on each, and the reference transmitter uses a different one
+again for its BT4 and BT5 advertising sets, so one aircraft can occupy four
+rows. They are not merged because merging means trusting the UAS ID, which is
+the field a spoofer picks; `dl` marks the rows that agree on one instead.
+
+Detecting a drone that is **not** cooperating - one with Remote ID switched off -
+is evaluated in [docs/drone-rf-detection.md](docs/drone-rf-detection.md) and not
+built. Three findings decide it: the ESP32's Wi-Fi radio cannot be made into a
+spectrum sensor at all (no energy-detect API exists in any IDF version, and the
+ROM symbol that looks like one returns a constant while the `libphy` one that
+sounds like one *transmits a tone*); the SX1262 already here **is** a real
+sub-GHz sensor and can decode ExpressLRS 900 at SF7-SF9; and the cheapest win of
+all is software - DJI's own DroneID rides in a Wi-Fi beacon vendor element under
+OUI `26 37 12`, carrying the serial number, the aircraft position and **the
+pilot's location**, decodable by the beacon walk in `droneIdFrames.cpp` with one
+more `memcmp`. Note its coordinates scale by 174533.0, not 1e7.
+
+Getting what it hears into a database — `lpatiny/loramesh-monitoring`, a map and
+an intrusion alert — is designed in
+[docs/drone-mesh-forwarding.md](docs/drone-mesh-forwarding.md) and **not built**.
+Three things decide its shape. One drone's position at 1 Hz costs 135 % of
+sub-band P's whole allowance, so raw forwarding over LoRa is impossible and what
+travels is an 11-byte `TRACK` record four to a frame, plus a 6-byte `PILOT` for
+the operator's position and a variable `IDENT` binding the handle to the UAS ID —
+three new DATA opcodes in an envelope that is otherwise unchanged, encryption
+included. **A board that is a bridge is also a drone watcher**, so a post the
+host can reach with a cable emits its sightings as JSON on the same serial feed,
+at 1 Hz and full precision, and the mesh is spent only on the fences no cable
+reaches. And the firmware only ever *encodes* those records: the host already
+stores every decrypted body as hex, so there is exactly one decoder and it is
+the one that can be re-run over a capture.
+
+`taskWifi` is compiled into every image here but never started on this board,
+and **the `(w)` menu must not be used on it** — associating with a network pins
+the channel to the access point's and takes the receiver away until a reboot.
 
 ## HTTP (`src/http.cpp`)
 

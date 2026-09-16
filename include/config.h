@@ -6,6 +6,7 @@
 // 6 was KIND_LORA_GPS, now a GPS fix broadcast on the mesh (KIND_LORA_MESH)
 #define KIND_LORA_MESH 7
 #define KIND_BLE_BEACON 8
+#define KIND_DRONE_TRACKER 9
 #define KIND_EXAMPLE 99
 
 #if BOARD_TYPE == KIND_ROCKET
@@ -24,6 +25,8 @@
 #include "./configLoraMesh.h"
 #elif BOARD_TYPE == KIND_BLE_BEACON
 #include "./configBleBeacon.h"
+#elif BOARD_TYPE == KIND_DRONE_TRACKER
+#include "./configDroneTracker.h"
 #else
 #error "Unknown board type"
 #endif

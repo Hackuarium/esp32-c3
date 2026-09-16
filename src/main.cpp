@@ -18,6 +18,8 @@ void setupLoraMesh();
 void loopLoraMesh();
 void setupBleBeacon();
 void loopBleBeacon();
+void setupDroneTracker();
+void loopDroneTracker();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -37,6 +39,8 @@ void setup() {
   setupLoraMesh();
 #elif BOARD_TYPE == KIND_BLE_BEACON
   setupBleBeacon();
+#elif BOARD_TYPE == KIND_DRONE_TRACKER
+  setupDroneTracker();
 #else
   setupExample();
 #endif
@@ -59,6 +63,8 @@ void loop() {
   loopLoraMesh();
 #elif BOARD_TYPE == KIND_BLE_BEACON
   loopBleBeacon();
+#elif BOARD_TYPE == KIND_DRONE_TRACKER
+  loopDroneTracker();
 #else
   loopExample();
 #endif

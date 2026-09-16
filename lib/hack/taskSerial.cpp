@@ -30,6 +30,10 @@ void processGpsCommand(char command, char* paramValue, Print* output);
 void processBleCommand(char command, char* paramValue, Print* output);
 #endif
 
+#ifdef THR_DRONE_ID
+void processDroneCommand(char command, char* paramValue, Print* output);
+#endif
+
 void TaskSerial(void* pvParameters) {
   Serial.begin(115200);
   while (true) {
@@ -127,6 +131,11 @@ void printResult(char* data, Print* output) {
 #if defined(THR_BLE) || defined(THR_BLE_BEACON)
     case 'b':
       processBleCommand(data[1], paramValue, output);
+      break;
+#endif
+#ifdef THR_DRONE_ID
+    case 'd':
+      processDroneCommand(data[1], paramValue, output);
       break;
 #endif
     case 'h':
