@@ -1325,3 +1325,30 @@ I see only 1 in the json ":6}
 {"event":"drone","addr":"60:60:1f:05:40:7c","via":"beacon","uas":"1581F5FJD23BD00E7058","status":1,"lat":46.5154949,"lon":6.5372715,"height":0.0,"heightRef":0,"speed":0.00,"hacc":0,"vacc":0,"rssi":-73,"ch":6}
 Is really everything decoded ????
 
+[2026-09-16T18:26:34Z]
+the mini 4 pro is currently running and we see nothing. Explore other possibilities.
+
+[2026-09-16T18:36:19Z]
+Try to do as well an alternative to scan the bandwith and identify possible drone if this is possible. I do not feel currenly to use an android phone. We will buy a esp32 with 5ghz
+
+[2026-09-16T18:45:32Z]
+Do we know if the mini 4 pro emit the remoteID on 5 GHzt
+
+[2026-09-16T18:49:19Z]
+Is the new version able to see the drones ?
+
+[2026-09-16T18:51:07Z]
+It is expected to be a drone watcher. Check
+
+[2026-09-16T18:52:48Z]
+And with RX5808 / RTC6715, ~€7 are we certain to detect it ?
+
+[2026-09-16T18:53:03Z]
+And with RX5808 / RTC6715, ~€7 are we certain to detect it ? What about other wifi sources ?
+
+[2026-09-16T19:01:29Z]
+And for the mini pro 4 what is the solution then ?
+
+[2026-09-16T19:01:54Z]
+commit and push everything
+
