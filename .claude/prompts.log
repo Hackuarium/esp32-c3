@@ -1180,3 +1180,148 @@ the interface does not allow to put -43 at 1m
 <ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/include/configLoraMesh.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
 commit and push all the code from this project
 
+[2026-09-08T18:03:27Z]
+we need a new task that will capture the drone bluetooth of wifi id, decode it and log it on the console
+
+[2026-09-08T18:03:48Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/include/configPixels.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+This is a new configDroneTracker
+
+[2026-09-08T18:38:05Z]
+need to deal with both protocol of remoteID
+
+[2026-09-08T18:46:04Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/droneId/droneIdTable.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+there is a library that decode this
+
+[2026-09-08T18:51:10Z]
+<task-notification>
+<task-id>wtx8ulfym</task-id>
+<tool-use-id>toolu_019jkwtmb6akjH9Ai1kYUB4s</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/tasks/wtx8ulfym.output</output-file>
+<status>completed</status>
+<summary>Dynamic workflow "Verify Open Drone ID wire formats, ESP32 BLE/WiFi capture APIs and this repo conventions before implementing a drone tracker task" completed</summary>
+<result>{"odid-messages":{"verdict":"has-errors","corrections":["§0.3 reason #2 (unaligned multi-byte loads) is factually wrong on the exact targets it names. The report claims 'Latitude sits at byte offset 5 ... On ESP32-C3 (RISC-V) an unaligned word load traps into an emulation handler (slow) or faults depending on config; on Xtensa it faults.' __attribute__((__packed__)) sets the struct's alignment to 1 and marks every member as potentially unaligned, so the compiler emits byte-wise loads automatically. Verified by compiling a packed struct with an int32_t at offset 5 using the project's own toolchains: riscv32-esp-elf-gcc 8.4.0 emits four `lbu` instructions and xtensa-esp32s3-elf-gcc 8.4.0 emits four `l8ui` instructions — never a word load. FIX: replaced the rationale with the three reasons that are actually true (implementation-defined bitfield allocation order, strict-aliasing violation when casting a uint8_t* radio buffer to the struct type, and host-byte-order dependence of the multi-byte members), and added the disassembly evidence. The recommendation to use explicit shifts/masks is unchanged and still correct.","§4.3 table row for `SpeedMult == 1` states the range covered as '63.75 .. 255.00 m/s'. That upper bound is the invalid sentinel, not a valid speed. FIX: valid range is 63.75 .. 254.25 m/s (raw 0..254); raw 255 decodes to exactly 255.0 m/s and is the invalid/unknown value. Confirmed by encoding 254.25 (-&gt; mult=1 raw=254) and INV_SPEED_H (-&gt; mult=1 raw=255), and by encodeLocationMessage rejecting any input in (254.25, 255.0).","§1 asserts 'Value 2 | ASTM F3411 v1.1 second ballot draft = **ASTM F3411-22a**' as established fact. The library's own header comment reads 'ASTM F3411-v1.1 draft sent for second ballot round Q1 2022. (ASTM F3411-22 ?)' — with an explicit question mark — and the identical comment appears in the Android receiver's Constants.java. Both ASTM F3411-22 and F3411-22a are published editions (F3411-22a approved 2022-06-17). FIX: downgraded to what the sources actually say and moved the exact edition mapping to the still-open list.","§12 labels Timestamp accuracy values 1-15 as '`&lt;0.1 s` … `&lt;1.5 s`'. The second implementation renders these inclusively — LocationData.getTimeAccuracyAsString formats '&lt;= %1.1f s' — unlike every other accuracy enum, which renders '&lt; bound'. FIX: changed to `≤ 0.1 s` … `≤ 1.5 s` and flagged it as the one accuracy enum with an inclusive bound.","OMISSION (added): the BLE transport offset, which is the single fact needed to locate the 25 bytes in a received advertisement. Verified in OpenDroneIdDataManager.receiveDataBluetooth, which calls parseData(data, 6, ...), and in BluetoothScanner: the AD payload is `len | 0x16 (Service Data - 16-bit UUID) | FA FF (0xFFFA, ASTM Remote ID) | 0x0D (ODID app code) | message counter | 25-byte message`, so the message starts at offset 6 and the counter is at offset 5. Wi-Fi NAN and Beacon use offset 1 (counter at byte 0), matching `struct ODID_service_info { uint8_t message_counter; ODID_MessagePack_encoded odid_message_pack[]; }` in odid_wifi.h.","OMISSION (added): the Message Pack case in decodeOpenDroneID() is a buffer overread in the reference library, not merely a recursion hazard. The function documents that msgData points to 25 bytes, but for type 0xF it casts to ODID_MessagePack_encoded* (228 bytes) and reads up to 3 + 25*MsgPackSize. On an ESP32 fed from a radio buffer this reads past the end before any of the library's own checks run. The report's gate code handles it but never explains why the length check must precede the cast.","OMISSION (added): resolved the report's own open uncertainty about bitfield allocation on ESP32. Compiled a struct with the exact header/BasicID/Location/System byte-1 bitfield shapes and a constant initializer for both riscv32-esp-elf-gcc and xtensa-esp32s3-elf-gcc; both emit .byte 18, 18, 39, 6 (0x12, 0x12, 0x27, 0x06), identical to arm64 clang and to the encoder's own output. LSb-first allocation is confirmed on both real ESP32 targets, not just assumed.","OMISSION (added): decodeSystemMessage() performs no field validation whatsoever and decodeSelfIDMessage() does not validate DescType, so every reserved and out-of-range enum value reaches the caller unchanged. Consistent with the report's (correct) 'do not reject on reserved values' policy, but an implementer needs to know the reference decoder provides no filtering here.","OMISSION (added): decodeAuthMessage()'s `Length &gt; MAX_AUTH_LENGTH` check is inside `#if (MAX_AUTH_LENGTH &lt; UINT8_MAX)`. At the default ODID_AUTH_MAX_PAGES=16, MAX_AUTH_LENGTH is 362 (measured) so that check is compiled out entirely; only the `capacity &lt; Length` test runs. The report presented both as unconditional.","OMISSION (added): the Android receiver's page-0 Authentication failure policy differs from the C library's. On `authLastPageIndex &gt;= 16 || authLength &gt; len` it zeroes LastPageIndex/Length/Timestamp and keeps the message, where the C library rejects it outright. Worth stating since the report leans on the two implementations agreeing.","CLARIFICATION (added): the ODID_status enum's header comment says '3 to 15 reserved', which is stale — 3 (Emergency) and 4 (Remote ID System Failure) are both defined. The report's table (5-15 reserved) is correct; noted explicitly so an implementer reading the header does not 'correct' the table back.","OMISSION (added): opendroneid.h also declares an unrelated FRDID_UAS_Data struct and frdid_build/frdid_wifi_build_beacon_frame functions (French Direct ID). These share the header but have nothing to do with the ODID 25-byte message format and must not be confused with it. Also added ODID_MessagePack_data (SingleMessageSize + MsgPackSize + Messages[9]), the non-encoded pack struct encodeMessagePack() takes."],"findings":"# Open Drone ID — byte-exact message specification\n\nNormative source: `opendroneid/opendroneid-core-c` @ commit `6484f26545d4f012682524e2d843fab0fbdc0b34` (branch `master`, verified 2026-09-08 via the GitHub API; commit \"Merge pull request #110 from friissoren/bug_fix2\", authored 2026-09-08T15:32:56Z).\n\n**The directory is `libopendroneid/`, not `libraries/opendroneid/`.** Raw URLs are listed at the end.\n\nEverything below was **verified empirically, twice**: the library was compiled and its encoder output dumped for known inputs, and every extraction was cross-checked against the Android receiver's independent hand-written parser (`OpenDroneIdParser.java`), which agrees on every field. Bitfield allocation was additionally confirmed on the **real ESP32-C3 (RISC-V) and ESP32-S3 (Xtensa) GCC toolchains**, not merely on a host compiler.\n\n---\n\n## 0. Global facts\n\n| Fact | Value |\n|---|---|\n| Message size | **exactly 25 bytes** (`ODID_MESSAGE_SIZE`) |\n| Endianness | **little-endian** for all multi-byte integers — confirmed (§0.2) |\n| Struct packing | `__attribute__((__packed__))`, no padding; every encoded message struct `sizeof` == 25 (measured) |\n| Message Pack struct | 228 bytes = 3 + 25×9 (measured) |\n| Current protocol version emitted | 2 (`ODID_PROTOCOL_VERSION`) |\n| `ODID_ID_SIZE` | 20 |\n| `ODID_STR_SIZE` | 23 |\n| `ODID_AUTH_PAGE_ZERO_DATA_SIZE` | 17 |\n| `ODID_AUTH_PAGE_NONZERO_DATA_SIZE` | 23 |\n| `ODID_AUTH_MAX_PAGES` | 16 (compile-time, settable 1–16) |\n| `ODID_BASIC_ID_MAX_MESSAGES` | 2 (compile-time, settable 1–5) |\n| `ODID_PACK_MAX_MESSAGES` | 9 |\n| `MAX_AUTH_LENGTH` | 362 (measured) = 17 + 23×15 |\n\n### 0.1 Measured reference dumps\n\nReal output of `encodeXxxMessage()`, independently reproduced. These are the ground truth for everything in this document.\n\n```\nsizes: basic=25 loc=25 authz=25 authn=25 self=25 sys=25 op=25 pack=228\n\nbasicID   02 12 41 42 43 44 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 00 00 00 00\nlocation  12 27 14 30 F6 C8 57 BA 1B 38 02 F4 03 B8 0B E0 0B 98 08 4B 33 9F 8C 05 00\nsystem    42 06 40 56 B7 1B 80 14 EF 03 01 00 32 A0 0F D0 07 24 F0 0A 4
+... (truncated 349892 chars, full result in /private/tmp/claude-501/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/tasks/wtx8ulfym.output)</result>
+<diagnostics>Per-agent results: /Users/lpatiny/.claude/projects/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/subagents/workflows/wf_e3467ec7-44c/journal.jsonl — one {"type":"result",...} line per completed agent with its full return value.
+If the result above is empty or unexpected, Read this file BEFORE diagnosing — do not assume agents returned non-empty results.
+To re-run with edited post-processing: Workflow({scriptPath: '/Users/lpatiny/.claude/projects/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/workflows/scripts/drone-remote-id-research-wf_e3467ec7-44c.js', resumeFromRunId: 'wf_e3467ec7-44c'}) — agents whose (prompt, opts) are unchanged replay from cache.</diagnostics>
+<usage><agent_count>10</agent_count><agents_done>10</agents_done><agents_error>0</agents_error><agents_skipped>0</agents_skipped><agents_empty_result>0</agents_empty_result><subagent_tokens>2281652</subagent_tokens><tool_uses>580</tool_uses><duration_ms>2591477</duration_ms></usage>
+</task-notification>
+
+[2026-09-08T19:00:05Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+Did you search for the existing library ???????????????????
+
+[2026-09-08T19:01:26Z]
+The organisation is here https://github.com/opendroneid
+
+[2026-09-08T19:33:11Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+I expect the library to be listed in platformio but can not find it. It is there is should be installed seems to me.
+
+[2026-09-08T20:06:56Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/droneId/droneIdLabels.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+why soo much new code ? All the code is not in the library ?
+
+[2026-09-08T20:07:22Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/droneId/droneIdLabels.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+which library should I use to decode droneID from esp32 ?
+
+[2026-09-08T20:20:37Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini in the IDE. This may or may not be related to the current task.</ide_opened_file>
+the board witl be a xiao s3 with lora
+
+[2026-09-08T20:27:58Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/taskBLE.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+add the test in the native test env
+
+[2026-09-08T20:29:26Z]
+Also evaluate how we could normalize and forward all the packets with droneID to our LoraMesh after encryption and nformalization
+
+[2026-09-08T20:42:56Z]
+This project is for law enforcement to protect prison. how could we send data every 5s ? Changing the encoding ?
+
+[2026-09-09T04:18:41Z]
+what is DJI's proprietary DroneID is not heard,
+
+[2026-09-09T05:12:15Z]
+yes
+
+[2026-09-09T05:13:29Z]
+Also evaluate the possibility to use the wifi to detect the drone presence based on emission. Can we hack the wifi receiver to check which frequencies are being used and check some hops caracteristic of drone remote control ? Evaluate the possibilities
+
+[2026-09-09T06:03:17Z]
+<task-notification>
+<task-id>wgtilnxh0</task-id>
+<tool-use-id>toolu_0118yHN4KjXcqNmvfvxW4ZnP</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/tasks/wgtilnxh0.output</output-file>
+<status>completed</status>
+<summary>Dynamic workflow "Evaluate detecting drone presence from RF emissions with the ESP32-S3 + SX1262, and what cheap additions would extend it" completed</summary>
+<result>{"esp32-spectrum":{"verdict":"has-errors","corrections":["FABRICATED CAUSAL LINK (most serious). The report states pm_noise_check 'is gated behind a modulo of a power-management tick counter against NoiseTimerInterval, which I read out of pp.o's .data.NoiseTimerInterval as 0x64 = 100.' Two separately-true facts were welded into a false claim. Verified: NoiseTimerInterval is defined in libpp.a:pp.o as a 2-byte D symbol whose contents are `64 00` = 100 (confirmed by objdump -s -j .data.NoiseTimerInterval). But `nm -u` across every library in the SDK finds NO undefined reference to it, and `objdump -r pp.o` shows its ONLY relocation is in section .xt.prop — the Xtensa linker property/relaxation section, not executable code. pm_noise_check lives in pm.o and has no relocation to it at all; its modulo (`rems a2, a8, a2`) divides a g_pm tick field by a quotient built from g_pm+52 and the literal 0x00040000. Consequence: the refresh cadence of the noise-floor cache CANNOT be stated in seconds from this binary. The report's '~100 PM ticks, i.e. on the order of seconds, not the ~100 us you need' must be withdrawn and replaced with 'periodic and tick-gated, period not determined.'","MISREAD OF THE KEY LITERATURE'S ANTENNA CONFIGURATION. The report says the arXiv 2606.07347 result's 'whole processing gain comes from inter-antenna phase averaging over 3 RX chains.' The paper's own setup table (verified) says 'MIMO 3x1 (AP x STA)' — three TRANSMIT chains at the Buffalo AP, ONE receive chain at the Raspberry Pi CM4. The averaging is over three transmit chains observed on one receiver. The corrected version of this argument is stronger, not weaker: those three chains share one AP oscillator and are therefore mutually phase-coherent, which is exactly why three independent ESP32 transmitters could not substitute for them.","esp_private/wifi.h contains 37 esp_wifi_* function declarations, not the 42 claimed. (Conclusion unaffected — enumerated in full, nothing measurement-related; the only power-adjacent names are esp_wifi_power_domain_on/off, which gate the power domain, and esp_wifi_internal_get_negotiated_bandwidth/channel.)","libphy.a exports 259 defined (T/D/B/R) symbols, not 272.","phy.h declares 14 names, not the 9 listed. The report's list omits coex_bt_high_prio, coexist, phy_eco_version_sel, phy_freq_mem_backup, phy_get_romfunc_addr and phy_init_flag, and wrongly places get_phy_version_str in phy.h — it is declared in esp_phy_init.h:246. The conclusion (no measurement function declared) survives on the corrected list.","THE THREE MOST PLAUSIBLE-SOUNDING libphy CANDIDATES WERE NEVER EXAMINED. The report lists meas_tone_pwr_db, get_power_db and phy_get_rx_gain as existing and then silently drops them. Disassembled here: meas_tone_pwr_db (phy_pwdet.o) calls start_tx_tone_step, loops four times over get_power_db, then stop_tx_tone — it KEYS THE TRANSMITTER and measures its own output. get_power_db reads the power-detector SAR via get_fm_sar_dout through a g_phyFuns vtable slot; the whole object (get_tone_sar_dout, txtone_linear_pwr, pwdet_tone_start, phy_set_pwdet_power, ram_read_sar2_code) is the closed-loop TX power calibration path, not an RX detector. phy_get_rx_gain is a gain-table helper and phy_force_rx_gain is a pure setter (calls rom_rx_gain_force). This omission is a safety issue: an experimenter poking meas_tone_pwr_db would transmit.","'Even at 2.4 GHz you have one 20 MHz window' is wrong. The datasheet feature list states '802.11n MCS0-7 that supports 20 MHz and 40 MHz bandwidth' and Table 6-4 lists HT40 sensitivities down to -90.0 dBm (MCS0). The window is 20 or 40 MHz.","'one antenna' needs qualifying. 1T1R (one RF chain) is correct and is the load-bearing fact, but it is stated in the datasheet's Section 1 feature list ('1T1R mode with data rate up to 150 Mbps'), not in Section 6.1 as cited, and the S3 does support antenna DIVERSITY through an external RF switch — a second antenna selectable onto the same single chain, which does not provide a second coherent chain.","DJI O4 lower 5 GHz band is 5.150-5.250 GHz per DJI's own Goggles 3 specification page, not the 5.170-5.250 GHz stated. The '60 MHz occupied bandwidth' figure does not appear on DJI's published specification and is unsourced; it has been removed and the sourced transmit-power and band figures substituted.","'the driver's own passive-scan default dwell is 360 ms/channel' is unsourced and could not be reproduced. It is not in esp_wifi_types.h, not in the framework sdkconfig, and not in the IDF v4.4.6 wifi.rst (which documents a 120 ms default for ACTIVE scans only). Only the '&gt;1500 ms may cause station to disconnect' warning on wifi_scan_time_t.passive is verifiable. Every derived sweep-rate figure has been marked as an unmeasured estimate.","ic_get_rssi does not subtract the global rssi_margin symbol. Disassembly: it calls rc_get_trc(ifidx, ...), and on success returns peer[3] - wDevCtrl[46]; on lookup failure it returns the constant 31. (Conclusion unchanged: cached per-station RSSI, not an energy detector.)","esp8266/Arduino#2386 is CLOSED, not 'unanswered'. Verified title 'WiFi: Signal to Noise Ratio (SNR) and/or noise measurement', opened by bitnapper 2016-08-11. The defensible statement is that it was closed without such an API being added and none exists in the core today.","first_word_invalid is not documented as an ESP32-S3-specific limitation. The IDF v4.4.6 docs source reads 'due to a hardware limitation in {IDF_TARGET_NAME}' — a build-time template substitution, so the same sentence renders for every target.","Struct line citations drift. In the vendored esp_wifi_types.h: wifi_pkt_rx_ctrl_t is 381-428 (not 380-428), WIFI_PKT_MISC is line 447 (not 444), the WIFI_PROMIS_FILTER_MASK_* block is 451-458 (not 447-456), and wifi_csi_config_t / wifi_csi_info_t are 482-504.","The CSI total-byte set is 128/256/376/380/384/612; the report omitted 376 (HT, 40 MHz, STBC, secondary channel above).","The stated reason Bluedroid HCI helpers 'are not even in the link' is wrong. The framework's sdkconfig has CONFIG_BT_BLUEDROID_ENABLED=y and libbt.a exports every symbol named (btsnd_hcic_ble_receiver_test, btsnd_hcic_ble_enhand_rx_test, BTM_BleGetEnergyInfo, BTA_DmBleGetEnergyInfo, btsnd_hcic_read_rssi, BTM_ReadRSSI — all confirmed T). The correct reason is that unreferenced archive members are not pulled in, and this firmware's host stack is the NimBLE-Arduino ^1.3.8 library. The symbols remain available to anyone who calls them.","The '~30x below one quantization step' figure rests on an unstated, unsourced assumption of |H| ~ 40 LSB. Restated with the assumption declared and the conclusion shown to be robust across the whole plausible range (6x to 30x below one LSB for |H| from 180 down to 40).","wDev_GetNoiseFloor is understated as 'a cache'. The disassembly shows it re-reads hardware only when the cached byte at wDevCtrl+47 is &gt;= 1; a valid (negative dBm) cached value short-circuits, so REPEATED CALLS RETURN A CONSTANT. The pollable entry point is rom_read_hw_noisefloor, not this one.","The claimed empirical link test (probe TU built with `pio run -e droneTracker`, SUCCESS in 34.26 s) was not re-run here and no probe file exists in the tree. It is unnecessary: rom_phy_get_noisefloor and rom_read_hw_noisefloor are unconditional absolute assignments (not PROVIDE) in esp32s3.rom.ld, and wDev_GetNoiseFloor is a T symbol in libpp.a which is on the link line, so resolution is guaranteed by construction. Restated on that basis.","SX126x getRSSI(false) is described as 'pollable at kHz rates' with no source and without the operating precondition. GetRssiInst is only meaningful with the radio in RX; the poll rate is an SPI-bound estimate, now marked as such.","Remote ID evasion is asserted flatly ('A contraband-delivery operator disables it') with no reporting behind it. Reporting is mixed: firmware modification to suppress Remote ID is described as complex and liable to brick or trip fail
+... (truncated 332178 chars, full result in /private/tmp/claude-501/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/tasks/wgtilnxh0.output)</result>
+<diagnostics>Per-agent results: /Users/lpatiny/.claude/projects/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/subagents/workflows/wf_e165ffcf-ee2/journal.jsonl — one {"type":"result",...} line per completed agent with its full return value.
+If the result above is empty or unexpected, Read this file BEFORE diagnosing — do not assume agents returned non-empty results.
+To re-run with edited post-processing: Workflow({scriptPath: '/Users/lpatiny/.claude/projects/-Users-lpatiny-git-hackuarium-esp32-c3/efed160b-0315-4aed-8e80-098c39b89418/workflows/scripts/drone-rf-detection-wf_e165ffcf-ee2.js', resumeFromRunId: 'wf_e165ffcf-ee2'}) — agents whose (prompt, opts) are unchanged replay from cache.</diagnostics>
+<usage><agent_count>10</agent_count><agents_done>10</agents_done><agents_error>0</agents_error><agents_skipped>0</agents_skipped><agents_empty_result>0</agents_empty_result><subagent_tokens>2665701</subagent_tokens><tool_uses>882</tool_uses><duration_ms>2848843</duration_ms></usage>
+</task-notification>
+
+[2026-09-16T17:21:41Z]
+<ide_selection>The user selected the lines 100 to 100 from /Users/lpatiny/git/hackuarium/esp32-c3/platformio.ini:
+droneTracker
+
+This may or may not be related to the current task.</ide_selection>
+upload the droneTracker firmware
+
+[2026-09-16T17:26:27Z]
+<ide_opened_file>The user opened the file /Users/lpatiny/git/hackuarium/esp32-c3/src/mainDroneTracker.cpp in the IDE. This may or may not be related to the current task.</ide_opened_file>
+serial command does not work when I try h for help. Nothing works in fact
+
+[2026-09-16T17:28:42Z]
+my monitor is not open. Test and iimprove if needed
+
+[2026-09-16T17:45:10Z]
+We plan only to have one or 2 wire devides. And indeed we will first do only remoteID
+
+[2026-09-16T17:45:35Z]
+We can work on detection after
+
+[2026-09-16T17:56:35Z]
+continue
+
+[2026-09-16T17:58:23Z]
+Need to flash the latest version so we can check if we receive the droneID
+
+[2026-09-16T18:01:33Z]
+are we looking in wifi and bluetooth ? Are we w
+
+[2026-09-16T18:02:17Z]
+Are we looking in all wifi requencies ? Where it is expecdted to be send ?
+
+[2026-09-16T18:05:18Z]
+We have a drone. Is the firmware updated ?
+
+[2026-09-16T18:06:26Z]
+In serial mode is there a specific mode to debug the droneID ?
+
+[2026-09-16T18:07:33Z]
+It is a dji
+
+[2026-09-16T18:08:24Z]
+And we need to listen to any drone know that emits droneID
+
+[2026-09-16T18:08:24Z]
+Currently the motors are on but we do not receive anything
+
+[2026-09-16T18:08:24Z]
+It mis a mini4 pro
+
+[2026-09-16T18:14:05Z]
+Did you change the board ? No need for a firmware update ?
+
+[2026-09-16T18:17:54Z]
+I see only 1 in the json ":6}
+{"event":"drone","addr":"60:60:1f:05:40:7c","via":"beacon","uas":"1581F5FJD23BD00E7058","status":1,"lat":46.5154958,"lon":6.5372715,"height":0.0,"heightRef":0,"speed":0.00,"hacc":0,"vacc":0,"rssi":-67,"ch":6}
+{"event":"drone","addr":"60:60:1f:05:40:7c","via":"beacon","uas":"1581F5FJD23BD00E7058","status":1,"lat":46.5154949,"lon":6.5372715,"height":0.0,"heightRef":0,"speed":0.00,"hacc":0,"vacc":0,"rssi":-73,"ch":6}
+Is really everything decoded ????
+
