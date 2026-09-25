@@ -1,11 +1,11 @@
 #include "config.h"
 #if defined(THR_DRONE_ID) && defined(THR_LORA_MESH)
-#include <math.h>
 #include <string.h>
 
 #include "../lora/loraBridge.h"
 #include "droneIdDecode.h"
 #include "droneIdFeed.h"
+#include "droneIdRecords.h"
 #include "droneIdReport.h"
 #include "params.h"
 
@@ -21,26 +21,12 @@ static uint32_t feedIntervalMillis() {
   return (uint32_t)seconds * 1000ul;
 }
 
-static int16_t pilotMoveMetres() {
+int16_t droneIdPilotMoveMetres() {
   int16_t metres = getParameter(PARAM_DRONE_PILOT_METRES);
   if (metres == ERROR_VALUE || metres <= 0) {
     metres = DRONE_PILOT_METRES_DEFAULT;
   }
   return metres;
-}
-
-/* Equirectangular, which is exact enough for a threshold of a few tens of
-   metres and costs one cosine: the two points are a walk apart, never a
-   flight. */
-static double metresBetween(double fromLatitude,
-                            double fromLongitude,
-                            double toLatitude,
-                            double toLongitude) {
-  const double metresPerDegree = 111320.0;
-  double latitude = (toLatitude - fromLatitude) * metresPerDegree;
-  double longitude = (toLongitude - fromLongitude) * metresPerDegree *
-                     cos(fromLatitude * M_PI / 180.0);
-  return sqrt(latitude * latitude + longitude * longitude);
 }
 
 boolean droneIdFeedEnabled() { return loraMeshIsBridge(); }
@@ -75,9 +61,11 @@ uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block) {
     boolean moved =
         !droneIdDecodeHasPosition(entry->fedOperatorLatitude,
                                   entry->fedOperatorLongitude) ||
-        metresBetween(entry->fedOperatorLatitude, entry->fedOperatorLongitude,
-                      system->OperatorLatitude, system->OperatorLongitude) >=
-            pilotMoveMetres();
+        droneIdMetresBetween(entry->fedOperatorLatitude,
+                             entry->fedOperatorLongitude,
+                             system->OperatorLatitude,
+                             system->OperatorLongitude) >=
+            droneIdPilotMoveMetres();
     if (moved || block || slow) {
       entry->fedOperatorLatitude = system->OperatorLatitude;
       entry->fedOperatorLongitude = system->OperatorLongitude;

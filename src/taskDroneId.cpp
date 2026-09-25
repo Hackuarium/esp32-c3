@@ -2,6 +2,7 @@
 #ifdef THR_DRONE_ID
 #include "droneId/droneIdBle.h"
 #include "droneId/droneIdFeed.h"
+#include "droneId/droneIdMesh.h"
 #include "droneId/droneIdQueue.h"
 #include "droneId/droneIdReport.h"
 #include "droneId/droneIdSurvey.h"
@@ -64,6 +65,8 @@ static void writeDefaultsWhenUntouched() {
   setAndSaveParameter(PARAM_DRONE_FORGET_SECONDS, DRONE_FORGET_SECONDS_DEFAULT);
   setAndSaveParameter(PARAM_DRONE_FEED_SECONDS, DRONE_FEED_SECONDS_DEFAULT);
   setAndSaveParameter(PARAM_DRONE_PILOT_METRES, DRONE_PILOT_METRES_DEFAULT);
+  setAndSaveParameter(PARAM_DRONE_MESH_SECONDS, DRONE_MESH_SECONDS_DEFAULT);
+  setAndSaveParameter(PARAM_DRONE_MESH_PER_FRAME, DRONE_MESH_PER_FRAME_DEFAULT);
   setQualifier(DRONE_QUALIFIER);
 }
 
@@ -132,6 +135,15 @@ static void printDroneInfo(Print* output) {
     output->println(F(" s - the console blocks are not printed"));
   } else {
     output->println(F("console (DA2 makes this board a bridge)"));
+    output->print(F("Mesh: "));
+    int16_t interval = getParameter(PARAM_DRONE_MESH_SECONDS);
+    if (interval > 0 && interval != ERROR_VALUE) {
+      output->print(F("a report every "));
+      output->print(interval);
+      output->println(F(" s while something flies (dm)"));
+    } else {
+      output->println(F("not reporting (dm5 starts)"));
+    }
   }
 }
 
@@ -176,6 +188,12 @@ void processDroneCommand(char command, char* paramValue, Print* output) {
       }
       droneIdSurveyPrint(output);
       break;
+    case 'm':
+      droneIdMeshCommand(paramValue, output);
+      break;
+    case 'f':
+      droneIdMeshRequestIdent(paramValue, output);
+      break;
     case 'c':
       droneIdTableReset();
       setParameter(PARAM_DRONE_COUNT, 0);
@@ -190,6 +208,9 @@ void processDroneCommand(char command, char* paramValue, Print* output) {
       output->println(
           F("(dv) what else is on the air - dv1 starts, dv0 stops"));
       output->println(F("(dc) clear the drone list"));
+      output->println(
+          F("(dm) reports over LoRa - dm5 every 5 s, dm0 stops"));
+      output->println(F("(df) re-send one aircraft's IDENT, df3"));
       printParameterHelp(output, PARAM_DRONE_BLE_SECONDS,
                          F("seconds per cycle on Bluetooth, 0 = never"));
       printParameterHelp(output, PARAM_DRONE_WIFI_SECONDS,
@@ -200,6 +221,10 @@ void processDroneCommand(char command, char* paramValue, Print* output) {
                          F("quiet seconds between two lines on one drone"));
       printParameterHelp(output, PARAM_DRONE_FORGET_SECONDS,
                          F("seconds of silence before a drone is dropped"));
+      printParameterHelp(output, PARAM_DRONE_MESH_SECONDS,
+                         F("seconds between LoRa reports, 0 = never"));
+      printParameterHelp(output, PARAM_DRONE_MESH_PER_FRAME,
+                         F("aircraft per LoRa report frame, 1 to 4"));
       printParameterHelp(output, PARAM_DRONE_COUNT,
                          F("drones currently in the table"));
       printParameterHelp(

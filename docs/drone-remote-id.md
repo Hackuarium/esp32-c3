@@ -124,6 +124,8 @@ a minute is one nobody reads:
 | `dd3` | everything transmitter 3 has said |
 | `dh` | the last payload accepted, and the last refused, in hex |
 | `dc` | clear the list |
+| `dm` | what this post reports over LoRa; `dm5` every 5 s, `dm0` stops |
+| `df3` | re-send the IDENT of handle 3 over LoRa |
 
 ## Several watchers
 
@@ -177,6 +179,8 @@ whether Bluetooth or Wi-Fi is reaching further today.
 | `D` | quiet seconds between two lines on one aircraft, 0 = every frame | 5 |
 | `E` | seconds of silence before a transmitter is dropped | 300 |
 | `F` | transmitters currently in the table, written by the task | — |
+| `K` | seconds between LoRa reports, 0 = never; ignored on a bridge | 5 |
+| `L` | aircraft per LoRa TRACK frame, 1 to 4 | 4 |
 | `M` | metres the operator must move before the feed reports them again | 25 |
 | `Q` | seconds between two `drone` lines about one transmitter, on a bridge | 1 |
 
@@ -205,8 +209,7 @@ This is the whole path to `lpatiny/loramesh-monitoring` for a watcher the host
 can reach with a cable, and it is the one to use wherever a cable reaches: the
 position is as the aircraft transmitted it, the identity is on every line, and
 none of the compression a LoRa post has to pay for applies. A post on a fence no
-cable reaches is a different exercise, in
-[docs/drone-mesh-forwarding.md](drone-mesh-forwarding.md).
+cable reaches reports over LoRa instead — see *Over the mesh* below.
 
 Four things about it are deliberate:
 
@@ -225,11 +228,46 @@ Four things about it are deliberate:
 - **The line does not name the board.** The host learns that once, by asking
   `ai` when it opens the port — the same as for `ble`.
 
+## Over the mesh: every other board reports to the bridge
+
+A board that is **not** a bridge summarizes what it hears every `K` seconds and
+broadcasts it as `DATA`, so the bridge prints it on its `rx` line and the host
+stores it. Nothing is sent while the sky is empty. Three records, specified in
+[docs/drone-mesh-forwarding.md](drone-mesh-forwarding.md):
+
+| Opcode | Record | Sent |
+|---|---|---|
+| `0x12` | `IDENT` — handle, UAS ID, operator ID, EU class | a new aircraft, a newly arrived operator ID or class, every 5 min, or `df` |
+| `0x11` | `PILOT` — the operator's position | first seen, moved more than `M`, every 5 min |
+| `0x10` | `TRACK` — position, height, speed, heading, RSSI, transports | every `K` s while heard in the last 15 s, `L` to a frame — with the position bit clear when the aircraft sent none |
+
+One handle is one UAS ID, so an aircraft on four transports costs one record,
+with the transports as a bitmask and a conflict flag when two of them disagree
+by more than 100 m. An aircraft that has not yet sent its Basic ID has nothing
+to key on and waits for it — a second or two on every transport.
+
+`dm` prices the cadence before it is used, through the same airtime formula as
+the governor:
+
+```
+dm5
+Mesh forwarding: every 5 s, 4 aircraft per frame
+Airtime with 4 aircraft flying: 34% of the duty cycle
+  handle 0  1581F5559000000ABCD BT5 beacon
+Frames sent: 12, refused: 0
+```
+
+A board that was already a drone tracker before this firmware reads `K` as 0,
+which is off: its defaults were written once, by the earlier firmware. `dm5`
+turns it on.
+
 ## Tests
 
     ~/.platformio/penv/bin/pio test -e native
 
-Nine cases over `src/droneId/droneIdFrames.cpp`, which is where an off-by-one
+Eight cases over `src/droneId/droneIdRecords.cpp` check the three LoRa
+records against exact bytes, and that a coordinate survives a reference 0.3
+degree away. Nine more over `src/droneId/droneIdFrames.cpp`, which is where an off-by-one
 decodes a valid message as garbage or - worse - garbage as a position. They run
 against real frames from the reference transmitter, frozen in
 `test/test_droneid_frames/fixtures.h`: a legacy advertisement, a pack behind an

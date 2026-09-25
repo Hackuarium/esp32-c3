@@ -41,6 +41,10 @@
    stubs below let the call sites stay free of the question. */
 #ifdef THR_LORA_MESH
 
+/* (M): how far the operator must move before the feed - or, on a post, the
+   mesh - says so again. */
+int16_t droneIdPilotMoveMetres();
+
 /* True on a bridge, where the caller prints no human block of its own. */
 boolean droneIdFeedEnabled();
 

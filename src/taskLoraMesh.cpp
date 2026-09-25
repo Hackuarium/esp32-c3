@@ -3,6 +3,7 @@
 #include <RadioLib.h>
 #include <string.h>
 
+#include "droneId/droneIdMesh.h"
 #include "lora/loraBridge.h"
 #include "lora/loraMesh.h"
 #include "lora/loraPeers.h"
@@ -332,14 +333,14 @@ static uint32_t airtimeMillis(uint8_t frameLength) {
   return (uint32_t)(total + 1);
 }
 
-uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds) {
-  if (count == 0 || intervalSeconds <= 0) {
+uint16_t loraMeshBodyBudgetPercent(uint8_t bodyLength,
+                                   int16_t intervalSeconds) {
+  if (bodyLength == 0 || intervalSeconds <= 0) {
     return 0;
   }
-  /* the same frame loraMeshBroadcastParameters builds: a 6-byte header while
-     the counter is 24 bit, the SET body, the tag, and a 1-byte trailer with no
-     route entries yet because this node is the origin */
-  uint32_t frameLength = 6 + 2 + 2ul * count + LORA_MIC_SIZE + 1;
+  /* a 6-byte header while the counter is 24 bit, the body, the tag, and a
+     1-byte trailer with no route entries yet because this node is the origin */
+  uint32_t frameLength = 6ul + bodyLength + LORA_MIC_SIZE + 1;
   if (frameLength > LORA_MAX_FRAME_SIZE) {
     return 0;
   }
@@ -351,6 +352,17 @@ uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds) 
   }
   uint32_t percent = spent * 100ul / allowance;
   return percent > 65535ul ? 65535 : (uint16_t)percent;
+}
+
+uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds) {
+  if (count == 0) {
+    return 0;
+  }
+  /* the SET body loraMeshBroadcastParameters builds */
+  uint32_t bodyLength = 2 + 2ul * count;
+  return bodyLength > 255 ? 0
+                          : loraMeshBodyBudgetPercent((uint8_t)bodyLength,
+                                                      intervalSeconds);
 }
 
 /* Credits the airtime the window has given back since the last check. The
@@ -1196,6 +1208,10 @@ void TaskLoraMesh(void* pvParameters) {
       lastBroadcast = millis();
       loraMeshBroadcastParameters();
     }
+
+#ifdef THR_DRONE_ID
+    droneIdMeshService();
+#endif
 
     giveLoraMesh();
     vTaskDelay(10);

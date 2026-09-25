@@ -83,6 +83,22 @@ extern int16_t parameters[MAX_PARAM];
    table, so (s) answers "is anything flying" without (dl). */
 #define PARAM_DRONE_COUNT 5  // F
 
+/* How often a post that is not a bridge reports what it hears over LoRa -
+   see src/droneId/droneIdMesh.h. 0 stops it. Nothing is sent while the sky is
+   empty, so the cadence costs airtime only while something is flying.
+
+   Five seconds, because it is what the duty cycle affords: four aircraft in one
+   frame every 5 s is 35 % of sub-band P's allowance at SF9 and 11 % at SF7,
+   whereas the aircraft's own 1 Hz does not fit at any spreading factor. (dm)
+   prices a change before making it. */
+#define PARAM_DRONE_MESH_SECONDS 10  // K
+#define DRONE_MESH_SECONDS_DEFAULT 5
+
+/* Aircraft per TRACK frame, 1 to 4. Four is 46 of the 48 body bytes; fewer
+   makes each frame shorter and a busy sky take more of them. */
+#define PARAM_DRONE_MESH_PER_FRAME 11  // L
+#define DRONE_MESH_PER_FRAME_DEFAULT 4
+
 /* The seconds between two (drone) lines about one transmitter on the JSON feed
    a bridge emits - see src/droneId/droneIdFeed.h. It paces a database input
    rather than a console, so it is separate from (D): what a person reading the

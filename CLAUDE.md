@@ -787,7 +787,7 @@ command to type on the other board.
 A XIAO ESP32S3 with the Wio-SX1262 that listens for drone Remote ID. It is a
 mesh node too - `configDroneTracker.h` takes `configLoraMeshParams.h` the way
 CLAUDE.md's two-line recipe says, so the block at 104 to 113 and `MAX_PARAM`
-114 arrive with it, and the drone parameters sit at 0 to 5 well clear. Three
+114 arrive with it, and the drone parameters sit between 0 and 16, well clear. Three
 radios, of which only Bluetooth and Wi-Fi compete: LoRa is a separate chip at
 868 MHz. The mesh earns its place through `ar`, which runs a console command on
 another node - so `ar42:dl` lists what node 42 can see from where it stands,
@@ -878,7 +878,11 @@ more `memcmp`. Note its coordinates scale by 174533.0, not 1e7.
 
 Getting what it hears into a database — `lpatiny/loramesh-monitoring`, a map and
 an intrusion alert — is designed in
-[docs/drone-mesh-forwarding.md](docs/drone-mesh-forwarding.md) and **not built**.
+[docs/drone-mesh-forwarding.md](docs/drone-mesh-forwarding.md). Both paths are
+built on the firmware side: the JSON feed on a bridge, and on every other board
+`src/droneId/droneIdMesh.cpp`, which the mesh task calls each loop to broadcast
+a summary every `K` seconds (default 5, `dm` prices it). The proximity test and
+the urgent `DATA_ACK` path are not built, nor is the host's decoder.
 Three things decide its shape. One drone's position at 1 Hz costs 135 % of
 sub-band P's whole allowance, so raw forwarding over LoRa is impossible and what
 travels is an 11-byte `TRACK` record four to a frame, plus a 6-byte `PILOT` for

@@ -64,6 +64,10 @@ void loraMeshResetAirtimeBudget();
    checked where it is set, not discovered in a field. 0 when nothing is sent. */
 uint16_t loraMeshBroadcastBudgetPercent(uint8_t count, int16_t intervalSeconds);
 
+/* The same price for any DATA body this node originates, sent every
+   `intervalSeconds`. */
+uint16_t loraMeshBodyBudgetPercent(uint8_t bodyLength, int16_t intervalSeconds);
+
 /* Applies a received CMD body. Returns a LORA_STATUS_/LORA_REASON_ code, which
    is what travels back in the ACK or NACK. Handles the parameter opcodes only:
    CONSOLE is queued instead of applied, because it runs after its receipt. */

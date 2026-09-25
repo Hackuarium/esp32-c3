@@ -259,8 +259,14 @@ prints `No GPS fix, holding the broadcast` once. It applies only when the window
 covers `G`…`J`, so a board broadcasting something other than a fix is untouched,
 and HELLO is never suppressed — a node with no position stays in the peer tables.
 
+A drone watcher that is not a bridge adds three DATA bodies of its own —
+`0x10` `TRACK`, `0x11` `PILOT` and `0x12` `IDENT` — specified in
+[drone-mesh-forwarding.md](drone-mesh-forwarding.md). The firmware only encodes
+them.
+
 A `DATA` body whose first byte is neither `0x01` nor `0x02` is reported as an
-opaque opcode and length.
+opaque opcode and length — so a bridge prints a `data` line for a drone record,
+and its `rx` line carries the whole body in hex for the host to decode.
 
 ### HELLO
 

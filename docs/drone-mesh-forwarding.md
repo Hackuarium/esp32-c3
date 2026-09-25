@@ -1,6 +1,9 @@
 # Forwarding drone Remote ID over the mesh — an evaluation
 
-**The local feed is built; the LoRa records are not.** This is the design for a
+**Both paths are built**: the local feed (`src/droneId/droneIdFeed.cpp`) and
+the LoRa records (`src/droneId/droneIdMesh.cpp`, encoders in
+`droneIdRecords.cpp`). The proximity test and the urgent `DATA_ACK` path are
+not, and nothing on the host decodes the records yet. This is the design for a
 perimeter watch — several
 `[env:droneTracker]` posts reporting what they hear to one host running
 `lpatiny/loramesh-monitoring` — and, more importantly, the arithmetic that
@@ -98,6 +101,11 @@ grows a receiver fills them itself.
 10  misc      u8   3-0 seconds since heard (15 = older), 7-4 transports bitmask
 ```
 
+An aircraft the relay hears but that has sent no Location message — a test
+transmitter, or one still solving its fix — still gets a TRACK every tick with
+bit 4 clear and the three quantized fields at 255: it is the only record that
+says the aircraft is still being heard, and at what margin.
+
 Frame: `opcode(1) count(1) records(n × 11)`. **Four records is 46 of the 48 the
 body allows**, so one frame covers four aircraft.
 
@@ -121,7 +129,7 @@ and nothing else in Remote ID can say so.
                                                  2 fixed, 3 unknown)
                    2   moved since the last report
                    3   inside this node's proximity radius
-                   7-4 EU category and class, the nibbles as on the wire
+                   7-4 spare
 2   lat16     i16  same encoding as TRACK
 4   lon16     i16
 ```
@@ -133,8 +141,15 @@ one: an operator walking a fence line at 1.4 m/s crosses 25 m every 18 s, which
 is a 19-byte frame — 26 ms at SF7 — and it is the single most useful thing the
 mesh can carry. A pilot standing still costs nothing at all.
 
+Frame: `opcode(1) count(1) records(n × 6)`, so the pilots of up to seven
+aircraft share one frame.
+
 No operator altitude: the person is on the ground, at the post's own elevation
 to within what matters.
+
+The EU category and class are not here, although they arrive in the same
+System message: the two nibbles are 2 and 3 bits, which do not fit the 4 spare
+bits, and neither changes during a flight. They travel in `IDENT`.
 
 ### `IDENT` — variable, what does not change
 
@@ -142,14 +157,18 @@ to within what matters.
 0   opcode
 1   handle    u8
 2   types     u8   7-4 ID type, 3-0 UA type, the nibbles as on the wire
-3   uasLen    u8   then uasLen bytes, trailing NULs trimmed
+3   class     u8   7-4 EU category, 3-0 EU class, as on the wire; 0 when the
+                   aircraft declared no EU classification
+4   uasLen    u8   then uasLen bytes, trailing NULs trimmed
     opLen     u8   then opLen bytes of the Operator ID (the registration)
 ```
 
-A serial number of 19 and a registration of 16 make a 40-byte body — 51 on air,
-52 ms at SF7. It is sent when a handle is allocated, again when the Operator ID
-arrives (it is a separate message and turns up later), then at a slow keepalive
-while the handle is live.
+A serial number of 19 and a registration of 16 make a 41-byte body — 52 on air,
+53 ms at SF7. It is sent when a handle is allocated, again when the Operator ID
+or the classification arrives (each is a separate message and turns up later),
+then at a five minute keepalive while the handle is live. At most two go out
+per tick, so a sky that fills at once does not keep the receiver closed for a
+second.
 
 **The handle is a local index, not an identity.** One byte, scoped to the
 sending node, so the bridge keys on `(node, handle)` and resolves it through the
@@ -243,7 +262,7 @@ the governor uses, at 250 kHz. Frame = 6 header + body + 4 tag + 1 trailer.
 | `TRACK`, one aircraft | 13 | 24 | 31 ms | 57 ms | 103 ms |
 | **`TRACK`, four aircraft** | **46** | **57** | **54 ms** | 98 ms | 175 ms |
 | `PILOT`, one | 8 | 19 | 26 ms | 52 ms | 93 ms |
-| `IDENT`, typical | 40 | 51 | 52 ms | 93 ms | 165 ms |
+| `IDENT`, typical | 41 | 52 | 52 ms | 93 ms | 165 ms |
 
 As a share of one node's **whole** 10 % allowance (360 s/h in sub-band P):
 
@@ -307,7 +326,7 @@ rest are new:
 | | | Default |
 |---|---|---|
 | `G`…`J` | the post's surveyed position, lat and lon as int32 over two slots each | unset |
-| `K` | seconds between `TRACK` frames, 0 = forwarding off | 0 |
+| `K` | seconds between `TRACK` frames, 0 = forwarding off | 5 |
 | `L` | aircraft per frame, 1–4 | 4 |
 | `M` | metres the operator must move before a `PILOT` frame | 25 |
 | `N` | proximity radius in metres, 0 = nothing is urgent | 0 |
@@ -319,11 +338,18 @@ rest are new:
 the radio costs of `K`…`P` are costs of the mesh, and a board reporting down a
 cable pays none of them.
 
-`K0` by default, so a board that is flashed and not yet configured says nothing
-on the air — the same reasoning as `DF0`. And, like `gt`, the console verb that
-sets the cadence should **price it first**: a forwarder that quietly loses 60 %
-of its frames to the governor is a security system that is not reporting, which
-is the worst possible way to find out about a duty cycle.
+Only `K`, `L` and `M` are built; `G`…`J` and `N`…`P` wait for the proximity
+test.
+
+`K5` by default, not `K0`: a post exists to report, and nothing is sent while
+the sky is empty, so a board that is flashed and not yet configured costs no
+airtime until something flies. A board that was already a drone tracker keeps
+the defaults its earlier firmware wrote, so its `K` reads 0 until `dm5`.
+
+`dm` **prices the cadence first**, as `gt` does: a forwarder that quietly loses
+60 % of its frames to the governor is a security system that is not reporting,
+which is the worst possible way to find out about a duty cycle. `df3` re-sends
+the IDENT of handle 3 on the next pass.
 
 ## The bridge is a post too, and then there is no mesh at all
 
@@ -522,8 +548,8 @@ not, and spend the mesh only on the remainder.
    At this point a drone shows up on the map, over a cable, with no LoRa
    anywhere.
 3. The map layer and the alert, including the host-side perimeter.
-4. `droneIdMesh.cpp` on a remote post: handle allocation, the three encoders,
-   the cadence priced through the governor. Nothing in `droneIdTable` or the
+4. ~~`droneIdMesh.cpp` on a remote post: handle allocation, the three encoders,
+   the cadence priced through the governor.~~ **Done**. Nothing in `droneIdTable` or the
    decoding changes.
 5. The host's decoder for `rx.body`, which folds a mesh-borne record into the
    record that already exists from step 2 — and which can be tested against a
