@@ -34,6 +34,7 @@ boolean gpsHasCurrentFix();
 static void resolveHello(LoraHello* hello) {
   memset(hello, 0, sizeof(LoraHello));
   hello->repeater = getParameter(PARAM_LORA_ROLE) == LORA_ROLE_REPEATER;
+  hello->bridge = getParameter(PARAM_LORA_ROLE) == LORA_ROLE_BRIDGE;
 #ifdef THR_DRONE_ID
   hello->droneWatcher = true;
 #endif

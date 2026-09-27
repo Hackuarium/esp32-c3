@@ -508,7 +508,7 @@ position of the post that sent them:
     flags(1) [latitude(4) longitude(4)]
     flags: bit 0 a position follows, bit 1 it is a current GPS fix (clear:
            placed by hand), bit 2 built with THR_DRONE_ID, bit 3 relays
-           (DA1), bits 4-7 zero
+           (DA1), bit 4 a bridge (DA2), bits 5-7 zero
     latitude, longitude: int32 little-endian, degrees x 1e6, the scale of G..J
 
 A fix is announced only while `gpsHasCurrentFix()` vouches for it, then a

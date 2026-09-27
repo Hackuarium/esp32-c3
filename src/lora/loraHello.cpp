@@ -81,6 +81,9 @@ size_t loraHelloEncode(const LoraHello* hello, uint8_t* out, size_t outSize) {
   if (hello->repeater) {
     flags |= LORA_HELLO_FLAG_REPEATER;
   }
+  if (hello->bridge) {
+    flags |= LORA_HELLO_FLAG_BRIDGE;
+  }
   out[0] = flags;
   return length;
 }

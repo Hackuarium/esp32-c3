@@ -64,6 +64,25 @@ static void test_hello_from_a_repeater(void) {
   TEST_ASSERT_EQUAL_HEX8(0x0F, body[0]);
 }
 
+/* A second bridge receipts like the host's own, so the host has to be told
+   which nodes are bridges; its own it learns from (ai). */
+static void test_hello_from_a_bridge(void) {
+  LoraHello hello;
+  memset(&hello, 0, sizeof(hello));
+  hello.bridge = true;
+  uint8_t body[LORA_HELLO_MAX_SIZE];
+  TEST_ASSERT_EQUAL(1, loraHelloEncode(&hello, body, sizeof(body)));
+  TEST_ASSERT_EQUAL_HEX8(0x10, body[0]);
+
+  /* a drone-watching bridge standing on its fix */
+  hello = placed(46519100, 6566800);
+  hello.gps = true;
+  hello.droneWatcher = true;
+  hello.bridge = true;
+  TEST_ASSERT_EQUAL(9, loraHelloEncode(&hello, body, sizeof(body)));
+  TEST_ASSERT_EQUAL_HEX8(0x17, body[0]);
+}
+
 static void test_hello_placed_by_hand_on_a_watcher(void) {
   LoraHello hello = placed(46519100, 6566800);
   hello.droneWatcher = true;
@@ -235,6 +254,7 @@ int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_hello_without_position);
   RUN_TEST(test_hello_from_a_repeater);
+  RUN_TEST(test_hello_from_a_bridge);
   RUN_TEST(test_hello_placed_by_hand_on_a_watcher);
   RUN_TEST(test_hello_with_a_fix);
   RUN_TEST(test_hello_that_does_not_fit);

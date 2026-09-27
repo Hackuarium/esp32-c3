@@ -13,7 +13,9 @@
                     placed by hand with (al)
             bit 2   this node watches for drones (built with THR_DRONE_ID)
             bit 3   this node relays what it hears (role DA1)
-            bits 4-7  0, reserved
+            bit 4   this node is a bridge (role DA2): it feeds a host and
+                    receipts what is meant for one
+            bits 5-7  0, reserved
 
    latitude and longitude are int32 little-endian, degrees x 1e6 - the scale of
    PARAM_GPS_LATITUDE and PARAM_GPS_LONGITUDE, so a fix goes out as taskGPS
@@ -33,6 +35,7 @@
 #define LORA_HELLO_FLAG_GPS 0x02
 #define LORA_HELLO_FLAG_DRONE_WATCHER 0x04
 #define LORA_HELLO_FLAG_REPEATER 0x08
+#define LORA_HELLO_FLAG_BRIDGE 0x10
 
 /* flags alone, and flags followed by a position */
 #define LORA_HELLO_MIN_SIZE 1
@@ -51,6 +54,10 @@ typedef struct {
   bool gps;
   bool droneWatcher;
   bool repeater;
+  /* Nothing else on the air says it: a host knows the bridge it is plugged
+     into from (ai), and any other one - whose receipts stop the repeaters as
+     surely as its own bridge's - would otherwise pass for a plain node. */
+  bool bridge;
   /* degrees x 1e6 */
   int32_t latitude;
   int32_t longitude;

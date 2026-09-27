@@ -302,7 +302,13 @@ flags(1) [latitude(4) longitude(4)]
 | 1   | it is a current GPS fix; clear when placed by hand (`al`) |
 | 2   | this node watches for drones (built with `THR_DRONE_ID`)  |
 | 3   | this node relays what it hears (role `DA1`)               |
-| 4–7 | reserved, sent as 0                                       |
+| 4   | this node is a bridge (role `DA2`)                        |
+| 5–7 | reserved, sent as 0                                       |
+
+Bit 4 is the only way a host learns of a bridge other than its own, which it
+knows from `ai`. It matters beyond the label: a repeater drops its copy on any
+bridge's receipt, so a second bridge feeding another host, or none, can keep
+a report from ever reaching this one.
 
 `latitude` and `longitude` are **int32, little-endian, degrees × 1e6** — the
 scale of the fix in `G`…`J`, so a tracker announces its position exactly as
@@ -751,6 +757,7 @@ export function decodeHelloBody(body) {
   const hello = {
     droneWatcher: (flags & 0x04) !== 0,
     repeater: (flags & 0x08) !== 0,
+    bridge: (flags & 0x10) !== 0,
     position: null,
   };
   if (flags & 0x01 && body.length >= 9) {
