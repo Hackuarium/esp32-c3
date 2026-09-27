@@ -44,4 +44,17 @@ size_t droneIdBuildBeaconFrame(const ODID_UAS_Data* record,
                                uint8_t* out,
                                size_t capacity);
 
+/* Where an aircraft flying a circle clockwise at a constant speed is after
+   `seconds`, starting due north of the centre, and the course it is flying -
+   0 to 360, the tangent to the circle. Equirectangular, on the scale
+   droneIdMetresBetween() measures with, so the two agree on the radius. */
+void droneIdOrbitPosition(double centerLatitude,
+                          double centerLongitude,
+                          double radiusMetres,
+                          double speed,
+                          double seconds,
+                          double* latitude,
+                          double* longitude,
+                          float* course);
+
 #endif

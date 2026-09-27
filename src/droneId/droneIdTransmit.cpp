@@ -1,5 +1,6 @@
 #include "droneIdTransmit.h"
 
+#include <math.h>
 #include <string.h>
 
 /* No config.h, for the reason droneIdFrames.cpp gives: the host test builds
@@ -174,4 +175,28 @@ size_t droneIdBuildBeaconFrame(const ODID_UAS_Data* record,
   out[at++] = WIFI_ODID_VENDOR_TYPE;
   out[at++] = counter;
   return at + packLength;
+}
+
+void droneIdOrbitPosition(double centerLatitude,
+                          double centerLongitude,
+                          double radiusMetres,
+                          double speed,
+                          double seconds,
+                          double* latitude,
+                          double* longitude,
+                          float* course) {
+  const double metresPerDegree = 111320.0;
+  /* the phase is taken modulo one lap before it becomes an angle, so it stays
+     exact however long the board has been running */
+  double lap = 2 * M_PI * radiusMetres / speed;
+  double bearing = 2 * M_PI * fmod(seconds, lap) / lap;
+  double north = radiusMetres * cos(bearing);
+  double east = radiusMetres * sin(bearing);
+  *latitude = centerLatitude + north / metresPerDegree;
+  *longitude = centerLongitude + east / (metresPerDegree *
+                                         cos(centerLatitude * M_PI / 180.0));
+  /* clockwise, so the course is the bearing from the centre plus a right
+     angle */
+  double degrees = fmod(bearing * 180.0 / M_PI + 90.0, 360.0);
+  *course = (float)degrees < 360.0f ? (float)degrees : 0.0f;
 }

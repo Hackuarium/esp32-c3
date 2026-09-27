@@ -2,6 +2,7 @@
 #ifdef THR_DRONE_TRANSMITTER
 #include <NimBLEDevice.h>
 #include <WiFi.h>
+#include <esp_timer.h>
 #include <esp_wifi.h>
 #include <string.h>
 
@@ -13,7 +14,8 @@
 Bluetooth 5 Long Range is an extended advertisement on the coded PHY."
 #endif
 
-/* A known aircraft for the watcher to hear, announced every second.
+/* A known aircraft for the watcher to hear, announced every second while it
+   flies a circle around a fixed point.
 
    Bluetooth 4 has room for one message per advertisement, so the five take
    turns, one every 200 ms - each type once a second, which is the rate the
@@ -114,15 +116,12 @@ static void describeAircraft() {
   strncpy(aircraft.BasicID[0].UASID, uasId, ODID_ID_SIZE);
 
   /* No clock on this board, so the timestamp says unknown rather than
-     inventing one. Hovering, so no course. */
+     inventing one. The position, course and speed are updatePosition()'s. */
   aircraft.LocationValid = 1;
   aircraft.Location.Status = ODID_STATUS_AIRBORNE;
-  aircraft.Location.Latitude = DRONE_TX_LATITUDE;
-  aircraft.Location.Longitude = DRONE_TX_LONGITUDE;
   aircraft.Location.AltitudeGeo = DRONE_TX_GROUND_ALTITUDE + DRONE_TX_HEIGHT;
   aircraft.Location.HeightType = ODID_HEIGHT_REF_OVER_TAKEOFF;
   aircraft.Location.Height = DRONE_TX_HEIGHT;
-  aircraft.Location.SpeedHorizontal = 0;
   aircraft.Location.SpeedVertical = 0;
   aircraft.Location.HorizAccuracy = ODID_HOR_ACC_10_METER;
   aircraft.Location.VertAccuracy = ODID_VER_ACC_10_METER;
@@ -133,11 +132,9 @@ static void describeAircraft() {
   aircraft.SelfID.DescType = ODID_DESC_TYPE_TEXT;
   strncpy(aircraft.SelfID.Desc, "hackuarium test beacon", ODID_STR_SIZE);
 
+  /* where the operator stands is updatePosition()'s too */
   aircraft.SystemValid = 1;
-  aircraft.System.OperatorLocationType = ODID_OPERATOR_LOCATION_TYPE_FIXED;
   aircraft.System.ClassificationType = ODID_CLASSIFICATION_TYPE_EU;
-  aircraft.System.OperatorLatitude = DRONE_TX_LATITUDE;
-  aircraft.System.OperatorLongitude = DRONE_TX_LONGITUDE;
   aircraft.System.OperatorAltitudeGeo = DRONE_TX_GROUND_ALTITUDE;
   aircraft.System.CategoryEU = ODID_CATEGORY_EU_OPEN;
   aircraft.System.ClassEU = ODID_CLASS_EU_CLASS_0;
@@ -145,6 +142,42 @@ static void describeAircraft() {
   aircraft.OperatorIDValid = 1;
   aircraft.OperatorID.OperatorIdType = ODID_OPERATOR_ID;
   strncpy(aircraft.OperatorID.OperatorId, "CHEhackuarium000", ODID_ID_SIZE);
+}
+
+static void updateOperator(double seconds) {
+  ODID_System_data* system = &aircraft.System;
+  if (DRONE_TX_OPERATOR_SPEED <= 0) {
+    system->OperatorLocationType = ODID_OPERATOR_LOCATION_TYPE_FIXED;
+    system->OperatorLatitude = DRONE_TX_LATITUDE;
+    system->OperatorLongitude = DRONE_TX_LONGITUDE;
+    return;
+  }
+  float course;
+  system->OperatorLocationType = ODID_OPERATOR_LOCATION_TYPE_LIVE_GNSS;
+  droneIdOrbitPosition(DRONE_TX_LATITUDE, DRONE_TX_LONGITUDE,
+                       DRONE_TX_OPERATOR_DIAMETER / 2, DRONE_TX_OPERATOR_SPEED,
+                       seconds, &system->OperatorLatitude,
+                       &system->OperatorLongitude, &course);
+}
+
+/* Where the aircraft and its operator are on their circles now, from the time
+   since boot - the only time this board has. */
+static void updatePosition() {
+  double seconds = esp_timer_get_time() / 1e6;
+  updateOperator(seconds);
+  ODID_Location_data* location = &aircraft.Location;
+  if (DRONE_TX_SPEED <= 0) {
+    location->Latitude = DRONE_TX_LATITUDE;
+    location->Longitude = DRONE_TX_LONGITUDE;
+    location->SpeedHorizontal = 0;
+    location->Direction = INV_DIR;
+    return;
+  }
+  droneIdOrbitPosition(DRONE_TX_LATITUDE, DRONE_TX_LONGITUDE,
+                       DRONE_TX_ORBIT_DIAMETER / 2, DRONE_TX_SPEED, seconds,
+                       &location->Latitude, &location->Longitude,
+                       &location->Direction);
+  location->SpeedHorizontal = DRONE_TX_SPEED;
 }
 
 /* the two most significant bits set is what makes it random static */
@@ -280,7 +313,7 @@ static void sendBeacon() {
 static void printSummary(Print* output) {
   output->print(F("[drone tx] "));
   output->print(uasId);
-  output->print(F(" at "));
+  output->print(DRONE_TX_SPEED > 0 ? F(" circling ") : F(" over "));
   output->print(DRONE_TX_LATITUDE, 7);
   output->print(F(", "));
   output->print(DRONE_TX_LONGITUDE, 7);
@@ -361,15 +394,40 @@ static void printInfo(Print* output) {
   output->print(uasId);
   output->println(F(" (serial number), multirotor"));
   output->print(F("Position: "));
-  output->print(DRONE_TX_LATITUDE, 7);
+  output->print(aircraft.Location.Latitude, 7);
   output->print(F(", "));
-  output->print(DRONE_TX_LONGITUDE, 7);
+  output->print(aircraft.Location.Longitude, 7);
   output->print(F(", "));
   output->print(DRONE_TX_GROUND_ALTITUDE + DRONE_TX_HEIGHT, 1);
   output->print(F(" m geodetic, "));
   output->print(DRONE_TX_HEIGHT, 1);
   output->println(F(" m above take-off"));
-  output->println(F("Operator: same place, on the ground"));
+  if (DRONE_TX_SPEED > 0) {
+    output->print(F("Flying: a "));
+    output->print(DRONE_TX_ORBIT_DIAMETER, 0);
+    output->print(F(" m circle, clockwise, at "));
+    output->print(DRONE_TX_SPEED, 1);
+    output->print(F(" m/s, course "));
+    output->print(aircraft.Location.Direction, 0);
+    output->print(F(", one lap every "));
+    output->print(M_PI * DRONE_TX_ORBIT_DIAMETER / DRONE_TX_SPEED, 0);
+    output->println(F(" s"));
+  } else {
+    output->println(F("Flying: hovering"));
+  }
+  output->print(F("Operator: "));
+  output->print(aircraft.System.OperatorLatitude, 7);
+  output->print(F(", "));
+  output->print(aircraft.System.OperatorLongitude, 7);
+  if (DRONE_TX_OPERATOR_SPEED > 0) {
+    output->print(F(", walking a "));
+    output->print(DRONE_TX_OPERATOR_DIAMETER, 0);
+    output->print(F(" m circle at "));
+    output->print(DRONE_TX_OPERATOR_SPEED, 1);
+    output->println(F(" m/s (live GNSS)"));
+  } else {
+    output->println(F(", standing (fixed)"));
+  }
 
   char wifi[18];
   snprintf(wifi, sizeof(wifi), "%02x:%02x:%02x:%02x:%02x:%02x", wifiAddress[0],
@@ -425,6 +483,9 @@ void TaskDroneTransmitter(void* pvParameters) {
   while (true) {
     applySettings();
 
+    if (slot == 0) {
+      updatePosition();
+    }
     if (appliedLegacy) {
       sendLegacy(slot);
     }

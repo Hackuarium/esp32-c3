@@ -6,8 +6,8 @@
    proved them end to end. This is a known transmitter to put on the bench.
 
    A XIAO ESP32S3 on a cable, no LoRa, no GPS. Every second it announces a
-   serial number drawn at boot, hovering over a fixed position, on three of the
-   four transports the watcher listens to. NAN is the one left out: it needs a
+   serial number drawn at boot, flying a circle around a fixed position, on
+   three of the four transports the watcher listens to. NAN is the one left out: it needs a
    cluster to synchronise with, which is a Wi-Fi stack of its own. */
 #define THR_DRONE_TRANSMITTER 1
 
@@ -31,24 +31,41 @@ extern int16_t parameters[MAX_PARAM];
 #define DRONE_TX_LONG_RANGE_DEFAULT 1
 #define DRONE_TX_CHANNEL_DEFAULT 6
 
-/* Ruelle des Chataigniers 5, 1026 Denges: the building address point of
-   swisstopo's register, converted from LV95 by its reframe service. The ground
-   there is 397.6 m above sea level, which is 449.0 m above the WGS84 ellipsoid
-   that Remote ID altitudes are measured from. Override with -D to put the
-   aircraft somewhere else. */
+/* The centre both circles are flown around. The ground is taken as 449 m
+   above the WGS84 ellipsoid that Remote ID altitudes are measured from.
+   Override with -D to put the aircraft somewhere else. */
 #ifndef DRONE_TX_LATITUDE
-#define DRONE_TX_LATITUDE 46.5156491
+#define DRONE_TX_LATITUDE 46.5172371
 #endif
 #ifndef DRONE_TX_LONGITUDE
-#define DRONE_TX_LONGITUDE 6.5372752
+#define DRONE_TX_LONGITUDE 6.5395828
 #endif
 #ifndef DRONE_TX_GROUND_ALTITUDE
 #define DRONE_TX_GROUND_ALTITUDE 449.0f
 #endif
-/* Hovering this far above its take-off point, so it reads as airborne. The
-   operator stands on the ground at the same address. */
+/* It flies a circle this wide around the centre, clockwise, this far above
+   its take-off point: a kilometre at 10 m/s is one lap every 314 s. A speed of
+   0 hovers over the centre instead. */
+#ifndef DRONE_TX_ORBIT_DIAMETER
+#define DRONE_TX_ORBIT_DIAMETER 1000.0
+#endif
+#ifndef DRONE_TX_SPEED
+#define DRONE_TX_SPEED 10.0
+#endif
 #ifndef DRONE_TX_HEIGHT
 #define DRONE_TX_HEIGHT 10.0f
+#endif
+
+/* The operator walks a circle of their own around the same centre, at walking
+   pace, and is reported as live GNSS - what a pilot holding a phone sends. At
+   1.4 m/s they pass the watchers' 25 m move threshold every 18 s or so, so the
+   operator's track moves too. A speed of 0 keeps them standing at the centre,
+   reported as a fixed location. */
+#ifndef DRONE_TX_OPERATOR_DIAMETER
+#define DRONE_TX_OPERATOR_DIAMETER 100.0
+#endif
+#ifndef DRONE_TX_OPERATOR_SPEED
+#define DRONE_TX_OPERATOR_SPEED 1.4
 #endif
 
 #define DRONE_TX_QUALIFIER 4965

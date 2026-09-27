@@ -1070,9 +1070,11 @@ the channel to the access point's and takes the receiver away until a reboot.
 `KIND_DRONE_TRANSMITTER`, `include/configDroneTransmitter.h`,
 `src/taskDroneTransmitter.cpp`. A bare XIAO ESP32S3 that pretends to be a drone,
 so the watcher has a known aircraft to hear. Every second it announces a serial
-number drawn at boot, hovering 10 m over Ruelle des Châtaigniers 5 in Denges, on
+number drawn at boot, flying a 1 km circle at 10 m/s around a fixed centre
+while its operator walks a 100 m one at 1.4 m/s, on
 Bluetooth 4 legacy (`A`), Bluetooth 5 Long Range (`B`) and a Wi-Fi beacon on
-channel `C`. See [docs/drone-remote-id.md](docs/drone-remote-id.md).
+channel `C`. The ID changes at every boot, so after
+a reflash the old aircraft lingers on the watchers for `E` (300) seconds. See [docs/drone-remote-id.md](docs/drone-remote-id.md).
 
 - **The frames are built in `src/droneId/droneIdTransmit.cpp`**, which has no
   Arduino, and `test/test_droneid_transmit` reads them back through the

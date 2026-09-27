@@ -287,10 +287,17 @@ ESP32S3 that pretends to be a drone:
     ~/.platformio/penv/bin/pio run -e droneTransmitter -t upload
 
 Every second it announces a serial number drawn at boot (`TESTC` and twelve
-random characters), hovering 10 m over Ruelle des Châtaigniers 5, 1026 Denges
-— 46.5156491, 6.5372752, ground at 449.0 m above the ellipsoid — with the
-operator on the ground at the same address and the Self-ID *hackuarium test
-beacon*, which is what a phone app shows first.
+random characters), flying a circle 1 km across, clockwise at 10 m/s and 10 m
+up, around a fixed centre set in `include/configDroneTransmitter.h`. One lap
+takes 314 s. The operator walks a circle 100 m across around the same centre
+at 1.4 m/s, reported as live
+GNSS, so the operator's track moves too, past the 25 m threshold (`M`) about
+every 18 s. The Self-ID reads *hackuarium test beacon*, which is what a phone
+app shows first.
+
+**A new serial number at every boot is a new aircraft.** After a reflash the
+previous one stays on a watcher's list, and on the map, until `E` seconds of
+silence drop it — 300 by default.
 
 | Transport | How | Switch |
 |---|---|---|
@@ -307,8 +314,13 @@ would read as both Bluetooth transports off.
 
 On a watcher it is **three rows**, one per transport, each with its own
 address, and `dl` marks them as sharing a UAS ID. The position and height are
-macros in `include/configDroneTransmitter.h`; `-D DRONE_TX_LATITUDE=…` moves
-the aircraft without editing them.
+macros in `include/configDroneTransmitter.h`, as are the circle's diameter
+and speed, and the operator's (`DRONE_TX_OPERATOR_DIAMETER`,
+`DRONE_TX_OPERATOR_SPEED`); `-D DRONE_TX_LATITUDE=…` moves the centre without
+editing them, `-D DRONE_TX_SPEED=0` hovers over it and
+`-D DRONE_TX_OPERATOR_SPEED=0` keeps the operator standing, as a fixed
+location. The circle is `droneIdOrbitPosition()`,
+tested on the host: 500 m from the centre everywhere, 10 m flown per second.
 
 The Wi-Fi half runs a hidden soft AP, locked with a random password, only so the
 driver will transmit. Its own beacons are slowed to one a minute, and the Remote

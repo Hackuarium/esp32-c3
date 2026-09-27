@@ -1,7 +1,9 @@
+#include <math.h>
 #include <string.h>
 #include <unity.h>
 
 #include "droneIdFrames.h"
+#include "droneIdRecords.h"
 #include "droneIdTransmit.h"
 
 /* The transmitter's frames, handed back to the receiver's own locators and
@@ -27,8 +29,8 @@ void setUp(void) {
 
   aircraft.LocationValid = 1;
   aircraft.Location.Status = ODID_STATUS_AIRBORNE;
-  aircraft.Location.Latitude = 46.5156491;
-  aircraft.Location.Longitude = 6.5372752;
+  aircraft.Location.Latitude = 46.5000000;
+  aircraft.Location.Longitude = 6.6000000;
   aircraft.Location.AltitudeGeo = 459.0f;
   aircraft.Location.HeightType = ODID_HEIGHT_REF_OVER_TAKEOFF;
   aircraft.Location.Height = 10.0f;
@@ -42,8 +44,8 @@ void setUp(void) {
   aircraft.SystemValid = 1;
   aircraft.System.OperatorLocationType = ODID_OPERATOR_LOCATION_TYPE_FIXED;
   aircraft.System.ClassificationType = ODID_CLASSIFICATION_TYPE_EU;
-  aircraft.System.OperatorLatitude = 46.5156491;
-  aircraft.System.OperatorLongitude = 6.5372752;
+  aircraft.System.OperatorLatitude = 46.5000000;
+  aircraft.System.OperatorLongitude = 6.6000000;
   aircraft.System.OperatorAltitudeGeo = 449.0f;
   aircraft.System.CategoryEU = ODID_CATEGORY_EU_OPEN;
   aircraft.System.ClassEU = ODID_CLASS_EU_CLASS_0;
@@ -59,14 +61,14 @@ static void assertWholeAircraft(void) {
   TEST_ASSERT_EQUAL_STRING("TESTC0123456789AB", heard.BasicID[0].UASID);
   TEST_ASSERT_TRUE(heard.LocationValid);
   TEST_ASSERT_EQUAL_UINT8(ODID_STATUS_AIRBORNE, heard.Location.Status);
-  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 46.5156491, heard.Location.Latitude);
-  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 6.5372752, heard.Location.Longitude);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 46.5000000, heard.Location.Latitude);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 6.6000000, heard.Location.Longitude);
   TEST_ASSERT_EQUAL_FLOAT(459.0f, heard.Location.AltitudeGeo);
   TEST_ASSERT_EQUAL_FLOAT(10.0f, heard.Location.Height);
   TEST_ASSERT_TRUE(heard.SelfIDValid);
   TEST_ASSERT_EQUAL_STRING("hackuarium test", heard.SelfID.Desc);
   TEST_ASSERT_TRUE(heard.SystemValid);
-  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 6.5372752,
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 6.6000000,
                             heard.System.OperatorLongitude);
   TEST_ASSERT_EQUAL_FLOAT(449.0f, heard.System.OperatorAltitudeGeo);
   TEST_ASSERT_EQUAL_UINT8(ODID_CLASS_EU_CLASS_0, heard.System.ClassEU);
@@ -91,7 +93,7 @@ static void test_legacy_carries_one_message(void) {
                     droneIdDecodePayload(payload, payloadLength, &heard));
   TEST_ASSERT_TRUE(heard.LocationValid);
   TEST_ASSERT_FALSE(heard.BasicIDValid[0]);
-  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 46.5156491, heard.Location.Latitude);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, 46.5000000, heard.Location.Latitude);
 }
 
 /* Five turns of the rotation are the whole aircraft. */
@@ -173,6 +175,95 @@ static void test_nothing_to_send_builds_nothing(void) {
       0, droneIdBuildExtendedAdvertisement(&aircraft, 0, frame, sizeof(frame)));
 }
 
+/* A kilometre across at 10 m/s: one lap every 100 pi seconds, 314 s. */
+#define ORBIT_LATITUDE 46.5000000
+#define ORBIT_LONGITUDE 6.6000000
+#define ORBIT_LAP (M_PI * 100.0)
+
+static void orbitAt(double seconds, double* latitude, double* longitude,
+                    float* course) {
+  droneIdOrbitPosition(ORBIT_LATITUDE, ORBIT_LONGITUDE, 500.0, 10.0, seconds,
+                       latitude, longitude, course);
+}
+
+/* It starts due north flying east, and each quarter lap turns it a quarter
+   to the right. */
+static void test_orbit_quarters(void) {
+  double latitude;
+  double longitude;
+  float course;
+
+  orbitAt(0, &latitude, &longitude, &course);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, ORBIT_LATITUDE + 500.0 / 111320.0,
+                            latitude);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, ORBIT_LONGITUDE, longitude);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 90.0f, course);
+
+  orbitAt(ORBIT_LAP / 4, &latitude, &longitude, &course);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, ORBIT_LATITUDE, latitude);
+  TEST_ASSERT_TRUE(longitude > ORBIT_LONGITUDE);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 180.0f, course);
+
+  orbitAt(ORBIT_LAP / 2, &latitude, &longitude, &course);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, ORBIT_LATITUDE - 500.0 / 111320.0,
+                            latitude);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 270.0f, course);
+
+  /* 359.99 would be fine; 360 is not a course the encoder accepts */
+  orbitAt(ORBIT_LAP * 3 / 4, &latitude, &longitude, &course);
+  TEST_ASSERT_TRUE(longitude < ORBIT_LONGITUDE);
+  TEST_ASSERT_TRUE(course < 360.0f);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, fmodf(course, 360.0f));
+}
+
+/* 500 m from the centre everywhere, 10 m flown per second, and a whole lap
+   later it is back where it started - even after days of running. */
+static void test_orbit_radius_and_speed(void) {
+  double latitude;
+  double longitude;
+  double previousLatitude;
+  double previousLongitude;
+  float course;
+  orbitAt(0, &previousLatitude, &previousLongitude, &course);
+  for (int second = 1; second <= 320; second++) {
+    orbitAt(second, &latitude, &longitude, &course);
+    TEST_ASSERT_DOUBLE_WITHIN(0.01, 500.0,
+                              droneIdMetresBetween(ORBIT_LATITUDE,
+                                                   ORBIT_LONGITUDE, latitude,
+                                                   longitude));
+    TEST_ASSERT_DOUBLE_WITHIN(0.01, 10.0,
+                              droneIdMetresBetween(previousLatitude,
+                                                   previousLongitude, latitude,
+                                                   longitude));
+    previousLatitude = latitude;
+    previousLongitude = longitude;
+  }
+
+  double startLatitude;
+  double startLongitude;
+  orbitAt(0, &startLatitude, &startLongitude, &course);
+  orbitAt(ORBIT_LAP * 1000, &latitude, &longitude, &course);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, startLatitude, latitude);
+  TEST_ASSERT_DOUBLE_WITHIN(0.0000001, startLongitude, longitude);
+}
+
+/* The moving aircraft still encodes: speed and course survive the wire. */
+static void test_orbit_encodes(void) {
+  orbitAt(ORBIT_LAP / 8, &aircraft.Location.Latitude,
+          &aircraft.Location.Longitude, &aircraft.Location.Direction);
+  aircraft.Location.SpeedHorizontal = 10.0f;
+  size_t length = droneIdBuildLegacyAdvertisement(
+      &aircraft, ODID_MESSAGETYPE_LOCATION, 0, frame);
+  uint8_t payloadLength = 0;
+  const uint8_t* payload =
+      droneIdFindBluetoothPayload(frame, length, &payloadLength);
+  TEST_ASSERT_EQUAL(ODID_MESSAGETYPE_LOCATION,
+                    droneIdDecodePayload(payload, payloadLength, &heard));
+  TEST_ASSERT_EQUAL_FLOAT(10.0f, heard.Location.SpeedHorizontal);
+  /* the wire carries whole degrees */
+  TEST_ASSERT_FLOAT_WITHIN(1.0f, 135.0f, heard.Location.Direction);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_legacy_carries_one_message);
@@ -180,5 +271,8 @@ int main(void) {
   RUN_TEST(test_extended_carries_a_pack);
   RUN_TEST(test_beacon_carries_a_pack);
   RUN_TEST(test_nothing_to_send_builds_nothing);
+  RUN_TEST(test_orbit_quarters);
+  RUN_TEST(test_orbit_radius_and_speed);
+  RUN_TEST(test_orbit_encodes);
   return UNITY_END();
 }
