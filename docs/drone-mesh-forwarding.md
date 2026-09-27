@@ -34,10 +34,10 @@ SF9 / 250 kHz:
 
 | | |
 |---|---|
-| frame | 6 header + 2 opcode + 26 payload + 4 tag + 1 trailer = **39 bytes** |
-| airtime | **135 ms** |
-| at 1 Hz | 485 s per hour |
-| as a share of sub-band P's 10 % allowance (360 s/h) | **135 %** |
+| frame | 4 seal + 6 header + 2 opcode + 26 payload + 1 trailer + 4 tag = **43 bytes** |
+| airtime | **144 ms** |
+| at 1 Hz | 518 s per hour |
+| as a share of sub-band P's 10 % allowance (360 s/h) | **144 %** |
 
 **One drone, forwarded raw, does not fit in the entire duty cycle** — before the
 HELLOs, before any relaying, before a second drone, and before anything else the
@@ -76,10 +76,16 @@ are confidently and silently displaced. Here a wrong reference either changes
 nothing or moves the aircraft by a whole 73 km window, which is not a mistake
 anybody acts on.
 
-The reference lives in the tracker's **existing `G`…`J` slots** — the same four
-int16 a GPS tracker writes its fix into, written by hand with
-`setParameterInt32` semantics over `ar`. Nothing new, and a post that later
-grows a receiver fills them itself.
+The reference is **the position the post announces in its HELLO**
+([lora-mesh-frame.md § HELLO](lora-mesh-frame.md#hello)): a current GPS fix
+when the post has one, otherwise a position placed by hand with
+`al46.5191,6.5668` and kept in NVS as `mesh.lat` / `mesh.lon` — not in
+parameters, so no block copy can hand one post's position to another. A host
+places a relay from that HELLO, and a post that later grows a receiver announces
+its fix instead, with nothing to reconfigure. A HELLO is relayed only when the
+bridge did not hear it (see the receipts in the frame document), so a post out
+of the bridge's range is placed too; `ar<address>:al` returns the same
+`Location:` line in one frame at any time.
 
 ### `TRACK` — 11 bytes, what changes
 
@@ -138,7 +144,7 @@ Sent on the first System message, **whenever the operator moves more than
 `PILOT_MOVE_METRES` (25 by default)**, and otherwise every few minutes as a
 keepalive. That cadence is the difference between this design and the obvious
 one: an operator walking a fence line at 1.4 m/s crosses 25 m every 18 s, which
-is a 19-byte frame — 26 ms at SF7 — and it is the single most useful thing the
+is a 23-byte frame — 31 ms at SF7 — and it is the single most useful thing the
 mesh can carry. A pilot standing still costs nothing at all.
 
 Frame: `opcode(1) count(1) records(n × 6)`, so the pilots of up to seven
@@ -163,8 +169,8 @@ bits, and neither changes during a flight. They travel in `IDENT`.
     opLen     u8   then opLen bytes of the Operator ID (the registration)
 ```
 
-A serial number of 19 and a registration of 16 make a 41-byte body — 52 on air,
-53 ms at SF7. It is sent when a handle is allocated, again when the Operator ID
+A serial number of 19 and a registration of 16 make a 41-byte body — 56 on air,
+54 ms at SF7. It is sent when a handle is allocated, again when the Operator ID
 or the classification arrives (each is a separate message and turns up later),
 then at a five minute keepalive while the handle is live. At most two go out
 per tick, so a sky that fills at once does not keep the receiver closed for a
@@ -180,7 +186,7 @@ A `TRACK` can still arrive before its `IDENT` — a broadcast is unacknowledged.
 The host stores that point with a null UAS ID and back-fills it when the binding
 lands, rather than dropping it. And because `ar` runs a console verb on any
 node, the host can **ask**: a new `df<handle>` re-sends the IDENT for one
-handle, which is a 52 ms answer instead of a five-minute wait.
+handle, which is a 54 ms answer instead of a five-minute wait.
 
 ### One handle is one aircraft, which is a deliberate change of mind
 
@@ -198,9 +204,9 @@ would contradict it travels with it.
 ## Compatibility: there is exactly one extension point, and this is it
 
 **Nothing in the envelope changes.** A drone record rides a mesh frame like any
-other body: AES-128-CCM under the group key, the header authenticated, the
-counter as the nonce, the same relay rules, the same duty-cycle governor, the
-same route trailer — see [docs/lora-mesh-frame.md](lora-mesh-frame.md).
+other body: AES-128-CCM under the group key, sealed afresh by every node that
+transmits it, the same relay rules, the same duty-cycle governor, the same
+route — see [docs/lora-mesh-frame.md](lora-mesh-frame.md).
 
 What is new is three body layouts behind **three DATA opcodes**, and the format
 already reserved the room: a DATA body is a SET body byte for byte, so opcodes
@@ -211,9 +217,11 @@ Three consequences, and the third is the one worth planning around:
 
 - **DATA, never CMD.** A receiver records these, it does not act on them. This
   is the same reason a tracker broadcasts its fix as DATA.
-- **Broadcast and unacknowledged** for the periodic reports; 255 nodes
-  acknowledging a sighting is the ACK storm the mesh already refuses. The one
-  exception is the first urgent report of a handle, below.
+- **Broadcast and unacknowledged** by the nodes they reach; 255 nodes
+  acknowledging a sighting is the ACK storm the mesh already refuses. A bridge
+  that hears one sends a receipt, which only keeps the repeaters from carrying
+  a copy it already has — the watcher never waits for it. The one exception is
+  the first urgent report of a handle, below.
 - **A node that has never heard of these opcodes handles them correctly
   already.** `loraMeshReportData` prints `{"event":"data","src":…,"opcode":16,
   "length":45}` and moves on, and — this is the part that matters — the `rx`
@@ -254,24 +262,25 @@ blocking every other command on that node.
 ## What it costs
 
 Computed with `airtimeMillis()` from `src/taskLoraMesh.cpp`, the same function
-the governor uses, at 250 kHz. Frame = 6 header + body + 4 tag + 1 trailer.
+the governor uses, at 250 kHz. Frame = 4 seal + 6 header + body + 1 trailer +
+4 tag.
 
 | Frame | body | on air | SF7 | SF8 | SF9 |
 |---|---|---|---|---|---|
-| GPS telemetry, for scale | 18 | 29 | 34 ms | 62 ms | 114 ms |
-| `TRACK`, one aircraft | 13 | 24 | 31 ms | 57 ms | 103 ms |
-| **`TRACK`, four aircraft** | **46** | **57** | **54 ms** | 98 ms | 175 ms |
-| `PILOT`, one | 8 | 19 | 26 ms | 52 ms | 93 ms |
-| `IDENT`, typical | 41 | 52 | 52 ms | 93 ms | 165 ms |
+| GPS telemetry, for scale | 18 | 33 | 36 ms | 67 ms | 124 ms |
+| `TRACK`, one aircraft | 13 | 28 | 34 ms | 62 ms | 114 ms |
+| **`TRACK`, four aircraft** | **46** | **61** | **57 ms** | 103 ms | 185 ms |
+| `PILOT`, one | 8 | 23 | 31 ms | 57 ms | 103 ms |
+| `IDENT`, typical | 41 | 56 | 54 ms | 98 ms | 175 ms |
 
 As a share of one node's **whole** 10 % allowance (360 s/h in sub-band P):
 
 | cadence | 4 aircraft per frame, SF7 | SF9 | 1 aircraft, SF7 | SF9 |
 |---|---|---|---|---|
-| every 2 s | 27.0 % | 87.5 % | 15.5 % | 51.5 % |
-| **every 5 s** | **10.8 %** | 35.0 % | 6.2 % | 20.6 % |
-| every 10 s | 5.4 % | 17.5 % | 3.1 % | 10.3 % |
-| every 30 s | 1.8 % | 5.8 % | 1.0 % | 3.4 % |
+| every 2 s | 28.5 % | 92.5 % | 17.0 % | 57.0 % |
+| **every 5 s** | **11.4 %** | 37.0 % | 6.8 % | 22.8 % |
+| every 10 s | 5.7 % | 18.5 % | 3.4 % | 11.4 % |
+| every 30 s | 1.9 % | 6.2 % | 1.1 % | 3.8 % |
 
 **Five seconds at SF7 is the working point**, and it costs a ninth of one post's
 allowance whether it is watching one aircraft or four. The `PILOT` and `IDENT`
@@ -290,15 +299,15 @@ and the answer there is a relay rather than a slower channel for everybody.
 
 Each post has its own 360 s an hour, but **they all share one channel**, and
 LoRa does not sense the carrier before transmitting. At 5 s and SF7, each post
-spends 39 s of the hour:
+spends 41 s of the hour:
 
 | posts | on air | channel occupancy |
 |---|---|---|
-| 2 | 78 s/h | 2.2 % |
-| 4 | 156 s/h | 4.3 % |
-| 8 | 311 s/h | 8.6 % |
+| 2 | 82 s/h | 2.3 % |
+| 4 | 164 s/h | 4.6 % |
+| 8 | 328 s/h | 9.1 % |
 
-Eight posts still sit under about 9 %, where collisions stay rare.
+Eight posts still sit at about 9 %, where collisions stay rare.
 
 **Do not add duplicate suppression at this scale.** It is the right answer when
 the budget binds — a post that has just heard a stronger report of the same
@@ -320,12 +329,11 @@ Two smaller things for a fixed site:
 ## Parameters on the watching post
 
 `droneTracker` uses `A`…`F`, and the mesh block sits at 104–113, so the
-forwarder takes free slots in between. `G`…`J` are the reference position; the
-rest are new:
+forwarder takes free slots in between. The post's own position is not one of
+them — it is placed with `al` and announced in the HELLO (see *Coordinates*):
 
 | | | Default |
 |---|---|---|
-| `G`…`J` | the post's surveyed position, lat and lon as int32 over two slots each | unset |
 | `K` | seconds between `TRACK` frames, 0 = forwarding off | 5 |
 | `L` | aircraft per frame, 1–4 | 4 |
 | `M` | metres the operator must move before a `PILOT` frame | 25 |
@@ -338,8 +346,7 @@ rest are new:
 the radio costs of `K`…`P` are costs of the mesh, and a board reporting down a
 cable pays none of them.
 
-Only `K`, `L` and `M` are built; `G`…`J` and `N`…`P` wait for the proximity
-test.
+Only `K`, `L` and `M` are built; `N`…`P` wait for the proximity test.
 
 `K5` by default, not `K0`: a post exists to report, and nothing is sent while
 the sky is empty, so a board that is flashed and not yet configured costs no
@@ -561,7 +568,7 @@ not, and spend the mesh only on the remainder.
 ## Open questions
 
 1. **Is 5 s per aircraft what the operator needs from a LoRa post?** It is what
-   the band affords comfortably at SF7. 2 s is possible at 27 % of one post's
+   the band affords comfortably at SF7. 2 s is possible at 29 % of one post's
    allowance; 1 Hz is not, at any spreading factor, and that answer does not
    change with a better encoding. A cabled post has none of this ceiling, so the
    question is really about which fences are cabled.

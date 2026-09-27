@@ -115,6 +115,8 @@ static void printLoraMeshHelp(Print* output) {
   output->println(LORA_ADDRESS_MAX);
   output->println(F("(ap) peer table"));
   output->println(F("(ah) broadcast a HELLO now"));
+  output->println(F("(al) where the HELLO places this node, al0 forgets"));
+  output->println(F("    al46.5191,6.5668  place it by hand"));
   output->println(F("(az) forget every peer"));
   output->println(F("(ad) give back a full hour of airtime budget"));
   output->println(F("(ax) set or read a parameter over the mesh"));
@@ -191,8 +193,15 @@ void processLoraCommand(char command, char* paramValue, Print* output) {
     case 'p':
       loraMeshPrintPeers(output);
       break;
-    case 'h':
-      loraMeshSend(LORA_ADDRESS_BROADCAST, LORA_TYPE_HELLO, NULL, 0, output);
+    case 'h': {
+      uint8_t body[LORA_HELLO_MAX_SIZE];
+      uint8_t length = loraMeshHelloBody(body);
+      loraMeshSend(LORA_ADDRESS_BROADCAST, LORA_TYPE_HELLO, body, length,
+                   output);
+      break;
+    }
+    case 'l':
+      processLoraMeshLocationCommand(paramValue, output);
       break;
     case 'z':
       loraPeerClear();

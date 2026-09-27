@@ -183,6 +183,21 @@ whether Bluetooth or Wi-Fi is reaching further today.
 | `L` | aircraft per LoRa TRACK frame, 1 to 4 | 4 |
 | `M` | metres the operator must move before the feed reports them again | 25 |
 | `Q` | seconds between two `drone` lines about one transmitter, on a bridge | 1 |
+| `DK`…`DR` | the board's own GPS fix, written by `taskGPS`: latitude and longitude as int32 × 1e6 over two slots each, altitude, satellites, HDOP × 100, fix quality | — |
+
+**The board has three positions to report, and only one is its own.** The
+aircraft's and the operator's come off the air in Remote ID and travel as
+`drone` and `pilot` lines on a bridge, `TRACK` and `PILOT` records over LoRa.
+The board's own comes from a GPS on D7 when one is fitted — its HELLO then
+carries the fix, flags `0x0f` on a repeater — or from `al` when not. The probe
+runs once at boot, so a receiver plugged in later needs a reboot (`ub`).
+
+The fix sits at 114–121 rather than at `G`…`N`, where the mesh node keeps it,
+because `K`, `L` and `M` are drone settings here; `MAX_PARAM` is 122 on this
+board. A bridge decorates a `params` line with `lat`/`lon` from its own slots,
+so a drone-tracker bridge does not decorate a `loraGPS` tracker's telemetry
+block, and the reverse — the HELLO, which carries degrees rather than slots, is
+unaffected.
 
 A freshly flashed board has an empty NVS partition, where every slot reads 0 —
 not "unset". Since 0 is a legitimate `A` and a legitimate `B`, a board coming up
@@ -261,6 +276,44 @@ A board that was already a drone tracker before this firmware reads `K` as 0,
 which is off: its defaults were written once, by the earlier firmware. `dm5`
 turns it on.
 
+## A transmitter to test against (`[env:droneTransmitter]`)
+
+The only aircraft heard in the field was silent, so nothing had ever proved the
+receiver, the feed and the host end to end. `droneTransmitter` is a bare XIAO
+ESP32S3 that pretends to be a drone:
+
+    ~/.platformio/penv/bin/pio run -e droneTransmitter -t upload
+
+Every second it announces a serial number drawn at boot (`TESTC` and twelve
+random characters), hovering 10 m over Ruelle des Châtaigniers 5, 1026 Denges
+— 46.5156491, 6.5372752, ground at 449.0 m above the ellipsoid — with the
+operator on the ground at the same address and the Self-ID *hackuarium test
+beacon*, which is what a phone app shows first.
+
+| Transport | How | Switch |
+|---|---|---|
+| Bluetooth 4 legacy | the five messages in turn, one every 200 ms | `A1` / `A0` |
+| Bluetooth 5 Long Range | one pack of all five, coded PHY | `B1` / `B0` |
+| Wi-Fi Beacon | one pack of all five, on channel `C` | `C6`, `C0` = off |
+
+NAN is not sent: it needs a cluster to synchronise with. `di` prints the
+identity, the three addresses and how many frames each transport has sent.
+Switching one off is how to test the watcher one path at a time. A board that
+last ran another firmware is reset to these defaults at its first boot, since
+its old `A`, `B` and `C` meant something else — the drone tracker's `A7 B3 C6`
+would read as both Bluetooth transports off.
+
+On a watcher it is **three rows**, one per transport, each with its own
+address, and `dl` marks them as sharing a UAS ID. The position and height are
+macros in `include/configDroneTransmitter.h`; `-D DRONE_TX_LATITUDE=…` moves
+the aircraft without editing them.
+
+The Wi-Fi half runs a hidden soft AP, locked with a random password, only so the
+driver will transmit. Its own beacons are slowed to one a minute, and the Remote
+ID beacons are sent by hand with `esp_wifi_80211_tx`. The frames are built in
+`src/droneId/droneIdTransmit.cpp`, which a host test hands back to the
+receiver's own locators and decoder.
+
 ## Tests
 
     ~/.platformio/penv/bin/pio test -e native
@@ -275,6 +328,10 @@ AD Flags structure (which the reference Android receiver's fixed offset misses),
 a beacon, a NAN action frame, a truncated pack, cross-transport frames and
 noise. The decoded values are checked against what was encoded, not against
 "something came back".
+
+Five more over `src/droneId/droneIdTransmit.cpp` build the test transmitter's
+frames and read them back through those same locators and the decoder, so the
+transmitter cannot pass on the bench while the watcher fails to read it.
 
 ## The decoding is not ours
 

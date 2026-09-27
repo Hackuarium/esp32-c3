@@ -21,8 +21,15 @@ struct LoraPeer {
   uint32_t acknowledgedCounter;
   uint8_t acknowledgedStatus;
   boolean hasAcknowledged;
+  /* The margin this node's own transmission was last heard at, and when. Only
+     a direct reception sets them: a relayed copy was transmitted by the relay,
+     so its margin is the relay's, and a node heard only through relays has
+     none - heardDirect stays false. */
   int16_t lastRssi;
   int8_t lastSnr;
+  uint32_t directMillis;
+  boolean heardDirect;
+  /* when anything from this node last arrived, directly or not */
   uint32_t lastHeardMillis;
   boolean used;
 };
@@ -41,6 +48,10 @@ LoraPeer* loraPeerFind(uint8_t address);
    the one hole in the design, and it closes as soon as the first frame is
    recorded. */
 boolean loraPeerAcceptCounter(uint8_t address, uint32_t counter);
+
+/* Records that address was heard transmitting, at this margin: the transmitter
+   of a copy, which is the frame's source only when it came direct. */
+void loraPeerHeardDirectly(uint8_t address, int16_t rssi, int8_t snr);
 
 uint8_t loraPeerCount();
 LoraPeer* loraPeerAt(uint8_t index);

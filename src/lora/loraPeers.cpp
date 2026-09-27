@@ -75,6 +75,15 @@ boolean loraPeerAcceptCounter(uint8_t address, uint32_t counter) {
   return true;
 }
 
+void loraPeerHeardDirectly(uint8_t address, int16_t rssi, int8_t snr) {
+  LoraPeer* peer = loraPeerGet(address);
+  peer->lastRssi = rssi;
+  peer->lastSnr = snr;
+  peer->directMillis = millis();
+  peer->heardDirect = true;
+  peer->lastHeardMillis = peer->directMillis;
+}
+
 uint8_t loraPeerCount() {
   uint8_t count = 0;
   for (uint8_t i = 0; i < LORA_MAX_PEERS; i++) {

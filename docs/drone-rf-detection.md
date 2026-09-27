@@ -193,6 +193,146 @@ this from a $10 experiment to a $400 product decision.
 5. **Do not build** an nRF24 scanner, a broadband log detector, or buy an
    RTL-SDR for this.
 
+## 6b. Corrections and verified figures, 2026-09-16
+
+Everything above was written before the sources were checked line by line. What
+follows replaces it where the two disagree; each item was verified against a
+primary source (OFCOM interface regulations, the Swiss National Frequency
+Allocation Plan, manufacturer datasheets) rather than recalled.
+
+### The threat model was wrong about the aircraft
+
+§5 guessed that "goggle-flown quads and custom builds" are what matters. The
+reporting says the opposite, and it is worth being blunt because the whole
+5.8 GHz sensor case rested on it:
+
+- The GI-TOC report *Crime by Drone* (October 2025) uses FPV **only** about
+  armed conflict. Its smuggling passages say **"modified commercial drones"**
+  and **"commercial drone platforms such as DJI or Parrot"**.
+- The June 2026 federal indictment says **"six off-the-shelf drones"** and
+  **names no manufacturer** — an earlier draft of this document attributed "all
+  manufactured by DJI" to it, which the DOJ release does not say.
+- Villefranche-sur-Saône (1 826 deliveries in 51 days) is **June–August 2026**
+  and names no model.
+
+**The strongest argument for a 5.8 GHz sensor is not FPV builds, it is the DJI
+FCC-mode unlock** — third-party firmware tools applied to Mavic, Mini, Avata
+and the FPV air units, raising CE output from the 25 mW class to over 1 W. That
+turns the aircraft the reporting actually names into a loud 5.8 GHz emitter.
+
+### The band is quiet of Wi-Fi, not quiet
+
+§4 treated 5725 MHz upward as clear because EU Wi-Fi stops there. In
+Switzerland that window also carries:
+
+| service | range | level |
+|---|---|---|
+| **BFWA fixed links** (RIR0301-05) | 5725–5795, 5815–5875 | licensed; the likeliest persistent strong carrier, and it was omitted entirely |
+| road tolling LSVA/RPLP | 5795–5805, 5805–5815 | 2 W e.i.r.p. |
+| **ITS non-safety** (RIR0510-02) | 5855–5875 | **33 dBm e.i.r.p.** |
+| amateur, secondary | 5650–5850 | amateur-satellite downlink 5830–5850 |
+| ITS safety / FSS uplink | 5875+ | |
+
+5725–5875 is additionally an **ISM band** with **radiolocation primary**.
+
+The operative EU text is **(EU) 2025/105**, not 2019/1345 as cited earlier; the
+25 mW SRD conclusion survives the re-check unchanged.
+
+### The measurement that now has to come first
+
+**OFCOM RIR1010-05 limits drones at 5 GHz to 5170–5250 MHz, at 200 mW.** At
+5.8 GHz they get 25 mW. That is a **9 dB legal incentive to sit in the band an
+RX5808 cannot tune at all**, and it is a regulation rather than an inference
+from a DJI spec sheet.
+
+DJI's own O4 Air Unit specs list 5.170–5.250 and 5.725–5.850 GHz and **no
+2.4 GHz band at all**; CE EIRP is <23 dBm at 5.1 and <14 dBm at 5.8.
+
+So: sweep `5g1` before anything is ordered.
+
+### Hardware figures that changed
+
+| item | corrected |
+|---|---|
+| **RX5808 tuning** | **5705–5945 MHz** per the module spec. The 5645 figure is the RTC6715 chip's channel table via SPI, not the module's. Sensitivity −90 dBm typ |
+| **RX5808 blind spots** | 5170–5250 (DJI's louder band) **and** "Lowband" 5333–5613. It covers 40 of the 48 standard FPV channels |
+| **RX5808 build** | needs the **SPI mod** — the module must be opened and an SMD resistor removed. Per-unit hand work; order spares |
+| **AntSDR E200** | the **AD9363 variant tunes only 325 MHz–3.8 GHz** — enough for 2.4 GHz DroneID, useless at 5.8. Only the AD9361 variant reaches 6 GHz. Decisive, and previously omitted |
+| **FCC↔CE range ratio** | **5×, not 9×**. 9× is the free-space idealisation; DJI's own O3 page publishes 10 km FCC against 2 km CE |
+| **SPF5189Z LNA** | rated **50–4000 MHz** and EOL since 2021. Not a 5.8 GHz part. Use Mini-Circuits PMA3-83LN+ (0.5–8 GHz) |
+
+### Switzerland has a deployed reference, and it is not RF-only
+
+**JVA Lenzburg has run drone detection since end-2017** — about CHF 200 000,
+**radar plus video**, detecting objects from 7 cm. SRF reported in 2025 that the
+supplier has left the civil market and the canton has not found a replacement
+meeting its specification. The one Swiss buyer bought radar-and-optics-led.
+
+## 6c. The direction-finding node, if it is built
+
+Settled by review against datasheets. The open questions in the field notes now
+have answers, and two of them change the design.
+
+**The switch is a pSemi PE42442** (30–6000 MHz, IL 1.90 dB typ / 2.35 max at
+6 GHz, isolation 27 dB **min**, 3.3 V logic direct from a GPIO, ~$5.60). The
+cascaded-SPDT alternative is **not viable**: SKY13453-385LF has an absolute
+maximum control voltage of 3.0 V — a 3.3 V GPIO is out of spec — and only 15 dB
+of isolation at 6 GHz, which is 1.4 dB of bearing-dependent error.
+
+**Three findings that change the design:**
+
+1. **The image frequency lands on Wi-Fi.** The RTC6715's 479 MHz low-side IF
+   puts its image at RF − 958 MHz, which is exactly twice the 2.4 GHz ISM band:
+   **Wi-Fi channel 6 arrives as a bearing at 5832 MHz**, and this board's own
+   BLE active scan would do it to itself. A 5.7–6.0 GHz filter in front of every
+   receiver is mandatory, not an improvement.
+2. **The LNA is the range lever, not the op-amp.** Against a CE-power drone,
+   usable range with 15 dB of margin is about **85 m** without one and **~700 m**
+   with — a factor of eight. The precision op-amp stage that an earlier draft
+   spent a section on buys 0.7°.
+3. **Never compute a bearing from a rear channel.** At 27 dB isolation the
+   switch's own leakage is 0.38 dB at the crossover, but on a rear channel —
+   idle antenna at +8 dBi against the selected antenna's back lobe — it reaches
+   **3.9 dB**. Use the two strongest channels only, and calibrate in the bearing
+   domain rather than with four per-port constants.
+
+**Co-site desense is a real blocker.** The node carries an SX1262 at +22 dBm:
+at 150 mm that couples roughly −13 to −28 dBm into the RX5808 input against a
+front-end P1dB near −15 to −10 dBm. The 2.4 GHz ESP32 radio at 100 mm gives
+about −15 dBm. Both compress, and because the transmit antenna is not
+equidistant from four receivers the desense is **asymmetric — a bearing error,
+not a dropout**. A firmware TX/sweep interlock is mandatory.
+
+**One receiver or four** is still genuinely open, and the deciding measurement
+is cheap:
+
+- *Four* samples all antennas at the same instant, which matters because
+  OcuSync is TDD and the O4 Pro is 2×2 MIMO — a switched receiver compares
+  different bursts. Costs 785 mA on its own buck regulator, and four
+  uncalibratable RSSI offsets: the RTC6715 datasheet specifies **no min/max and
+  no temperature coefficient**, and at 6.25 mV/dB a 50 mV inter-module offset is
+  8 dB, i.e. 18–30° of bias.
+- *One* makes every one of those terms common-mode.
+- **Measure the RX5808's RSSI settling time after an RF step** — it is absent
+  from the datasheet. The FPV world's 35 ms includes a full PLL relock and is an
+  upper bound. If it is ~100 µs, a four-antenna sweep finishes inside one OFDM
+  burst and the four-receiver topology loses its only real advantage.
+
+**Do not use an ESP32-C5 for this board.** Its 5 GHz radio tunes 5180–5885 MHz
+and would transmit 69–87 dB of overload straight into the RX5808's band at
+realistic mast spacing; it has no B2B connector for the Wio-SX1262; and it needs
+Arduino-ESP32 3.3.x from the pioarduino fork, which — because ten of twelve envs
+pin `platform = espressif32` unversioned — **would move the whole fleet,
+including the wall-mounted `square`**. Keep the C5 as a *separate* board doing
+what the S3 cannot: hearing Wi-Fi Remote ID and DJI's `26:37:12` vendor element
+on 5.8 GHz, which turns "energy at bearing 47°" into "and it is a DJI".
+
+Two smaller corrections worth keeping: a circular antenna's received power from
+a linear source varies peak-to-peak by **exactly its axial ratio in dB**, not
+twice it (every entry in the earlier table was 2× too pessimistic); and the RF
+Elements HG3-TP-S90's "90°" is its **−6 dB** beamwidth — the −3 dB figure is
+67°, which makes its DF slope the best of the candidates rather than the worst.
+
 ## 7. Two non-technical items for the deployment file
 
 - **Passive receive is generally lawful; transmitting is not.** Jamming,

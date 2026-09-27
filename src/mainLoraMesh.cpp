@@ -54,11 +54,12 @@ void resetParameters() {
      with the node it was flashed onto.
 
      It follows from the sub-band rather than from what a tracker would like:
-     868.4 allows 1% of an hour, which is 36 s of airtime, and one 29-byte
-     telemetry frame costs 226 ms at SF9/125 kHz. 60 s spends 13.6 s of the 36,
-     20 s would ask for 40.7 - past the whole allowance, and the governor drops
+     868.4 allows 1% of an hour, which is 36 s of airtime, and one 33-byte
+     telemetry frame costs 247 ms at SF9/125 kHz. 60 s spends 14.8 s of the 36,
+     20 s would ask for 44.4 - past the whole allowance, and the governor drops
      what it cannot pay for rather than transmitting it late. The beacon's RSSI
-     makes the frame 31 bytes and 247 ms, so 14.8 s of the same 36. */
+     makes the frame 35 bytes and costs nothing more: at SF9 those two bytes
+     fall in the same block of symbols. */
   setAndSaveParameter(PARAM_LORA_INTERVAL_SECONDS, 60);
   setAndSaveParameter(PARAM_LORA_BROADCAST_FIRST_PARAMETER,
                       PARAM_TELEMETRY_FIRST);

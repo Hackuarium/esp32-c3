@@ -14,42 +14,54 @@ sources are [loraFrame.h](../src/lora/loraFrame.h) (constants and layout),
 ## Layout
 
 ```
- ctrl(1) src(1) dst(1) counter(3|4) | ciphertext(0..48) | mic(4) | route(2h) | trailer(1)
- \____________ authenticated ______/  \___ encrypted __/          \______ mutable ______/
+ from(1) seal(3|4) | E( ctrl(1) src(1) dst(1) counter(3|4) body(0..48) route(2h) trailer(1) ) | mic(4)
+ \__ clear, AAD __/     \_________________________ encrypted _________________________/
 ```
 
-| Field      | Bytes              | Notes                                                         |
-| ---------- | ------------------ | ------------------------------------------------------------- |
-| `ctrl`     | 1                  | `ver(1) type(3) cntsz(1) spare(3)`, bit 7 down to bit 0       |
-| `src`      | 1                  | originator, 1–254                                             |
-| `dst`      | 1                  | 1–254, or 255 for broadcast                                   |
-| `counter`  | 3 or 4             | big-endian, `cntsz` says which                                |
-| ciphertext | 0–48               | the body, same length as the plaintext (CCM is a stream mode) |
-| `mic`      | 4                  | AES-128-CCM tag                                               |
-| route      | 2 per recorded hop | `address(1) rssi(1)`, 0–4 entries                             |
-| trailer    | 1                  | `budget(4) hops(4)`, high nibble first                        |
+| Field     | Bytes              | Notes                                                       |
+| --------- | ------------------ | ----------------------------------------------------------- |
+| `from`    | 1                  | the node that transmitted **this copy**, 1–254              |
+| `seal`    | 3 or 4             | a counter `from` never used for any other transmission      |
+| `ctrl`    | 1                  | `ver(1) type(3) spare(4)`, bit 7 down to bit 0               |
+| `src`     | 1                  | originator, 1–254                                           |
+| `dst`     | 1                  | 1–254, or 255 for broadcast                                 |
+| `counter` | 3 or 4             | the message, the same in every copy and every retry         |
+| body      | 0–48               |                                                             |
+| route     | 2 per recorded hop | `address(1) rssi(1)`, 0–4 entries                           |
+| trailer   | 1                  | `budget(4) hops(4)`, high nibble first                      |
+| `mic`     | 4                  | AES-128-CCM tag over everything before it                   |
 
-Minimum overhead is **11 bytes** (6-byte header + 4-byte tag + 1-byte trailer),
-plus 2 for every recorded hop. `LORA_MAX_FRAME_SIZE` is **68**.
+Everything from `ctrl` to the trailer is one CCM plaintext, so the ciphertext
+has the same length. Only `from` and `seal` can be read without the key.
+
+Minimum overhead is **15 bytes** (4-byte seal + 6-byte header + 1-byte
+trailer + 4-byte tag), plus 2 for every recorded hop. `LORA_MAX_FRAME_SIZE` is
+**73**.
+
+### Counters
+
+`seal` and `counter` share one encoding: big-endian, **3 bytes while the value
+fits in 23 bits, 4 bytes with bit 7 of the first byte set once it does not**.
+The remaining 31 bits are the value. A node draws both from one sequence, so
+the widening happens once, for good, after about 8.4 million transmissions.
 
 ### `ctrl`
 
-| Bit | Name    | Meaning                                |
-| --- | ------- | -------------------------------------- |
-| 7   | `ver`   | protocol version, currently always 0   |
-| 6–4 | `type`  | frame type, see below                  |
-| 3   | `cntsz` | 0 = 3-byte counter, 1 = 4-byte counter |
-| 2–0 | spare   | transmitted as 0                       |
+| Bit | Name   | Meaning                                  |
+| --- | ------ | ---------------------------------------- |
+| 7   | `ver`  | protocol version, **1**                  |
+| 6–4 | `type` | frame type, see below                    |
+| 3–0 | spare  | transmitted as 0                         |
 
-`ver` is decoded into `LoraFrame.version` but **no receiver checks it yet** — a
-version-1 frame would be parsed as if it were version 0. Anything defining a
-version 1 has to add that test first.
+A frame whose `ver` is not 1 is refused even when its tag verifies. Version 0
+was the previous envelope, with the header in clear; its frames do not decode
+here at all, and the reverse is equally true.
 
 ### Frame types
 
 | Value | Name       | Body                      | Answered with                      |
 | ----- | ---------- | ------------------------- | ---------------------------------- |
-| 0     | `HELLO`    | empty                     | nothing                            |
+| 0     | `HELLO`    | flags [+ position]        | nothing                            |
 | 1     | `DATA`     | SET-shaped                | nothing                            |
 | 2     | `DATA_ACK` | SET-shaped                | `ACK` (unicast only)               |
 | 3     | `ACK`      | counter echo + status     | —                                  |
@@ -72,58 +84,67 @@ AES-128-CCM with a 13-byte nonce and a 4-byte tag, from mbedTLS. One primitive
 gives confidentiality and authenticity in a single pass — there is no second key
 and no separate CMAC.
 
-The **nonce** is built from header fields, never transmitted separately:
+The **nonce** is built from the two clear fields, never transmitted separately:
 
 ```
-nonce[0]   = ctrl
-nonce[1]   = src
-nonce[2]   = dst
-nonce[3:7] = counter, zero-extended to 32 bit, big-endian
-nonce[7:13]= 0
+nonce[0]    = 0x01
+nonce[1]    = from
+nonce[2:6]  = seal, the full 32-bit value, big-endian
+nonce[6:13] = 0
 ```
 
-The counter is always zero-extended from 32 bits, so the permanent widening from
-a 3- to a 4-byte transmitted counter (past `0xFFFFFF`) can never produce a nonce
-that was already used.
+**Every transmission is sealed afresh by whoever makes it** — the origin, each
+retry, each relay — under its own address and a counter it has never used. That
+is what lets a relay record its passage and a retry raise the budget: both
+change the plaintext, and encrypting two plaintexts under one nonce is the one
+misuse CCM does not survive. Nonces stay unique across the mesh because
+addresses are, and within a node because `seal` never repeats (see the counter
+reservation below).
 
-The **additional authenticated data** is the header exactly as transmitted — all
-6 or 7 bytes, passed to mbedTLS without a copy and with nothing masked out. That
-works only because everything a relay rewrites lives in the trailer, past the
-tag.
+The first byte keeps this format's nonces apart from the previous one's, which
+began with a `ctrl` byte whose three low bits were always clear. A mesh that
+keeps its key and its counters across the upgrade therefore never meets a nonce
+twice. The seal is always put in the nonce as the full 32-bit value, so its
+widening cannot collide with a nonce already used either.
 
-The price is that **the trailer is unauthenticated**. A route is metadata of the
-same standing as an RSSI reading, not evidence: anyone replaying a captured
-frame can claim `budget 15, hops 0`. `LORA_TTL_MAX_ACCEPT` is what actually caps
-amplification, not the budget.
+The **additional authenticated data** is `from` and `seal` exactly as
+transmitted. The nonce already holds their values; binding their encoding too
+leaves no second spelling of a counter that would still verify.
 
-A relay cannot instead sign its passage inside the ciphertext. It holds the group
-key and could re-encrypt, but the nonce comes from the origin's `src` and
-`counter`, which it must not change, and re-encrypting under a spent nonce is
-the one misuse CCM does not survive.
+So **nothing on the air is unauthenticated**: the route and the budget are
+inside the ciphertext, and a relay can only change them by sealing a copy of
+its own. A key holder can still claim anything, which is why
+`LORA_TTL_MAX_ACCEPT`, not the budget, is what caps amplification.
 
-## The trailer, read from the end
+What stays readable without the key is which node transmitted, how often, how
+long its frames are and how strongly they arrive. A frame's type, its source
+and destination, the message counter and the path are not.
 
-The trailer is self-describing, which is why there is no length field and no
+## The plaintext, read from both ends
+
+The plaintext is self-describing, which is why there is no length field and no
 flag bit:
 
-1. the **last** byte gives `budget` (high nibble) and `hops` (low nibble);
-2. the number of stored route entries is `min(hops, 4)`, so the route occupies
+1. `ctrl`, `src` and `dst` are the first three bytes, and the counter's first
+   byte says whether it takes 3 or 4 more;
+2. the **last** byte gives `budget` (high nibble) and `hops` (low nibble);
+3. the number of stored route entries is `min(hops, 4)`, so the route occupies
    `2 × min(hops, 4)` bytes immediately before it;
-3. everything before that is header, ciphertext and tag — and the header's first
-   byte says whether it is 6 or 7 bytes long, which yields the body length.
+4. the body is whatever lies between.
 
 A frame that outruns the 4-entry table keeps counting hops and stops recording
-them, so `hops > 4` is how a truncated route announces itself.
+them, so `hops > 4` is how a truncated route announces itself — and `from` is
+then the only record of the relay that transmitted the copy heard.
 
 A route entry is `address(1) rssi(1)`, the dBm at which **that** relay heard the
 frame (clamped to int8), so one reception carries the margin of every hop it
 crossed. The last hop is deliberately absent — the receiver measures that one
-itself.
+itself, from `from`.
 
 **The budget counts up, not down.** A frame travels while `hops < budget`, and a
 `budget` of 0 means "do not relay". That, not the broadcast address, is the
-direct-versus-flood switch. Escalating a retry from 0 to 2 hops rewrites one
-trailer byte and reuses the ciphertext byte for byte.
+direct-versus-flood switch. Escalating a retry from 0 to 2 hops changes the
+plaintext, so the retry is sealed again under a new seal, keeping its counter.
 
 ## Bodies
 
@@ -198,8 +219,8 @@ parameter read, or the console output for `0x04`.
 A console reply is capped at `LORA_CONSOLE_MAX_REPLY` = **43** bytes, and
 `flags` carries one bit, `LORA_CONSOLE_TRUNCATED` = `0x01`, saying it was cut
 there. What a node prints is unbounded — the parameter dump alone is one line
-per slot — while such a frame already costs ~350 ms on the default profile and
-1.2 s at SF12, so the answer is truncated to one frame rather than paged over a
+per slot — while such a frame already costs 196 ms on the default profile and
+1.4 s at SF12, so the answer is truncated to one frame rather than paged over a
 channel with a duty cycle. The
 bit exists because a reply cut at the frame boundary and a command that simply
 had little to say are otherwise the same bytes, and reading the first as the
@@ -246,7 +267,8 @@ the Bluetooth device it was told to watch sits at `O`, immediately after the fix
 quality, and the window becomes `DG6 DH9`. That placement is the whole reason it
 is at 14 and not somewhere more convenient — a signal strength in a slot that
 does not touch the fix would need a frame of its own, and the two readings only
-mean something together. It costs 2 bytes and 21 ms of airtime a frame.
+mean something together. It costs 2 bytes a frame and, at SF9, no airtime at
+all: 33 and 35 bytes fall in the same block of symbols.
 
 **The broadcast is held while the fix is not current.** The coordinates keep
 their last good value for ever once the receiver stops solving — `publishFix()`
@@ -270,85 +292,204 @@ and its `rx` line carries the whole body in hex for the host to decode.
 
 ### HELLO
 
-Empty body. It proves a direct link and nothing else, which is why it is never
-relayed (`budget` 0) and why its cadence is measured in hours: the default `DI`
-is **10800 s (3 h)**. One is also sent as soon as the task starts, so a node that
-has just booted does not stay out of its neighbours' peer tables for a whole
-period.
+```
+flags(1) [latitude(4) longitude(4)]
+```
+
+| Bit | Meaning                                                   |
+| --- | --------------------------------------------------------- |
+| 0   | a position follows                                        |
+| 1   | it is a current GPS fix; clear when placed by hand (`al`) |
+| 2   | this node watches for drones (built with `THR_DRONE_ID`)  |
+| 3   | this node relays what it hears (role `DA1`)               |
+| 4–7 | reserved, sent as 0                                       |
+
+`latitude` and `longitude` are **int32, little-endian, degrees × 1e6** — the
+scale of the fix in `G`…`J`, so a tracker announces its position exactly as
+`taskGPS` stored it. The body is 1 byte without a position and 9 with one.
+
+Its cadence is measured in hours — the default `DI` is **10800 s (3 h)** —
+because a peer table costs airtime to maintain. One is also sent as soon as the
+task starts, so a node that has just booted does not stay out of its
+neighbours' peer tables for a whole period.
+
+It travels with the default budget `DB`, like a report, so a node the bridge
+does not hear directly still gets its position to the host; a bridge's
+[receipt](#receipts-a-frame-the-bridge-has-is-not-repeated) keeps it from being
+repeated when the bridge did hear it. A bridge's own HELLO keeps budget 0:
+nobody receipts it, so every repeater around would carry it for nothing.
+
+It also says where the node is, because a drone watcher on a fence has no GPS
+and the host still has to place it — and to rebuild the `TRACK` coordinates it
+relays, which travel modulo a window and are put back against the position of
+the post that sent them. The position is, in this order:
+
+1. a current GPS fix, with bit 1 set — only while `gpsHasCurrentFix()` says so,
+   the test that also holds the telemetry broadcast, since the coordinates in
+   `G`…`J` keep their last value for ever once the receiver stops solving;
+2. a position placed by hand with `al46.5191,6.5668`, kept in NVS as `mesh.lat`
+   and `mesh.lon`, with bit 1 clear;
+3. none — the flags alone.
+
+Bit 3 is the role, because nothing else on the air says it: a repeater only
+shows up in a route once it has carried somebody's frame, and a host drawing
+the network has to know which nodes extend it before any of them has. Older
+firmware sends it clear, so a node that relays but has not been reflashed reads
+as an endpoint until it is.
+
+```
+05 3cd3c502 90336400
+│  │        └ longitude 6566800 = 6.566800
+│  └ latitude 46519100 = 46.519100
+└ position, placed by hand, drone watcher
+```
+
+**An empty body is what older firmware sends, and it stays legal.** No receiver
+reads a HELLO body — the frame updates the peer table and, off a bridge, prints
+one line — so an older node treats a 9-byte HELLO exactly like an empty one, and
+a bridge of any version prints the decrypted body as hex on its `rx` line like
+every other body. Only the host decodes it (see the decoder below).
+
+A node can also be asked where it stands: `ar42:al` brings back the line `al` prints —
+`Location: 46.519100,6.566800 (fixed)`, `(gps)` for a live fix, or
+`Location: not set` — which is at most 40 characters and so fits the 43 bytes of
+one console reply. `ai` prints the same line after `Role:`, which is how a host
+places the bridge itself.
 
 ## Worked example
 
-A `CMD` from node 42 to node 7, counter 1234, setting `DA` (index 104) to 1,
-with a budget of 2 hops, under the key `000102…0f`:
+A `CMD` from node 42 to node 7, message 1234, setting `DA` (index 104) to 1,
+with a budget of 2 hops, under the key `000102…0f`. Its first transmission is
+sealed with the counter it was just given:
 
 ```
-ctrl     0x40           version 0, type 4 (CMD), cntsz 0
-src      0x2A           42
-dst      0x07           7
-counter  0x0004D2       1234
-nonce    402a07000004d2000000000000
-aad      402a070004d2   the header, all 6 bytes
-plain    01 68 01       SET_INT8, first = 104 (DA), value 1
-frame    402a070004d2 8b1fa0 b7e01cbd 20
-                       └ ct  └ mic    └ budget 2, hops 0
+from     0x2A           42
+seal     0x0004D2       1234
+nonce    012a000004d200000000000000
+aad      2a0004d2       from and seal, as transmitted
+plain    c0 2a 07 0004d2 016801 20
+         │  │  │  │      │      └ budget 2, hops 0
+         │  │  │  │      └ SET_INT8, first = 104 (DA), value 1
+         │  │  │  └ counter 1234
+         │  │  └ dst 7
+         │  └ src 42
+         └ ctrl: version 1, type 4 (CMD)
+frame    2a0004d2 3bfee7348323dd0df668 7b3962a4
+         │        └ ciphertext          └ mic
+         └ from, seal
 ```
 
-14 bytes on the air. After node 9 relays it, having heard it at −95 dBm
-(`0xA1`):
+18 bytes on the air. Node 9 relays it, having heard it at −95 dBm (`0xA1`), and
+seals its copy with its own counter, 5000:
 
 ```
-frame    402a070004d2 8b1fa0 b7e01cbd 09a1 21
-                                      │    └ budget 2, hops 1
-                                      └ route: node 9 at −95 dBm
+from     0x09           9
+seal     0x001388       5000
+nonce    01090000138800000000000000
+plain    c0 2a 07 0004d2 016801 09a1 21
+                                │    └ budget 2, hops 1
+                                └ route: node 9 at −95 dBm
+frame    09001388 bfc94163e8b320b1771a457c 3f3a5348
 ```
 
-16 bytes. The header and tag are untouched — only the trailer grew.
+20 bytes. The two copies share no byte on the air, yet both name message 1234
+from node 42, which is what a receiver deduplicates on. Both frames are checked
+byte for byte by `test/test_lora_frame`.
 
 ## Sending, relaying, retrying
 
-**Duplicate suppression and replay defence are the same test.** Each peer entry
-holds `lastCounter` plus a 32-bit IPsec-style sliding window, because flooding
-delivers the same frame by several paths and out of order — a plain
-"greater than" test would drop legitimate frames. A frame that is not _fresh_ is
-neither acted on nor relayed. A peer heard for the first time is accepted at
-face value; that cold entry is the one hole in the design, and it closes with
-the first frame recorded.
+**Duplicate suppression and replay defence are the same test**, and it is keyed
+on the message — `src` and `counter` — never on the seal, which differs in every
+copy. Each peer entry holds `lastCounter` plus a 32-bit IPsec-style sliding
+window, because flooding delivers the same frame by several paths and out of
+order — a plain "greater than" test would drop legitimate frames. A frame that
+is not _fresh_ is neither acted on nor relayed. A peer heard for the first time
+is accepted at face value; that cold entry is the one hole in the design, and it
+closes with the first frame recorded.
+
+A node's messages are not numbered consecutively: its retries and the frames it
+relays draw from the same sequence. The window is 32 values wide, so two
+messages from one node that arrive out of order are both accepted only while
+fewer than 32 of its transmissions lie between them.
 
 **A relay verifies the MIC before forwarding**, so only authentic group traffic
 is ever amplified. It then requires all of: the frame is fresh, this node's role
 is repeater (`DA` = 1), `remaining = budget − hops` is above 0 and not above
-`LORA_TTL_MAX_ACCEPT` (3), and the frame is not addressed to this node. It waits
-a random 0…3× airtime and **cancels its copy if it hears two other nodes relay
-the same frame**. Skipping any of these turns a flood into an N² storm. A bridge
-(`DA` = 2) does not relay.
+`LORA_TTL_MAX_ACCEPT` (3), and the frame is not addressed to this node. A reply
+(`ACK`, `NACK`, `RESP`) must also answer a message this node relayed itself. It
+records itself in the route, **waits for the frame's answer**, then a random
+0…3× airtime, and **cancels its copy if it hears that answer or two other nodes
+relay the same message**. Skipping any of these turns a flood into an N² storm.
+A copy that does go out is sealed under the relay's own address and a counter it
+draws at that moment, so a cancelled copy costs no counter. A bridge (`DA` = 2)
+does not relay.
 
-**A retry reuses the same counter.** Incrementing it would make the receiver
+### Receipts: a frame the bridge has is not repeated
+
+A bridge answers every `HELLO` and `DATA` meant for the host — sent to everyone
+or to the bridge — that could still travel (`budget > hops`) with a **receipt**,
+before it prints anything. A receipt is an ordinary `ACK`: addressed to the
+source, echoing its counter, status 0, budget the `hops` the copy took, so a
+receipt for a direct reception is heard only around the bridge.
+
+A repeater holding a copy waits for the answer the frame can get before its
+jitter: `LORA_REPLY_TURNAROUND_MS` (100) plus the answer's airtime — a short
+`ACK`, or a whole frame for the `RESP` to a read. That is about 0.2 s at the
+defaults. Nothing is waited for a reply, or for a broadcast command, which
+nobody answers. Hearing any copy of an answer — `ACK`, `NACK` or `RESP`
+addressed to the source and echoing the counter — cancels the copy. So only a
+repeater that did not hear the bridge carries the frame on, and a repeater out
+of the bridge's range relays exactly as before: nothing is lost.
+
+**Replies retrace their request.** Every reply begins with the low 24 bits of
+the counter it answers, so a repeater carries one on only if it relayed that
+message itself, from a memory of its last 16 relays. No field is added to the
+wire, and a node without the rule floods replies up to their budget as before,
+so both coexist on one mesh.
+
+The bridge keeps a fifth of its airtime back and sends no receipt below it.
+Without receipts the mesh relays as if no bridge were in range, so running short
+degrades into repetition, never into loss. A receipt is ~93 ms at the defaults:
+a drone watcher reporting every 5 s costs the bridge about 19 % of its hour,
+where two relayed copies of each report cost every repeater about 37 %.
+
+The rules live in `src/lora/loraRelayPolicy.h`, tested on the host by
+`test/test_lora_relay`.
+
+**A retry keeps the message counter.** Incrementing it would make the receiver
 execute the command twice, because it cannot tell a lost ACK from a second
 command. The receiver remembers the last counter it answered per peer, so a
 duplicate is acknowledged again without being applied again — while a duplicate
-GET is simply answered again, since a read changes nothing.
+GET is simply answered again, since a read changes nothing. Each attempt is
+sealed again under a new seal, because the budget it carries has changed.
 
 The escalation ladder for a frame that expects an ACK (`CMD`, `DATA_ACK`, unicast
-only — broadcasts are never acknowledged):
+only — broadcasts are never acknowledged by the nodes they reach). `wait` is
+what each relay spends waiting for the answer on the way out, turnaround plus a
+full frame's airtime. The top rung is 3 hops because that is the most a relay
+accepts — at 4 the first relay refused it:
 
 | Attempt | Budget     | Timeout                         |
 | ------- | ---------- | ------------------------------- |
-| 0, 1    | 0 (direct) | `2 × (2h+1) × airtime + 200 ms` |
-| 2, 3    | 2 hops     | idem                            |
-| 4       | 4 hops     | idem                            |
+| 0       | 0 (direct) | `2 × (2h+1) × airtime + h × wait + 200 ms` |
+| 1       | 2 hops     | idem                            |
+| 2       | 3 hops     | idem                            |
 
-After five attempts the sender gives up and reports `noack`. If the destination
-is not in the peer table, or was last heard over 30 minutes ago, the ladder
-starts at attempt 2 and skips the two direct tries. Only one acknowledged
-request is in flight at a time.
+After three attempts the sender gives up and reports `noack`. If the destination
+is not in the peer table, or was last heard directly over 30 minutes ago, the ladder
+starts at attempt 1 and skips the direct try. Only one acknowledged request is
+in flight at a time.
 
-**The counter is both the CCM nonce and the anti-replay sequence, so it must
-never go backwards.** `mesh.counter` in NVS therefore holds a _reservation_: a
-promise that nothing above it was ever used. A node claims
-`LORA_COUNTER_RESERVATION` (100) at a time and restarts at the bound, so a crash
-mid-block skips forward over counters it may or may not have spent. That is the
-flash-wear knob — one NVS write per 100 frames, paid for by burning 100 counters
-on every boot.
+**One counter sequence feeds both the seals and the messages, and it must never
+go backwards**: a seal used twice is a nonce used twice. A message's first
+transmission is sealed with the counter it was just given; every later
+transmission of this node — a retry, a relay — draws a new one. `mesh.counter`
+in NVS therefore holds a _reservation_: a promise that nothing above it was ever
+used. A node claims `LORA_COUNTER_RESERVATION` (100) at a time and restarts at
+the bound, so a crash mid-block skips forward over counters it may or may not
+have spent. That is the flash-wear knob — one NVS write per 100 transmissions,
+paid for by burning 100 counters on every boot. A busy repeater spends it
+faster than before, since each copy it relays now costs one.
 
 ## Radio and regulatory limits
 
@@ -399,8 +540,8 @@ time within a one-hour observation window, so the governor is a token bucket:
 `airtimeBudgetMillis` holds the transmit time still available, it is credited
 back at 1/N of real time, and each transmission spends what it costs. At the
 default 10 % that is 360 s per hour, which the node may burst through — roughly
-3157 frames of 114 ms at SF9/250 kHz — before it has to wait; on a 1 % carrier it
-is 36 s, roughly 158 frames of 227 ms at SF9/125 kHz. A fixed post-transmission
+2903 frames of 124 ms at SF9/250 kHz — before it has to wait; on a 1 % carrier it
+is 36 s, roughly 145 frames of 247 ms at SF9/125 kHz. A fixed post-transmission
 silence would be far stricter than the regulation and would make the retry
 ladder unusable. RadioLib enforces none of this outside LoRaWAN.
 
@@ -430,11 +571,11 @@ airtime an hour, and the radio's own 22 dBm rather than the 14 dBm the rest of
 the band permits. That also fixes the bandwidth: the regulation allows P as
 25 kHz channels or as one wideband channel, and 869.400–869.650 is exactly
 250 kHz, so the channel fills the sub-band edge to edge. SF9 is then what the
-budget can afford without spending it: a 29-byte telemetry frame costs 114 ms, so
-the hour pays for over three thousand of them.
+budget can afford without spending it: a 33-byte telemetry frame costs 124 ms, so
+the hour pays for nearly three thousand of them.
 
 **Airtime, not link budget, is what this mesh runs out of first.** For the
-31-byte frame that carries a fix and a beacon RSSI, at 124 ms:
+35-byte frame that carries a fix and a beacon RSSI, at 124 ms:
 
 | `gt` | Frames per hour | Airtime | Against the 360 s of sub-band P | On 868.4 MHz, against 36 s |
 | ---- | --------------- | ------- | ------------------------------- | -------------------------- |
@@ -487,24 +628,24 @@ rate optimisation is on and the frame is exactly half of SF12 at 125 kHz:
 
 | Frame                       | Bytes | **SF9 / 250 kHz** | SF9 / 125 kHz | SF12 / 250 kHz |
 | --------------------------- | ----- | ----------------- | ------------- | -------------- |
-| HELLO                       | 11    | 73 ms             | 145 ms        | 578 ms         |
-| the `CMD` of the example    | 14    | 83 ms             | 165 ms        | 578 ms         |
-| GPS telemetry, 8 parameters | 29    | 114 ms            | 227 ms        | 824 ms         |
-| the same plus a beacon RSSI | 31    | 124 ms            | 247 ms        | 906 ms         |
-| the largest frame           | 68    | 206 ms            | 411 ms        | 1479 ms        |
+| HELLO, no position          | 16    | 83 ms             | 165 ms        | 660 ms         |
+| HELLO with a position       | 24    | 103 ms            | 206 ms        | 742 ms         |
+| the `CMD` of the example    | 18    | 93 ms             | 186 ms        | 660 ms         |
+| GPS telemetry, 8 parameters | 33    | 124 ms            | 247 ms        | 906 ms         |
+| the same plus a beacon RSSI | 35    | 124 ms            | 247 ms        | 906 ms         |
+| the largest frame           | 73    | 216 ms            | 432 ms        | 1561 ms        |
 
-Against the budget each carrier grants, for that 29-byte frame:
+Against the budget each carrier grants, for that 33-byte frame:
 
 |                         | **SF9 / 250 kHz, 10 %** | SF9 / 125 kHz, 1 % | SF12 / 250 kHz, 10 % |
 | ----------------------- | ----------------------- | ------------------ | -------------------- |
 | Transmit time per hour  | 360 s                   | 36 s               | 360 s                |
-| 29-byte frames per hour | 3157                    | 158                | 436                  |
+| 33-byte frames per hour | 2903                    | 145                | 397                  |
 
 Latency follows airtime the same way. `ladderTimeout` is
-`2 × (2 × hops + 1) × airtime + 200 ms` over a 0/2/4-hop ladder, so that frame
-waits 0.43 s on the direct attempt and 4.0 s for the whole escalation, against
-0.65 s / 7.4 s on 868.4 and 1.85 s / 25.3 s at SF12. Relay jitter (0…3× airtime)
-is 0…0.34 s at the default and 0…2.5 s at SF12.
+`2 × (2 × hops + 1) × airtime + hops × wait + 200 ms` over a 0/2/3-hop ladder,
+where `wait` is the relay's wait for an answer. Relay jitter (0…3× airtime) is
+0…0.37 s at the default and 0…2.7 s at SF12, after that wait.
 
 #### What each one buys
 
@@ -536,59 +677,89 @@ bytes with the group key:
 ```js
 import { createDecipheriv } from "node:crypto";
 
-export function decodeMeshFrame(frame, key) {
-  const trailer = frame[frame.length - 1];
-  const budget = trailer >> 4;
-  const hops = trailer & 0x0f;
-  const stored = Math.min(hops, 4);
-  const payloadLength = frame.length - (1 + stored * 2);
-
-  const route = [];
-  for (let i = 0; i < stored; i++) {
-    const at = payloadLength + i * 2;
-    route.push({ address: frame[at], rssi: frame.readInt8(at + 1) });
+function readCounter(bytes, at) {
+  // bit 7 of the first byte set: 4 bytes holding 31 bits, otherwise 3 bytes
+  if (bytes[at] & 0x80) {
+    return { value: bytes.readUInt32BE(at) & 0x7fffffff, size: 4 };
   }
+  return { value: bytes.readUIntBE(at, 3), size: 3 };
+}
 
-  const ctrl = frame[0];
-  const headerSize = ctrl & 0x08 ? 7 : 6;
-  const header = frame.subarray(0, headerSize);
-  const counter =
-    ctrl & 0x08 ? header.readUInt32BE(3) : header.readUIntBE(3, 3);
-
-  const ciphertext = frame.subarray(headerSize, payloadLength - 4);
-  const mic = frame.subarray(payloadLength - 4, payloadLength);
+export function decodeMeshFrame(frame, key) {
+  const seal = readCounter(frame, 1);
+  const clear = frame.subarray(0, 1 + seal.size);
+  const ciphertext = frame.subarray(clear.length, frame.length - 4);
+  const mic = frame.subarray(frame.length - 4);
 
   const nonce = Buffer.alloc(13);
-  nonce[0] = ctrl;
-  nonce[1] = header[1];
-  nonce[2] = header[2];
-  nonce.writeUInt32BE(counter, 3);
+  nonce[0] = 0x01;
+  nonce[1] = frame[0];
+  nonce.writeUInt32BE(seal.value, 2);
 
   const decipher = createDecipheriv("aes-128-ccm", key, nonce, {
     authTagLength: 4,
   });
-  decipher.setAAD(header, { plaintextLength: ciphertext.length });
+  decipher.setAAD(clear, { plaintextLength: ciphertext.length });
   decipher.setAuthTag(mic);
-  const body = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  const plain = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+
+  const ctrl = plain[0];
+  if (ctrl >> 7 !== 1) throw new Error(`frame version ${ctrl >> 7}`);
+  const counter = readCounter(plain, 3);
+  const trailer = plain[plain.length - 1];
+  const hops = trailer & 0x0f;
+  const stored = Math.min(hops, 4);
+  const routeStart = plain.length - 1 - stored * 2;
+
+  const route = [];
+  for (let i = 0; i < stored; i++) {
+    const at = routeStart + i * 2;
+    route.push({ address: plain[at], rssi: plain.readInt8(at + 1) });
+  }
 
   return {
-    version: ctrl >> 7,
+    from: frame[0],
+    seal: seal.value,
     type: (ctrl >> 4) & 0x07,
-    source: header[1],
-    destination: header[2],
-    counter,
-    budget,
+    source: plain[1],
+    destination: plain[2],
+    counter: counter.value,
+    budget: trailer >> 4,
     hops,
     route,
-    body,
+    body: plain.subarray(3 + counter.size, routeStart),
   };
 }
 ```
 
 `decipher.final()` throws when the tag does not verify, which is exactly the test
-the firmware applies before it acts on — or relays — anything.
+the firmware applies before it acts on — or relays — anything. Without the key,
+`from` and `seal` are all a capture can say about a frame.
 
 The other bridge events are listed in
 [loraBridge.h](../src/lora/loraBridge.h) and in the project `CLAUDE.md`; `rx`
 already carries the decrypted body as hex, so a host normally only needs the
 decoder above for frames captured elsewhere or for a node without the key.
+
+A `HELLO` body (type 0), whichever of the two it came from:
+
+```js
+export function decodeHelloBody(body) {
+  // empty: a node on firmware older than the position, which says nothing
+  if (body.length === 0) return null;
+  const flags = body[0];
+  const hello = {
+    droneWatcher: (flags & 0x04) !== 0,
+    repeater: (flags & 0x08) !== 0,
+    position: null,
+  };
+  if (flags & 0x01 && body.length >= 9) {
+    hello.position = {
+      latitude: body.readInt32LE(1) / 1e6,
+      longitude: body.readInt32LE(5) / 1e6,
+      source: flags & 0x02 ? "gps" : "fixed",
+    };
+  }
+  return hello;
+}
+```

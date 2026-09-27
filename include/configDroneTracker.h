@@ -32,7 +32,41 @@
    another node, and the (d) menu is a console command like any other. So
    `ar42:dl` lists what node 42 can see from where it is standing, which is
    what turns one drone watcher into several. */
+
+/* GPS_RX comes from the env, as on the mesh node: with a receiver's TX on that
+   pin the board knows where it stands, so its HELLO places it - and the host
+   rebuilds the TRACK coordinates it relays against a fix rather than against a
+   spot somebody typed. Without a receiver the probe finds nothing and (al)
+   still places the post by hand.
+
+   The fix cannot sit where the mesh node keeps it: 6 to 13 are the drone
+   slots K, L and M here. Nothing between 0 and 103 offers eight adjacent free
+   slots, so the block goes above the mesh one, 114 to 121 (DK to DR), and
+   MAX_PARAM grows to cover it - declared before the mesh header, which accepts
+   a larger one. Growing it only adds NVS keys; no stored value changes
+   meaning. */
+#ifdef GPS_RX
+#define THR_GPS 1
+#define MAX_PARAM 122
+#endif
+
 #include "./configLoraMeshParams.h"
+
+#ifdef THR_GPS
+#define PARAM_GPS_LATITUDE 114     // DK and DL
+#define PARAM_GPS_LONGITUDE 116    // DM and DN
+#define PARAM_GPS_ALTITUDE 118     // DO - meters
+#define PARAM_GPS_SATELLITES 119   // DP
+#define PARAM_GPS_HDOP 120         // DQ - HDOP * 100
+#define PARAM_GPS_FIX_QUALITY 121  // DR - GGA field 6, 0 = no fix
+
+/* What (gt) would put on the air. Off unless somebody sets it: the HELLO
+   already carries the fix, and a post does not move. */
+#define PARAM_TELEMETRY_FIRST PARAM_GPS_LATITUDE
+#define PARAM_TELEMETRY_LAST PARAM_GPS_FIX_QUALITY
+#define PARAM_TELEMETRY_BLOCK_SIZE \
+  (PARAM_TELEMETRY_LAST - PARAM_TELEMETRY_FIRST + 1)
+#endif
 
 extern SemaphoreHandle_t xSemaphoreWire;
 

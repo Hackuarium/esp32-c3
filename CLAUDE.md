@@ -12,25 +12,27 @@ PlatformIO is not on `PATH`. Use the full path:
     ~/.platformio/penv/bin/pio run -e <env>
     ~/.platformio/penv/bin/pio run -e <env> -t upload
 
-`default_envs = lineS3lora`, so a bare `pio run -t upload` targets the pixels
-board that is also a mesh node.
+`default_envs = droneTracker`, so a bare `pio run -t upload` targets the drone
+watcher, which flashes over its built-in USB-JTAG.
 
 **Always build before claiming a firmware change works.** A build is ~12 s once
 the toolchain is warm.
 
-There is one host test, and it covers the drone tracker's frame parsing:
+The host tests cover the drone tracker's frame parsing and records, the test
+transmitter's frames, and the mesh HELLO body with the location line a host
+parses:
 
     ~/.platformio/penv/bin/pio test -e native
 
 `[env:native]` empties the inherited `framework` and `lib_deps` - a host builds
 neither Arduino nor two dozen board libraries - and `build_src_filter` picks out
-the single source file that needs no Arduino. See § The drone watcher.
+the source files that need no Arduino. See § The drone watcher.
 
 ### Devices
 
 | Env | Board | Address | What it is |
 |---|---|---|---|
-| `square` | `seeed_xiao_esp32s3` | **192.168.1.200** | The 16×16 energy wall (default env) |
+| `square` | `seeed_xiao_esp32s3` | **192.168.1.200** | The 16×16 energy wall |
 
 The square is flashed **over the air** — it is on a wall. `upload_port` is set to
 its IP in `platformio.ini`, and an IP upload port makes PlatformIO pick `espota`
@@ -174,16 +176,19 @@ to parameters only by name, so each config *could* pick its own slots — and th
 is exactly the trap: the block would then collide with `PARAM_OUT2_COLOR1` on
 the handrail, `PARAM_GATE1_IN` on the pixels board, and something else again on
 the next one. 104–113 is the one range free in every config here, which is why
-`MAX_PARAM` is 114 wherever the mesh is enabled. A board that sets a smaller
+`MAX_PARAM` is at least 114 wherever the mesh is enabled. A board that sets a smaller
 `MAX_PARAM` after including the header fails to compile rather than writing past
 `parameters[]`.
 
 The **GPS block does not travel as easily**: `configLoraMesh.h` puts the fix at
 6–13, which on the pixels board is `PARAM_BLUE` through `PARAM_INT_TEMPERATURE_A`,
-and nothing below 104 there offers eight adjacent free slots. A pixels tracker
-would have to reserve its own range above the mesh block (114–121, `DK`…`DR`) —
-and a bridge decorates `lat`/`lon` from *its own* `PARAM_GPS_LATITUDE`, so it
-would then only decode fixes from boards numbered like itself.
+and nothing below 104 there offers eight adjacent free slots. The drone watcher
+hit the same wall — 10–12 are its `K`, `L`, `M` — and reserves 114–121
+(`DK`…`DR`) above the mesh block, declaring `MAX_PARAM` 122 before including
+`configLoraMeshParams.h`. A pixels tracker would do the same. The one cost: a
+bridge decorates `lat`/`lon` from *its own* `PARAM_GPS_LATITUDE`, so it only
+decorates telemetry from boards numbered like itself. The HELLO carries degrees,
+not slots, and is unaffected.
 
 `DJ` is spare on purpose. Parameters are persisted in NVS **under
 their letter** (`NVS.setInt(numberToLabel(i), …)`), so renumbering one silently
@@ -198,69 +203,114 @@ decoder for a host reading a bridge's `raw` lines — is in
 [docs/lora-mesh-frame.md](docs/lora-mesh-frame.md). The summary below is what
 matters when changing the firmware.
 
-    ctrl(1) src(1) dst(1) counter(3 or 4) | ciphertext | mic(4) | route(2h) | budget,hops(1)
-    \___________ authenticated _________/   \_ encrypted _/       \________ mutable _______/
+    from(1) seal(3|4) | E( ctrl(1) src(1) dst(1) counter(3|4) body route(2h) budget,hops(1) ) | mic(4)
+    \__ clear, AAD __/     \_______________________ encrypted _______________________/
 
-    ctrl, bit 7 to 0:     ver(1) type(3) cntsz(1) spare(3)
+    ctrl, bit 7 to 0:     ver(1)=1 type(3) spare(4)
     trailer, bit 7 to 0:  budget(4) hops(4)
+    a counter:            big-endian, 3 bytes below 2^23, 4 with bit 7 set above
 
-11 bytes of overhead, plus 2 per recorded hop. AES-128-CCM with a 4-byte tag
+15 bytes of overhead, plus 2 per recorded hop. AES-128-CCM with a 4-byte tag
 does confidentiality and authenticity in one pass; there is no second key and no
-separate CMAC.
+separate CMAC. Only `from` and `seal` are readable without the key.
 
-- **Everything mutable lives in the trailer, past the tag**, so the header is
-  authenticated in full — nothing is masked out of the nonce, and the header as
-  transmitted *is* the additional data, passed to mbedtls without a copy. A
-  relay cannot instead sign its passage inside the ciphertext: it holds the
-  group key and could re-encrypt, but the nonce comes from the origin's `src`
-  and `counter`, which it must not change, and re-encrypting under a spent nonce
-  is the one misuse CCM does not survive.
-- **The trailer is read from the end**, which is what makes it self-describing:
-  the last byte gives the hop count, the number of stored route entries follows
-  from it (`min(hops, LORA_ROUTE_MAX)`), and everything before them is header,
-  ciphertext and tag. No length field, no flag bit.
+- **Every transmission is sealed afresh by whoever makes it** — the origin, each
+  retry, each relay — under a nonce built from its own address (`from`) and a
+  counter it has never used (`seal`). That is the whole reason a relay can
+  record its passage and a retry can raise the budget: both change the
+  plaintext, and encrypting two plaintexts under one nonce is the one misuse CCM
+  does not survive. `sealAndTransmit()` in `taskLoraMesh.cpp` is the only place
+  a frame is sealed, and a message's first transmission passes the counter it was
+  just given while every later one passes `nextCounter()`. Passing anything else
+  there reuses a nonce.
+- **So a frame carries two numbers.** The seal only has to be unique. The
+  counter names the message and stays the same across every copy and every
+  retry, which is what duplicate suppression, anti-replay, relay cancellation and
+  the ACK echo key on — never the seal, which differs in every copy.
+- **Nothing on the air is unauthenticated.** The route and the budget are inside
+  the ciphertext, so a replayed or rewritten frame fails its tag. A key holder
+  can still claim anything, which is why `LORA_TTL_MAX_ACCEPT`, not the budget,
+  caps amplification. What a listener without the key still learns is who
+  transmitted each copy, how often, how long it was and how strong it arrived.
+- **The plaintext is read from both ends**, which is what makes it
+  self-describing: the counter's first byte gives the header size, the last byte
+  gives the hop count, the number of stored route entries follows from it
+  (`min(hops, LORA_ROUTE_MAX)`), and the body is whatever lies between. No length
+  field, no flag bit.
 - **A route entry is `address(1) rssi(1)`** — the dBm at which *that* relay heard
   the frame, so one reception carries the margin of every hop it crossed. The
-  last hop is deliberately absent: the receiver measures that one itself. Past
-  `LORA_ROUTE_MAX` (4) the hops keep counting and stop being recorded, so
-  `hops > 4` is how a truncated route announces itself.
-- **The route is unauthenticated by construction** — metadata of the same
-  standing as an RSSI reading, not evidence. Anyone replaying a captured frame
-  can claim `budget 15, hops 0`. `LORA_TTL_MAX_ACCEPT`, not the budget, is what
-  actually caps amplification.
-- **The counter does two jobs**: it is the CCM nonce and the anti-replay
-  sequence, so it must never go backwards. `mesh.counter` in NVS therefore holds
-  a **reservation**, not the live value — a promise that nothing above it was
-  ever used. The node claims `LORA_COUNTER_RESERVATION` (100) at a time and
-  restarts at the bound, so a crash mid-block skips forward over the counters it
-  may or may not have spent. That is the flash-wear knob: one NVS write per 100
-  frames, paid for by burning 100 counters on every boot.
-- `cntsz` flips permanently once the counter passes 2²⁴. The nonce is always
-  built from the zero-extended 32-bit value, so the widening cannot collide.
+  last hop is deliberately absent: the receiver measures that one itself, and
+  `from` says who it was. Past `LORA_ROUTE_MAX` (4) the hops keep counting and
+  stop being recorded, so `hops > 4` is how a truncated route announces itself —
+  and `from` is then the only record of the relay that transmitted the copy
+  heard.
+- **One counter sequence feeds seals and messages, and it must never go
+  backwards**: a seal used twice is a nonce used twice. `mesh.counter` in NVS
+  therefore holds a **reservation**, not the live value — a promise that nothing
+  above it was ever used. The node claims `LORA_COUNTER_RESERVATION` (100) at a
+  time and restarts at the bound, so a crash mid-block skips forward over the
+  counters it may or may not have spent. That is the flash-wear knob: one NVS
+  write per 100 transmissions, paid for by burning 100 counters on every boot.
+  A repeater now spends one per copy it relays, so a node's message counters
+  are no longer consecutive.
+- A counter widens permanently past 2²³. The nonce always holds the full 32-bit
+  seal, and its first byte (`0x01`) differs from every nonce the previous
+  version-0 envelope built, so neither the widening nor the upgrade can collide.
+- **The codec needs neither Arduino nor a radio**, so `test/test_lora_frame`
+  runs it on the host against frames sealed by Node's `aes-128-ccm` — the
+  decoder the frame document gives a host. The host needs mbedtls
+  (`brew install mbedtls`), found through pkg-config.
 - **The retry ladder is three attempts, one per rung** — direct, two relayed
-  hops, then four (`LORA_LADDER_ATTEMPTS`). It holds the node's single
+  hops, then three (`LORA_LADDER_ATTEMPTS`). The top rung is three because
+  that is the most a relay accepts: it used to be four, which the first relay
+  refused, so the last attempt was a second direct one. It holds the node's single
   confirmed-request slot for its whole length, so its duration is what every
   other addressed command waits for before being refused with `A confirmed
   request is already in flight`. The first two rungs used to be doubled, which
   ran 10.5 s for a short frame at SF9/125 kHz and 18 s for a full one — long
   enough that a host polling on a ten second timer refused nearly everything
-  else the mesh had to say. A node not heard from in the last half hour skips the direct rung
-  and starts at two hops.
+  else the mesh had to say. A node not heard *directly* in the last half hour
+  skips the direct rung and starts at two hops — one heard only through a relay
+  is not a neighbour, however recently its frames arrived.
 - **A relay verifies the MIC before forwarding**, so only authentic group
-  traffic is ever amplified. It then dedups on `(src, counter)`, waits a random
-  0…3× airtime, and cancels its copy if it hears two other nodes relay the same
-  frame. Skipping any of the three turns a flood into an N² storm.
+  traffic is ever amplified. It then dedups on `(src, counter)`, **waits for the
+  frame's answer**, then a random 0…3× airtime, and cancels its copy if it
+  hears that answer or two other nodes relay the same message. Skipping any of
+  these turns a flood into an N² storm. The relay queue holds the decoded frame,
+  not bytes: its passage is recorded with `loraFrameRecordRelay` and the copy is
+  sealed only when it leaves, so a cancelled copy costs no counter.
+- **A frame the bridge already has is not repeated** (`src/lora/loraRelayPolicy.h`,
+  tested on the host by `test/test_lora_relay`). A bridge answers every HELLO
+  and DATA meant for the host that could still travel with a **receipt** — an
+  ordinary ACK to the source echoing its counter, budget = the hops the copy
+  took — sent before it prints anything. A repeater waits
+  `LORA_REPLY_TURNAROUND_MS` (100) plus the answer's airtime before its jitter,
+  about 0.2 s at the defaults, and drops its copy when it hears the receipt, or
+  the destination's ACK/RESP for a command. Only a repeater that hears no
+  answer carries the frame on, which is the one whose copy is needed; a
+  repeater out of the bridge's range relays as before, so nothing is lost. The
+  bridge keeps a fifth of its airtime back and stops receipting below it
+  (`LORA_RECEIPT_RESERVE_DIVISOR`): a receipt is ~93 ms, so a watcher
+  reporting every 5 s costs the bridge ~19 % of its hour, against ~37 % of
+  every repeater's that two relayed copies used to cost.
+- **An answer retraces its request.** A repeater carries an ACK, NACK or RESP
+  on only if it relayed the message it answers — replies already echo that
+  counter, so this is a 16-entry memory on the node (`LoraRelayedMemory`), not a
+  field on the wire. A reply no longer floods the mesh up to its budget.
 - **The budget counts up, not down**: a frame travels while `hops < budget`, and
   a `budget` of 0 means "do not relay" — that, not the broadcast address, is the
   direct-vs-flood switch. A relay also refuses anything whose *remaining* budget
   exceeds `LORA_TTL_MAX_ACCEPT`, which caps amplification whatever the sender
   claims. An ACK or a RESP is sent back with a budget of the `hops` the request
   actually took, which is a measurement rather than the guess the countdown gave.
-- **A retry reuses the same counter.** Incrementing it would make the receiver
-  execute the command twice, because it cannot tell a lost ACK from a second
-  command.
-- Broadcasts are never acknowledged — 255 nodes answering one frame is an ACK
-  storm.
+  The ladder's timeout pays for the relays' wait on the way out.
+- **A retry keeps the message counter.** Incrementing it would make the
+  receiver execute the command twice, because it cannot tell a lost ACK from a
+  second command. It is sealed again under a new seal, since the budget it
+  carries has changed.
+- Broadcasts are never acknowledged by the nodes they reach — 255 nodes
+  answering one frame is an ACK storm. The one answer to a broadcast is a
+  bridge's receipt, and only for what is meant for the host.
 
 **A write with holes in it is one frame, not one per run.** `ax42:BB1,17,1,A1,2,3`
 is the console syntax the decoration pages always used — a letter after a comma
@@ -286,7 +336,7 @@ rather than misreading it, so this is the one protocol change that needs the
 which every node understands.
 
 `axC6` broadcasts parameters C through H; `ax42:C6` sends them to node 42 and
-waits for an ACK through the escalation ladder (direct, 2 hops, 4 hops).
+waits for an ACK through the escalation ladder (direct, 2 hops, 3 hops).
 The first parameter index travels in the body, so the receiver knows exactly
 which block it is being asked to overwrite. Values go out as int8 when they all
 fit and int16 otherwise — the opcode says which.
@@ -364,13 +414,13 @@ would silently disagree with the node it was flashed onto, and the node is the
 one holding the value. Change it with `gt` or `DF` on the running board.
 
 A minute is what the sub-band leaves room to change: the telemetry frame is
-29 bytes, **114 ms** on the air at the SF9/250 kHz default, so 60 frames an hour
-take **6.8 s of the 360 s** sub-band P allows at 10 % — under 2 % of one node's
+33 bytes, **124 ms** on the air at the SF9/250 kHz default, so 60 frames an hour
+take **7.4 s of the 360 s** sub-band P allows at 10 % — about 2 % of one node's
 airtime for its own position, with the relays, the HELLOs and every other node's
-traffic sharing the rest. `gt10` is 41 s, still an eighth of the budget, so on
+traffic sharing the rest. `gt10` is 45 s, still an eighth of the budget, so on
 the default carrier a tracker is paced by what is worth knowing rather than by
-the regulation. On 868.4 MHz the same frame costs 226 ms against a 36 s
-allowance, where a minute is **13.6 s — 38 %** and `gt20` asks for more than the
+the regulation. On 868.4 MHz the same frame costs 247 ms against a 36 s
+allowance, where a minute is **14.8 s — 41 %** and `gt20` asks for more than the
 whole hour: the governor **drops** what it cannot pay for rather than sending it
 late, so a faster cadence there does not degrade gracefully, it goes missing.
 
@@ -435,13 +485,61 @@ satellite count updates, so a receiver that is still searching still reports how
 badly it is searching. The bridge decorates the block with a decimal `hdop`
 alongside `lat`/`lon`, the only other place a raw parameter is given a meaning.
 
-The one frame a node sends on its own without being asked to carry anything is
-the HELLO, every `DI` seconds (0 = never, **10800 — three hours — by default**),
-plus one as soon as the task starts so a node that has just booted does not stay
-out of its neighbours' peer tables for a whole period. It proves a direct link
-and nothing else, which is why it is never relayed and why its cadence is
-measured in hours: a peer table costs airtime to maintain, and airtime is the
-budget everything else competes for.
+The one frame a node sends on its own without being asked is the HELLO, every
+`DI` seconds (0 = never, **10800 — three hours — by default**), plus one as soon
+as the task starts so a node that has just booted does not stay out of its
+neighbours' peer tables for a whole period. Its cadence is measured in hours
+because a peer table costs airtime to maintain, and airtime is the budget
+everything else competes for.
+
+**A HELLO travels with the default budget `DB`**, like a report, so a post out
+of the bridge's range still gets its position to the host — the bridge's
+receipt keeps it from being repeated when the bridge heard it directly. It used
+to be budget 0, which left a far post unplaced. A bridge's own HELLO stays at 0:
+nobody receipts it, so every repeater around would carry it for nothing. A
+repeated HELLO still proves only the link its last hop crossed, which is how
+the peer table already files it (under `from`).
+
+**It also says where the node is** (`src/lora/loraHello.h`), because a drone
+watcher on a fence has no GPS and the host still has to place it — and to
+rebuild the `TRACK` coordinates it relays, which are put back against the
+position of the post that sent them:
+
+    flags(1) [latitude(4) longitude(4)]
+    flags: bit 0 a position follows, bit 1 it is a current GPS fix (clear:
+           placed by hand), bit 2 built with THR_DRONE_ID, bit 3 relays
+           (DA1), bits 4-7 zero
+    latitude, longitude: int32 little-endian, degrees x 1e6, the scale of G..J
+
+A fix is announced only while `gpsHasCurrentFix()` vouches for it, then a
+position placed by hand with `al`, then none — the flags alone. **The body could
+grow because nothing reads it**: an older receiver treats a 9-byte HELLO exactly
+like an empty one, and a bridge of any version prints it as hex on its `rx`
+line, so the host decodes it and no bridge had to be reflashed. An empty body is
+what older firmware still sends. With a position the frame is 20 bytes, 93 ms
+against 73 at the defaults.
+
+`al46.5191,6.5668` — or `al46.5191, 6.5668`, as a map copies it — stores the
+position in NVS (`mesh.lat`, `mesh.lon`) and broadcasts a HELLO at once, so a
+bridge in range learns it now rather than in up to three hours; `al0` forgets
+it, and `al` alone prints the line the host parses —
+`Location: 46.519100,6.566800 (fixed)`, `(gps)` for a live fix, or
+`Location: not set`. The line reports what a HELLO would carry right now, so a
+current fix wins over the hand-placed position. An untouched NVS key reads 0, so
+0,0 is "not set", and `al0,0` forgets rather than placing a node in the Gulf of
+Guinea.
+
+`ai` prints the same line after `Role:`, then `Drone watcher: yes` on a build
+with `THR_DRONE_ID` and `Drone watcher: no` otherwise — bit 2 of the HELLO,
+said the only way a bridge can say it at connect: its own HELLO never comes
+back up its port, so without the line the host would know it about every node
+but the one it is plugged into. After that the bridge's `tx` line carries the
+body of every HELLO it sends, so a bridge with a GPS keeps the host up to date
+with its fix — one it got after the `ai` it answered on connect included.
+
+A node can also be asked where it stands: `ar<address>:al` brings back the same
+line in one frame — 40 characters at most, inside the 43 bytes a console reply
+holds.
 
 ### The three roles, and the bridge (`DA`, `src/lora/loraBridge.h`)
 
@@ -460,15 +558,15 @@ happened.
 |---|---|---|
 | `raw` | **any** packet is received, before the key is consulted | `length rssi snr frame` (whole packet as hex) |
 | `reject` | the tag did not verify | `length` — pairs with the `raw` line above it |
-| `tx` | any frame leaves | `type dst counter ack` |
-| `rx` | an authentic frame is heard, **including ones not addressed here** | `type src dst counter budget hops rssi snr fresh route body` |
+| `tx` | any frame leaves | `type dst counter ack body` — `body` the plaintext in hex, as on `rx` |
+| `rx` | an authentic frame is heard, **including ones not addressed here** | `type src dst from counter budget hops rssi snr fresh route body` |
 | `params` | a DATA or RESP block arrives | `src`, then one member per parameter *label* (`"G":-15616`), plus `lat`/`lon` when the block covers the fix, `hdop` when it covers `M` and `rssi` when it covers `O` |
 | `data` | a DATA body with an unknown opcode | `src opcode length` |
 | `cmd` | a remote SET was applied here | `src status` |
 | `exec` | a remote `ar` command is about to run here | `src cmd` |
 | `console` | an `ar` reply arrives | `src text truncated` — `text` is escaped, so a quote or a newline in a node's output cannot break the line |
 | `noack` | the escalation ladder gave up | `dst counter` |
-| `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr age` |
+| `peers` | `ap` on a bridge | `count`, then an array of `address counter rssi snr rssiAge age` — `rssi`, `snr` and `rssiAge` only for a node heard directly, `counter` only once one of its own messages arrived |
 | `ble` | every `T` seconds on a bridge built with `BLE_SCAN`, one line per device heard in that window | `addr rssi best adv type`, plus `phy` and `ext` under `CONFIG_BT_NIMBLE_EXT_ADV`, `name` when the device advertises one and `tx` when it publishes a TX Power |
 | `drone` | every `Q` seconds per transmitter, on a bridge built with `THR_DRONE_ID`, while an aircraft is being heard | `addr via uas status lat lon alt height heightRef speed vspeed heading hacc vacc rssi ch` — the unknown ones omitted rather than sent as the standard's -1000 |
 | `pilot` | the operator's position arrives, or moves more than `M` metres | `addr via uas lat lon alt source category class rssi` |
@@ -477,16 +575,22 @@ happened.
 
 Every packet therefore produces **two lines**: `raw` before anything is trusted,
 then `rx` (or `reject`). A bridge with no key, or the wrong one, still logs every
-`raw` line — a capture survives a node that cannot read what it heard. `rx`
-carries `route` as an array of `{address, rssi}` and `body` as the decrypted
-plaintext in hex, so a host can archive what it cannot yet interpret.
+`raw` line — a capture survives a node that cannot read what it heard, though
+without the key `from` and `seal` are all such a line can say. `rx` carries
+`route` as an array of `{address, rssi}` and `body` as the decrypted plaintext in
+hex, so a host can archive what it cannot yet interpret, and `from`, the node
+whose transmission was heard — the source when it came direct, otherwise the
+last relay, even one past what the route records. That is the node the `rssi`
+belongs to, and the one the peer table files it under: a `peers` entry carries a
+margin only for a node heard directly, dated by that reception (`rssiAge`)
+rather than by whatever last arrived from it through a relay (`age`).
 
 Parameter labels are uppercase and the fixed keys lowercase, so a flat object
 never collides. A command answered over MQTT or the web page is **echoed on
 Serial** (`loraBridgeCopy`), so the host sees exchanges it did not start.
 
-A bridge does not relay — `isRepeater()` is still only role 1. Set `AI1` on the
-nodes that should extend range and `AI2` on the one plugged into the machine.
+A bridge does not relay — `isRepeater()` is still only role 1. Set `DA1` on the
+nodes that should extend range and `DA2` on the one plugged into the machine.
 
 The four drone lines are the exception to "a bridge is an endpoint that only
 relays what it hears": they are what *this* board heard on 2.4 GHz, and on a
@@ -496,7 +600,55 @@ because a port that has gone quiet otherwise reads as a dead radio.
 
 Human lines and JSON lines can still interleave on a bridge: typing `ai` on its
 serial port prints the human block. A host should keep the lines that parse and
-drop the rest.
+drop the rest. It sends `ai` itself on every connect, because three lines of
+that block say what nothing else does about the bridge: `Address: N` (the
+bridge's own address appears nowhere in the JSON), the `Location:` line, and
+`Drone watcher: yes` or `no`.
+
+### The repeater (`DA1`, `[env:loraGPS]`)
+
+**A normal repeater is `loraGPS` set to `DA1`, with or without a GPS**, and its
+HELLO says so with bit 3 — the host has no other way to tell a repeater from an
+endpoint before it has carried anybody's frame. With a
+receiver's TX on D7 — Seeed's L76K for the XIAO sits exactly there, at 9600
+baud, which `detectGpsBaud` finds — every HELLO carries the current fix, flags
+`0x03`. Without one the probe finds nothing and the HELLO carries the flags
+alone, or a position placed with `al`. The HELLO is sealed like any other
+frame, so the coordinates only ever travel encrypted.
+
+On its console:
+
+    an7                    its address
+    ak<group key>          the one the bridge's ai prints
+    DA1                    relay
+    DI300                  a HELLO every five minutes
+
+`DI` defaults to three hours, right for a node proving a link and wrong for one
+whose position is the point: 300 s is twelve 93 ms frames an hour, 1.1 s of the
+360 s sub-band P allows. The HELLO being the carrier has two consequences:
+
+- **The boot HELLO leaves before any fix** — a cold start takes tens of seconds
+  under open sky and never ends indoors — so the first one with coordinates is
+  the next `DI` period. `ar7:ah` sends one on demand.
+- **A HELLO is repeated only when the bridge did not hear it**, so a post out
+  of the bridge's range is placed too, at the cost of the relays that carry
+  it. `ar7:al` asks for the position at any time.
+
+**A bridge can carry the GPS too**: `loraGPS` set to `DA2` is a bridge with a
+receiver on D7 (and no Bluetooth scan, which only `loraBridge` builds). Its
+HELLO never reaches its own port, so the host reads the same flags and fix off
+the `tx` line of each HELLO it sends, and off `ai` on connect.
+
+`gt` reports *Tracker off* on a repeater and that is fine: the telemetry window
+would repeat the same fix as relayed DATA every `DF` seconds, which a node that
+does not move has no use for.
+
+| Node | Role | Image | Notes |
+|---|---|---|---|
+| 3 | bridge | `droneTracker` | USB serial `E8:06:90:A1:02:AC`, no GPS fitted yet |
+| 5, 6 | repeater | `droneTracker` | the prison project's drone watchers; still on the old envelope |
+| 7 | repeater | `droneTracker` | USB serial `68:EE:8F:62:F4:A8`, L76K GPS, `DI300` |
+| 8 | repeater | `droneTracker` | USB serial `68:EE:8F:62:FA:B8`, L76K GPS, `DI300` |
 
 ### Radio settings and the duty cycle
 
@@ -509,7 +661,7 @@ instead of the 14 dBm the rest of the band permits. The regulation lets P be
 used either as 25 kHz channels or as **one channel for high speed data**, and
 869.4–869.65 is exactly 250 kHz, so the bandwidth follows the carrier and 869.525
 is the only centre that fits. SF9 is then what the budget can afford without
-spending it: 114 ms for a 29-byte frame, over three thousand an hour.
+spending it: 124 ms for a 33-byte frame, nearly three thousand an hour.
 
 **Airtime is what this mesh runs out of first**, which is what chooses P: a
 tracker reporting every 10 s spends 45 s of the hour, 12 % of the allowance here
@@ -559,7 +711,7 @@ time within an observation window — one hour — so the governor is a token
 bucket, not a gap between frames: `airtimeBudgetMillis` holds the transmit time
 still available, `refillAirtimeBudget()` credits it back at 1/N of real time,
 and `transmitFrame` spends it. At the default 10 % that is **360 s of airtime per
-hour**, which the node may burst through — roughly 3157 frames of 114 ms back to
+hour**, which the node may burst through — roughly 2903 frames of 124 ms back to
 back at SF9/250 kHz — before it has to wait, and a frame it cannot pay for is
 dropped rather than delayed. Enforcing a fixed post-transmission
 silence instead would be far stricter than the regulation and would make a
@@ -787,7 +939,8 @@ command to type on the other board.
 A XIAO ESP32S3 with the Wio-SX1262 that listens for drone Remote ID. It is a
 mesh node too - `configDroneTracker.h` takes `configLoraMeshParams.h` the way
 CLAUDE.md's two-line recipe says, so the block at 104 to 113 and `MAX_PARAM`
-114 arrive with it, and the drone parameters sit between 0 and 16, well clear. Three
+114 arrive with it, and the drone parameters sit between 0 and 16, well clear
+(122 with the GPS block above the mesh one). Three
 radios, of which only Bluetooth and Wi-Fi compete: LoRa is a separate chip at
 868 MHz. The mesh earns its place through `ar`, which runs a console command on
 another node - so `ar42:dl` lists what node 42 can see from where it stands,
@@ -895,9 +1048,46 @@ reaches. And the firmware only ever *encodes* those records: the host already
 stores every decrypted body as hex, so there is exactly one decoder and it is
 the one that can be re-run over a capture.
 
+**A watcher places itself with a GPS on D7, or is placed by hand** —
+`al46.5191,6.5668` on the post, or `ar<address>:al46.5191,6.5668` from the
+bridge — and its HELLO carries that position with the drone bit set (see
+*Telemetry is the same block* above). The host needs it twice: to draw the
+post, and as the reference its relayed `TRACK` coordinates are rebuilt
+against. The bridge is the same image and reads a GPS the same way; its own
+HELLO reaches the host on its `tx` line. So a post reports three positions:
+its own, the aircraft's and the operator's.
+
+The fix lives at 114–121 (`DK`…`DR`) on this board, not at `G`…`N`, and
+`MAX_PARAM` is 122 — see *The GPS block does not travel as easily*. The baud
+probe runs once at boot, so a receiver fitted later needs a reboot.
+
 `taskWifi` is compiled into every image here but never started on this board,
 and **the `(w)` menu must not be used on it** — associating with a network pins
 the channel to the access point's and takes the receiver away until a reboot.
+
+## The drone transmitter (`[env:droneTransmitter]`)
+
+`KIND_DRONE_TRANSMITTER`, `include/configDroneTransmitter.h`,
+`src/taskDroneTransmitter.cpp`. A bare XIAO ESP32S3 that pretends to be a drone,
+so the watcher has a known aircraft to hear. Every second it announces a serial
+number drawn at boot, hovering 10 m over Ruelle des Châtaigniers 5 in Denges, on
+Bluetooth 4 legacy (`A`), Bluetooth 5 Long Range (`B`) and a Wi-Fi beacon on
+channel `C`. See [docs/drone-remote-id.md](docs/drone-remote-id.md).
+
+- **The frames are built in `src/droneId/droneIdTransmit.cpp`**, which has no
+  Arduino, and `test/test_droneid_transmit` reads them back through the
+  receiver's own locators. Keep it that way: a transmitter tested only against
+  itself proves nothing about the watcher.
+- **Bluetooth 4 rotates its payload every 200 ms** by calling the NimBLE host's
+  `ble_gap_ext_adv_set_data` directly. NimBLE-Arduino only sets data by
+  reconfiguring the set, which the host refuses while it advertises. A refused
+  update stops the set so the next turn starts it again, because the host
+  forgets its sets when it resets.
+- **It builds only its own four files** (`build_src_filter`), so `lib_deps` is
+  NimBLE and ArduinoNvs alone. It is also the one env not on `[env]`'s list,
+  which pins AnalogWrite 4.x and ArduinoNvs 2.8, versions the registry no
+  longer serves. Every other env fails to install on a fresh checkout until
+  that list is updated.
 
 ## HTTP (`src/http.cpp`)
 
@@ -925,6 +1115,22 @@ One shared 1000-byte `httpBuffer` and one shared connection for every fetch, so:
   with 24576 bytes for that reason; a stack overflow here is a reboot loop.
 - `TaskOTA` must stay at priority 3 — the comment in `taskOTA.cpp` says it
   crashes otherwise.
+- A board that arrives running Meshtastic (TinyUSB, `303A:0059`) reaches the
+  ROM when esptool connects, but that jump sets `RTC_CNTL_FORCE_DOWNLOAD_BOOT`,
+  which survives esptool's RTS reset: the flash verifies, then the board sits
+  at `waiting for download`. Replug it, or clear the flag and reset:
+  `esptool.py --chip esp32s3 -p <port> --before no_reset --after hard_reset write_mem 0x6000812C 0 1`.
+- **A port path names a USB socket, not a board.** macOS names the USB-JTAG
+  port after its location (`/dev/cu.usbmodem8401` is hub 8, port 4), so a board
+  swapped into the same socket gets the same path. A board once took an image
+  meant for the one unplugged a minute earlier. Read the MAC first
+  (`esptool.py -p <port> read_mac`, or the `SER=` of `pio device list`) and
+  flash only when it is the board you mean.
+- `upload_protocol = esp-builtin` programs whichever USB-JTAG OpenOCD finds
+  first, and PlatformIO hands OpenOCD no `upload_flags`. With two boards
+  plugged in, run OpenOCD yourself with `-c "adapter serial <USB serial>"`
+  after `interface/esp_usb_jtag.cfg`; a serial that matches nothing fails
+  rather than falling back to the other board.
 
 ## Style
 

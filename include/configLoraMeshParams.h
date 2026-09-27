@@ -57,9 +57,10 @@
    PARAM_LORA_BROADCAST_NB_PARAMETERS slots. */
 #define PARAM_LORA_BROADCAST_FIRST_PARAMETER 110  // DG
 #define PARAM_LORA_BROADCAST_NB_PARAMETERS 111    // DH
-/* seconds between two automatic HELLOs, 0 = never. A HELLO only proves a direct
-   link, so it is worth little airtime: three hours keeps the peer table alive
-   without competing with whatever the node actually has to say */
+/* seconds between two automatic HELLOs, 0 = never. A HELLO proves a direct
+   link and says where the node stands, neither of which changes often, so it
+   is worth little airtime: three hours keeps the peer table alive without
+   competing with whatever the node actually has to say */
 #define PARAM_LORA_HELLO_SECONDS 112  // DI
 #define LORA_HELLO_SECONDS_DEFAULT 10800
 

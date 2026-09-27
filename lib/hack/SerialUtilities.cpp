@@ -69,7 +69,7 @@ void printHelp(Print* output) {
 #if defined(THR_BLE) || defined(THR_BLE_BEACON)
   output->println(F("(b)luetooth"));
 #endif
-#ifdef THR_DRONE_ID
+#if defined(THR_DRONE_ID) || defined(THR_DRONE_TRANSMITTER)
   output->println(F("(d)rone remote ID"));
 #endif
   output->println(F("(f)s"));

@@ -5,3 +5,5 @@
 .vscode/ipch
 .DS_Store
 images/weather/node_modules
+__pycache__
+.claude

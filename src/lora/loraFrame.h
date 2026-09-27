@@ -1,32 +1,37 @@
 #ifndef _LORA_FRAME_H
 #define _LORA_FRAME_H
 
-#include <Arduino.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /* Wire format of the private LoRa mesh. One group, one AES-128 key, flooding
    with a hop budget, no routing tables.
 
-     ctrl(1) src(1) dst(1) counter(3 or 4) | ciphertext(n) | mic(4) | route(2h) | budget,hops(1)
-     \___________ authenticated _________/   \_ encrypted _/          \________ mutable _______/
+     from(1) seal(3|4) | E( ctrl(1) src(1) dst(1) counter(3|4) body(n) route(2h) budget,hops(1) ) | mic(4)
+     \__ clear, AAD __/     \___________________________ encrypted ___________________________/
 
-     ctrl, bit 7 to bit 0:  ver(1) type(3) cntsz(1) spare(3)
+     ctrl, bit 7 to bit 0:  ver(1) type(3) spare(4)
      trailer, bit 7 to 0:   budget(4) hops(4)
+     a counter:             big-endian, 3 bytes below 2^23; 4 bytes with bit 7
+                            of the first one set above
 
-   Everything a relay may rewrite lives in the trailer, past the tag, so the
-   header is authenticated in full - nothing is masked out of the nonce or the
-   additional data. A relay cannot instead record its passage inside the
-   ciphertext: it holds the group key and could re-encrypt, but the nonce is
-   built from the origin's source and counter, which it must not change, and
-   re-encrypting under a nonce already used is exactly the misuse CCM does not
-   survive.
+   Only the transmitter of this copy and its seal travel in clear. Who sent the
+   frame, to whom, which message it is, the path it took and the budget it has
+   left are all inside the ciphertext, and all authenticated.
 
-   The price is that the trailer is unauthenticated: a route is metadata of the
-   same standing as an RSSI reading, not evidence. LORA_TTL_MAX_ACCEPT, not the
-   budget, is what actually caps amplification.
+   Every transmission is sealed afresh by whoever makes it - the origin, each
+   retry, each relay - under a nonce built from its own address and a counter
+   it has never used. That is what lets a relay record its passage and a retry
+   raise the budget: both change the plaintext, and encrypting two plaintexts
+   under one nonce is the misuse CCM does not survive. So a frame carries two
+   numbers. The seal only has to be unique. The counter names the message and
+   stays the same across every copy and every retry, which is what duplicate
+   suppression, anti-replay and the ACK echo all key on.
 
-   The trailer is read from the end, which is what makes it self describing:
-   the last byte gives the hop count, the number of stored route entries follows
-   from it, and everything before them is header, ciphertext and tag. */
+   The plaintext is read from both ends, which is what makes it self
+   describing: ctrl and the counter's first byte give the header size, the last
+   byte gives the hop count, the number of stored route entries follows from
+   it, and the body is whatever lies between. */
 
 #define LORA_TTL_MAX 7
 /* a relay refuses to forward a frame whose remaining budget is larger than
@@ -51,19 +56,32 @@
 #define LORA_KEY_SIZE 16
 #define LORA_MIC_SIZE 4
 #define LORA_NONCE_SIZE 13
-/* header is 6 bytes while the counter is 24 bit, 7 once it widens */
+/* the format written in ctrl, and refused when it is anything else */
+#define LORA_VERSION 1
+
+/* Both counters are written in the same variable width. The first byte's top
+   bit says which: clear is 3 bytes holding 23 bits, set is 4 bytes holding 31.
+   The widening is permanent and the nonce always holds the full 32 bit value,
+   so the transition cannot produce a nonce already used. */
+#define LORA_COUNTER_SHORT_MAX 0x7FFFFFul
+#define LORA_COUNTER_MAX 0x7FFFFFFFul
+#define LORA_COUNTER_WIDE 0x80
+
+/* from(1) and a seal of 3 or 4 bytes */
+#define LORA_SEAL_MAX_SIZE 5
+/* ctrl, src, dst and a counter of 3 or 4 bytes */
 #define LORA_HEADER_MAX_SIZE 7
 /* the radio allows 245, but airtime is the real budget: a 48 byte body is
    already ~1.9 s at SF12 */
 #define LORA_MAX_BODY_SIZE 48
-#define LORA_MAX_FRAME_SIZE                                    \
-  (LORA_HEADER_MAX_SIZE + LORA_MAX_BODY_SIZE + LORA_MIC_SIZE + \
-   LORA_TRAILER_MAX_SIZE)
-
-/* the counter widens permanently once it no longer fits in 24 bits; the nonce
-   is always built from the zero extended 32 bit value, so the transition can
-   never produce a nonce collision */
-#define LORA_COUNTER_24_BIT_MAX 0xFFFFFFul
+#define LORA_PLAINTEXT_MIN_SIZE 7
+#define LORA_PLAINTEXT_MAX_SIZE \
+  (LORA_HEADER_MAX_SIZE + LORA_MAX_BODY_SIZE + LORA_TRAILER_MAX_SIZE)
+#define LORA_MAX_FRAME_SIZE \
+  (LORA_SEAL_MAX_SIZE + LORA_PLAINTEXT_MAX_SIZE + LORA_MIC_SIZE)
+/* what a frame costs beyond its body while both counters are short and no hop
+   has been recorded: a 4 byte seal, a 6 byte header, the tag and the trailer */
+#define LORA_FRAME_OVERHEAD 15
 
 #define LORA_TYPE_HELLO 0
 #define LORA_TYPE_DATA 1
@@ -164,7 +182,10 @@ struct LoraRouteEntry {
 };
 
 struct LoraFrame {
-  uint8_t version;
+  /* the node that sealed this copy and the counter it sealed it with: the
+     source on the first transmission, then whoever retried or relayed it */
+  uint8_t transmitter;
+  uint32_t seal;
   uint8_t type;
   /* hops the origin allows, and hops already taken */
   uint8_t budget;
@@ -173,46 +194,46 @@ struct LoraFrame {
   uint8_t routeLength;
   uint8_t source;
   uint8_t destination;
+  /* the message, the same in every copy */
   uint32_t counter;
   uint8_t body[LORA_MAX_BODY_SIZE];
   uint8_t bodyLength;
 };
 
-/* Serialises and encrypts frame into buffer. Returns the number of bytes to
-   transmit, or 0 if the body does not fit. */
+/* The bytes loraFrameEncode would produce, without sealing anything - what the
+   duty cycle and the timeouts are priced from before a seal is spent. 0 for a
+   frame that cannot be encoded: a route length that is not
+   min(hops, LORA_ROUTE_MAX), a body or a counter past its limit. */
+uint8_t loraFrameSize(const LoraFrame* frame);
+
+/* Serialises frame and seals it under its transmitter and seal. Returns the
+   number of bytes to transmit, or 0 if it does not fit buffer or cannot be
+   encoded at all.
+
+   The caller owns nonce freshness: the pair (transmitter, seal) must never be
+   sealed twice under one key. */
 uint8_t loraFrameEncode(const LoraFrame* frame,
                         const uint8_t* key,
                         uint8_t* buffer,
                         uint8_t bufferSize);
 
 /* Verifies the tag and decrypts buffer into frame. Returns false for anything
-   that is not authentic group traffic, which is what keeps a relay from
-   amplifying injected packets. */
-boolean loraFrameDecode(const uint8_t* buffer,
-                        uint8_t length,
-                        const uint8_t* key,
-                        LoraFrame* frame);
-
-/* Rewrites the budget of an already encoded frame. The tag stays valid because
-   the trailer is outside the authenticated data, so escalating a retry from 0
-   to 2 hops reuses the ciphertext byte for byte instead of re-encrypting. */
-void loraFrameSetBudget(uint8_t* buffer, uint8_t length, uint8_t budget);
+   that is not authentic group traffic of this version, which is what keeps a
+   relay from amplifying injected packets. Nothing in frame is meaningful after
+   a false. */
+bool loraFrameDecode(const uint8_t* buffer,
+                     uint8_t length,
+                     const uint8_t* key,
+                     LoraFrame* frame);
 
 /* Records this node's passage: counts the hop and, while the table has room,
-   appends the address and the dBm it was heard at. The frame grows by one entry
-   when the address is stored, so length is updated in place. Returns false if
-   the buffer cannot hold the entry, which leaves the frame untouched. */
-boolean loraFrameAppendRelay(uint8_t* buffer,
-                             uint8_t* length,
-                             uint8_t bufferSize,
-                             uint8_t address,
-                             int16_t rssi);
+   appends the address and the dBm it was heard at. A frame at LORA_HOPS_MAX is
+   left as it is. */
+void loraFrameRecordRelay(LoraFrame* frame, uint8_t address, int16_t rssi);
 
-/* Reads source and counter straight from the header, before decryption, so the
-   relay queue can match overheard copies of a frame it is about to forward. */
-uint8_t loraFrameGetSource(const uint8_t* buffer);
-uint32_t loraFrameGetCounter(const uint8_t* buffer);
-
+#ifdef ARDUINO
+#include <Arduino.h>
 const __FlashStringHelper* loraTypeName(uint8_t type);
+#endif
 
 #endif

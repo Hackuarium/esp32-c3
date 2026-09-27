@@ -30,7 +30,7 @@ void processGpsCommand(char command, char* paramValue, Print* output);
 void processBleCommand(char command, char* paramValue, Print* output);
 #endif
 
-#ifdef THR_DRONE_ID
+#if defined(THR_DRONE_ID) || defined(THR_DRONE_TRANSMITTER)
 void processDroneCommand(char command, char* paramValue, Print* output);
 #endif
 
@@ -133,7 +133,7 @@ void printResult(char* data, Print* output) {
       processBleCommand(data[1], paramValue, output);
       break;
 #endif
-#ifdef THR_DRONE_ID
+#if defined(THR_DRONE_ID) || defined(THR_DRONE_TRANSMITTER)
     case 'd':
       processDroneCommand(data[1], paramValue, output);
       break;

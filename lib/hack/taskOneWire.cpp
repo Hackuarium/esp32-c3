@@ -1,9 +1,8 @@
 #include "config.h"
 #include "params.h"
 
-#include <OneWire.h>
-
 #ifdef THR_ONEWIRE
+#include <OneWire.h>
 
 byte oneWirePorts[] = {THR_ONEWIRE};
 byte oneWireParameters[] = {PARAM_TEMPERATURE};

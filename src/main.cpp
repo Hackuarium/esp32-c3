@@ -20,6 +20,8 @@ void setupBleBeacon();
 void loopBleBeacon();
 void setupDroneTracker();
 void loopDroneTracker();
+void setupDroneTransmitter();
+void loopDroneTransmitter();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -41,6 +43,8 @@ void setup() {
   setupBleBeacon();
 #elif BOARD_TYPE == KIND_DRONE_TRACKER
   setupDroneTracker();
+#elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
+  setupDroneTransmitter();
 #else
   setupExample();
 #endif
@@ -65,6 +69,8 @@ void loop() {
   loopBleBeacon();
 #elif BOARD_TYPE == KIND_DRONE_TRACKER
   loopDroneTracker();
+#elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
+  loopDroneTransmitter();
 #else
   loopExample();
 #endif

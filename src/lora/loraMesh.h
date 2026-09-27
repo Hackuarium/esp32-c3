@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "lora/loraFrame.h"
+#include "lora/loraHello.h"
 
 /* The radio and the shared tables belong to TaskLoraMesh; anything reaching
    them from the serial task has to hold this first. The mutex is recursive, so
@@ -46,6 +47,16 @@ int16_t loraMeshParameterFromBody(const uint8_t* body,
 
 void loraMeshPrintInfo(Print* output);
 void loraMeshPrintPeers(Print* output);
+
+/* The HELLO body this node sends now - flags, then its position when it has
+   one (see loraHello.h). The automatic HELLO and (ah) both build it here, so
+   the two never announce different things. body must hold
+   LORA_HELLO_MAX_SIZE bytes; returns the length, 1 or 9. */
+uint8_t loraMeshHelloBody(uint8_t* body);
+
+/* "Location: 46.519100,6.566800 (fixed)", "(gps)" or "Location: not set" -
+   what a HELLO would carry right now, on one line the host parses. */
+void loraMeshPrintLocation(Print* output);
 
 /* Hands the node back a full hour's transmit allowance.
 
@@ -130,5 +141,6 @@ void processLoraMeshSetCommand(char* paramValue, Print* output);
 void processLoraMeshGetCommand(char* paramValue, Print* output);
 void processLoraMeshCopyCommand(char* paramValue, Print* output);
 void processLoraMeshRunCommand(char* paramValue, Print* output);
+void processLoraMeshLocationCommand(char* paramValue, Print* output);
 
 #endif

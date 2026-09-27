@@ -6,12 +6,18 @@ void taskSerial();
 void taskDroneId();
 void taskLoraMesh();
 void loraMeshResetParameters();
+#ifdef THR_GPS
+void taskGPS();
+#endif
 
 void setupDroneTracker() {
   setupParameters();
   taskSerial();
   taskDroneId();
   taskLoraMesh();
+#ifdef THR_GPS
+  taskGPS();
+#endif
 }
 
 void loopDroneTracker() { vTaskDelay(100000); }

@@ -7,6 +7,7 @@
 #include "lora/loraBridge.h"
 #include "lora/loraMesh.h"
 #include "lora/loraPeers.h"
+#include "lora/loraRelayPolicy.h"
 #include "params.h"
 #include "toHex.h"
 
@@ -47,7 +48,7 @@
    mesh does not need. On 868.4 the answer is 125 kHz instead, the widest that
    fits between 868.3 and 868.5 without overlapping either.
 
-   SF9 is where the two scarce resources meet. A 31-byte fix frame costs 124 ms
+   SF9 is where the two scarce resources meet. A 35-byte fix frame costs 124 ms
    at SF9/250 kHz against 906 ms at SF12, so a tracker reporting every 10 s
    spends 45 s of the 360 s an hour allows - an eighth of the budget, where SF12
    would spend 326 s of it and leave the rest of the mesh 34 s. The 7.5 dB given
@@ -105,6 +106,18 @@
 #define LORA_OVERHEARD_ENOUGH 2
 #define LORA_RELAY_QUEUE_SIZE 4
 
+/* What a node takes between hearing a frame and putting its answer on the air:
+   the decode, the seal and one channel scan. A repeater adds it to the answer's
+   own airtime before carrying a frame further, so a bridge's receipt or a
+   destination's ACK arrives while the copy can still be dropped. */
+#define LORA_REPLY_TURNAROUND_MS 100
+
+/* A bridge stops sending receipts once its airtime falls below this share of
+   the allowance - a fifth - and keeps the rest for the commands it originates.
+   Without receipts the mesh relays as it would without a bridge in range, so
+   running short degrades into repetition, never into loss. */
+#define LORA_RECEIPT_RESERVE_DIVISOR 5
+
 /* How many counter values are claimed in NVS at a time. The stored value is a
    promise that nothing above it was ever used, so this is the flash wear knob:
    one write per N transmissions, paid for by burning N counters on every boot
@@ -135,24 +148,25 @@ static int16_t appliedSpreadingFactor = 0;
 static float appliedFrequency = 0;
 static float appliedBandwidth = 0;
 
+/* Both queues hold the frame decoded rather than the bytes that carried it:
+   each transmission is sealed as it leaves, so there are no bytes to keep. */
 struct RelayEntry {
   boolean active;
-  uint8_t frame[LORA_MAX_FRAME_SIZE];
-  uint8_t frameLength;
-  uint8_t source;
-  uint32_t counter;
+  /* with this node's passage already recorded */
+  LoraFrame frame;
   uint32_t dueMillis;
   uint8_t overheard;
 };
 
 static RelayEntry relayQueue[LORA_RELAY_QUEUE_SIZE];
 
+/* what this node carried further, so a reply is only carried back along the
+   path its request took */
+static LoraRelayedMemory relayed;
+
 struct PendingRequest {
   boolean active;
-  uint8_t frame[LORA_MAX_FRAME_SIZE];
-  uint8_t frameLength;
-  uint8_t destination;
-  uint32_t counter;
+  LoraFrame frame;
   uint8_t attempt;
   uint32_t dueMillis;
   Print* output;
@@ -299,6 +313,14 @@ static boolean isRepeater() {
   return getParameter(PARAM_LORA_ROLE) == LORA_ROLE_REPEATER;
 }
 
+/* A HELLO travels as far as any report, so a post out of the bridge's range
+   still gets its position to the host - the bridge's receipt keeps it from
+   being repeated when the bridge heard it directly. A bridge's own stays at 0:
+   nobody receipts it, so every repeater around would carry it for nothing. */
+static uint8_t helloBudget() {
+  return loraMeshIsBridge() ? 0 : defaultTtl();
+}
+
 /* seconds between two automatic HELLOs, 0 = never. A board that joined the mesh
    without resetting its parameters has this slot unset, and silence is not what
    an unset parameter should mean here, so anything negative is the default */
@@ -338,9 +360,8 @@ uint16_t loraMeshBodyBudgetPercent(uint8_t bodyLength,
   if (bodyLength == 0 || intervalSeconds <= 0) {
     return 0;
   }
-  /* a 6-byte header while the counter is 24 bit, the body, the tag, and a
-     1-byte trailer with no route entries yet because this node is the origin */
-  uint32_t frameLength = 6ul + bodyLength + LORA_MIC_SIZE + 1;
+  /* no route entries yet, because this node is the origin */
+  uint32_t frameLength = (uint32_t)LORA_FRAME_OVERHEAD + bodyLength;
   if (frameLength > LORA_MAX_FRAME_SIZE) {
     return 0;
   }
@@ -476,37 +497,68 @@ static uint32_t nextCounter() {
   return transmitCounter;
 }
 
-static uint8_t buildFrame(uint8_t destination,
-                          uint8_t type,
-                          uint8_t budget,
-                          uint32_t counter,
-                          const uint8_t* body,
-                          uint8_t bodyLength,
-                          uint8_t* buffer) {
-  LoraFrame frame;
-  frame.version = 0;
-  frame.type = type;
-  frame.budget = budget;
-  frame.hops = 0;
-  frame.routeLength = 0;
-  frame.source = nodeAddress;
-  frame.destination = destination;
-  frame.counter = counter;
-  frame.bodyLength = bodyLength;
-  if (bodyLength > 0) {
-    memcpy(frame.body, body, bodyLength);
+/* A message originated here, not yet sealed. Returns false when the body does
+   not fit one frame. */
+static boolean prepareFrame(LoraFrame* frame,
+                            uint8_t destination,
+                            uint8_t type,
+                            uint8_t budget,
+                            uint32_t counter,
+                            const uint8_t* body,
+                            uint8_t bodyLength) {
+  if (bodyLength > LORA_MAX_BODY_SIZE) {
+    return false;
   }
-  return loraFrameEncode(&frame, groupKey, buffer, LORA_MAX_FRAME_SIZE);
+  memset(frame, 0, sizeof(LoraFrame));
+  frame->type = type;
+  frame->budget = budget;
+  frame->source = nodeAddress;
+  frame->destination = destination;
+  frame->counter = counter;
+  frame->bodyLength = bodyLength;
+  if (bodyLength > 0) {
+    memcpy(frame->body, body, bodyLength);
+  }
+  return true;
+}
+
+/* Seals frame as a transmission of this node and sends it.
+
+   The seal is half of the nonce, so it has to be a counter no transmission of
+   this node ever used: a message's first transmission passes the counter it was
+   just given, and every later one - a retry, a relay - passes nextCounter().
+   Nothing else may be passed here. Returns false when nothing went out. */
+static boolean sealAndTransmit(LoraFrame* frame, uint32_t seal) {
+  frame->transmitter = nodeAddress;
+  frame->seal = seal;
+  uint8_t buffer[LORA_MAX_FRAME_SIZE];
+  uint8_t length = loraFrameEncode(frame, groupKey, buffer, sizeof(buffer));
+  return length > 0 && transmitFrame(buffer, length);
+}
+
+/* The common case: a message sent once and never retried. Returns its
+   counter, or 0 when nothing went out. */
+static uint32_t sendMessage(uint8_t destination,
+                            uint8_t type,
+                            uint8_t budget,
+                            const uint8_t* body,
+                            uint8_t bodyLength) {
+  LoraFrame frame;
+  if (!prepareFrame(&frame, destination, type, budget, nextCounter(), body,
+                    bodyLength)) {
+    return 0;
+  }
+  return sealAndTransmit(&frame, frame.counter) ? frame.counter : 0;
 }
 
 static boolean expectsAcknowledge(uint8_t type) {
   return type == LORA_TYPE_CMD || type == LORA_TYPE_DATA_ACK;
 }
 
-/* The ladder: try direct, then ask for two relayed hops, then four. A retry
-   always reuses the same counter, so the receiver can tell "the ACK was lost"
-   from "he sent it again" - and because the budget sits in the trailer, outside
-   the authenticated data, escalating rewrites one byte instead of re-encrypting.
+/* The ladder: try direct, then ask for two relayed hops, then three. A retry
+   always keeps the message counter, so the receiver can tell "the ACK was lost"
+   from "he sent it again" - and it is sealed again under a new one, because
+   raising the budget changes the plaintext.
 
    Three attempts, one per rung, rather than doubling up the first two. The
    ladder holds the single confirmed-request slot for its whole length, so its
@@ -515,7 +567,11 @@ static boolean expectsAcknowledge(uint8_t type) {
    enough that a poller on a ten second timer refused nearly everything else the
    mesh had to say. Losing the duplicates costs a retransmission on a single
    dropped ACK; keeping all three rungs costs nothing, because the reach of the
-   mesh is the top one. */
+   mesh is the top one.
+
+   The top rung is three because that is the most a relay accepts
+   (LORA_TTL_MAX_ACCEPT): a rung above it is refused by the first relay and
+   becomes a second direct attempt. */
 #define LORA_LADDER_ATTEMPTS 3
 
 static uint8_t ladderTtl(uint8_t attempt) {
@@ -525,13 +581,16 @@ static uint8_t ladderTtl(uint8_t attempt) {
   if (attempt < 2) {
     return 2;
   }
-  return 4;
+  return LORA_TTL_MAX_ACCEPT;
 }
 
+/* each relay on the way out also waits for the answer it might overhear */
 static uint32_t ladderTimeout(uint8_t attempt, uint8_t frameLength) {
   uint32_t airtime = airtimeMillis(frameLength);
   uint8_t hops = ladderTtl(attempt);
-  return 2ul * (2ul * hops + 1ul) * airtime + 200ul;
+  uint32_t relayWait =
+      LORA_REPLY_TURNAROUND_MS + airtimeMillis(LORA_MAX_FRAME_SIZE);
+  return 2ul * (2ul * hops + 1ul) * airtime + hops * relayWait + 200ul;
 }
 
 static void sendAcknowledge(uint8_t destination,
@@ -544,26 +603,33 @@ static void sendAcknowledge(uint8_t destination,
   body[1] = (uint8_t)(requestCounter >> 8);
   body[2] = (uint8_t)requestCounter;
   body[3] = status;
-  uint8_t buffer[LORA_MAX_FRAME_SIZE];
-  uint8_t length =
-      buildFrame(destination, type, budget, nextCounter(), body, 4, buffer);
-  if (length > 0) {
-    transmitFrame(buffer, length);
-  }
+  sendMessage(destination, type, budget, body, 4);
 }
 
 /* The traffic events a bridge feeds to its host. They are written straight to
    Serial rather than to the caller's stream, so an automatic send reaches the
-   feed even though it reports its progress nowhere. */
+   feed even though it reports its progress nowhere.
+
+   The body goes with it, as on rx: a bridge's own HELLO never comes back up its
+   port, and this line is then the only way the host reads what the bridge says
+   about itself - a GPS fix included, which moves after the `ai` it answered on
+   connect. */
 static void reportTransmission(uint8_t type,
                                uint8_t destination,
                                uint32_t counter,
-                               boolean acknowledged) {
+                               boolean acknowledged,
+                               const uint8_t* body,
+                               uint8_t bodyLength) {
   Print* json = loraBridgeBegin("tx");
   loraBridgeText(json, "type", loraTypeName(type));
   loraBridgeInt(json, "dst", destination);
   loraBridgeInt(json, "counter", counter);
   loraBridgeInt(json, "ack", acknowledged ? 1 : 0);
+  if (json != NULL) {
+    json->print(F(",\"body\":\""));
+    toHex(json, body, bodyLength);
+    json->print('"');
+  }
   loraBridgeEnd(json);
 }
 
@@ -594,6 +660,9 @@ static void reportReception(const LoraFrame* frame,
   loraBridgeText(json, "type", loraTypeName(frame->type));
   loraBridgeInt(json, "src", frame->source);
   loraBridgeInt(json, "dst", frame->destination);
+  /* the node whose transmission this was: the source when it came direct,
+     otherwise the last relay - even one past what the route records */
+  loraBridgeInt(json, "from", frame->transmitter);
   loraBridgeInt(json, "counter", frame->counter);
   loraBridgeInt(json, "budget", frame->budget);
   loraBridgeInt(json, "hops", frame->hops);
@@ -656,14 +725,12 @@ boolean loraMeshSend(uint8_t destination,
   }
 
   uint32_t counter = nextCounter();
-  /* a beacon exists to prove a direct link: relaying it would prove nothing and
-     cost the whole mesh an airtime slot */
-  uint8_t budget = acknowledged || type == LORA_TYPE_HELLO ? ladderTtl(0)
-                                                           : defaultTtl();
-  uint8_t buffer[LORA_MAX_FRAME_SIZE];
-  uint8_t length =
-      buildFrame(destination, type, budget, counter, body, bodyLength, buffer);
-  if (length == 0) {
+  uint8_t budget = acknowledged              ? ladderTtl(0)
+                   : type == LORA_TYPE_HELLO ? helloBudget()
+                                             : defaultTtl();
+  LoraFrame frame;
+  if (!prepareFrame(&frame, destination, type, budget, counter, body,
+                    bodyLength)) {
     output->println(F("Body too long"));
     giveLoraMesh();
     return false;
@@ -672,7 +739,7 @@ boolean loraMeshSend(uint8_t destination,
   if (!acknowledged) {
     /* a broadcast is never acknowledged - 255 nodes answering one frame is an
        ACK storm, so a confirmed broadcast is polled node by node instead */
-    boolean sent = transmitFrame(buffer, length);
+    boolean sent = sealAndTransmit(&frame, counter);
     giveLoraMesh();
     if (!sent) {
       output->println(F("Duty cycle: cannot transmit yet"));
@@ -682,29 +749,27 @@ boolean loraMeshSend(uint8_t destination,
     output->print(loraTypeName(type));
     output->print(F(" counter "));
     output->println(counter);
-    reportTransmission(type, destination, counter, false);
+    reportTransmission(type, destination, counter, false, body, bodyLength);
     return true;
   }
 
-  memcpy(pending.frame, buffer, length);
-  pending.frameLength = length;
-  pending.destination = destination;
-  pending.counter = counter;
+  pending.frame = frame;
   pending.attempt = 0;
   pending.output = output;
   pending.active = true;
 
-  /* skip the direct attempt when the peer is not a fresh neighbour */
+  /* skip the direct attempt when the peer is not a fresh neighbour - one heard
+     directly, since a node only ever heard through a relay is not one at all */
   LoraPeer* peer = loraPeerFind(destination);
-  if (peer == NULL || millis() - peer->lastHeardMillis > 30ul * 60ul * 1000ul) {
+  if (peer == NULL || !peer->heardDirect ||
+      millis() - peer->directMillis > 30ul * 60ul * 1000ul) {
     pending.attempt = 1;
-    loraFrameSetBudget(pending.frame, pending.frameLength,
-                      ladderTtl(pending.attempt));
+    pending.frame.budget = ladderTtl(pending.attempt);
   }
 
-  transmitFrame(pending.frame, pending.frameLength);
-  pending.dueMillis =
-      millis() + ladderTimeout(pending.attempt, pending.frameLength);
+  sealAndTransmit(&pending.frame, counter);
+  pending.dueMillis = millis() + ladderTimeout(pending.attempt,
+                                               loraFrameSize(&pending.frame));
   pending.attempt++;
   giveLoraMesh();
   output->print(F("Sent "));
@@ -712,15 +777,59 @@ boolean loraMeshSend(uint8_t destination,
   output->print(F(" counter "));
   output->print(counter);
   output->println(F(", waiting for ACK"));
-  reportTransmission(type, destination, counter, true);
+  reportTransmission(type, destination, counter, true, body, bodyLength);
   return true;
 }
 
-static void queueRelay(const uint8_t* buffer,
-                       uint8_t length,
-                       uint8_t source,
-                       uint32_t counter,
-                       int16_t rssi) {
+/* How long a repeater waits for a frame's answer before carrying it: nothing
+   for a frame nobody answers, otherwise the answering node's turnaround plus
+   the answer's airtime - a short ACK, or a whole frame for a read. */
+static uint32_t replyWindowMillis(const LoraFrame* frame) {
+  uint8_t expected = loraExpectedReply(frame);
+  if (expected == LORA_REPLY_NONE) {
+    return 0;
+  }
+  /* an ACK carries 4 body bytes and no route yet; 2 more cover wide counters */
+  uint8_t length = expected == LORA_REPLY_RESP
+                       ? (uint8_t)LORA_MAX_FRAME_SIZE
+                       : (uint8_t)(LORA_FRAME_OVERHEAD + 4 + 2);
+  return LORA_REPLY_TURNAROUND_MS + airtimeMillis(length);
+}
+
+/* An answer to a message this node holds a copy of means the copy is not
+   needed: whoever the message was for has it. Any copy of the answer counts,
+   a repeated one included. */
+static void dropAnsweredRelays(const LoraFrame* reply) {
+  uint32_t echoed;
+  if (!loraReplyEcho(reply, &echoed)) {
+    return;
+  }
+  for (uint8_t i = 0; i < LORA_RELAY_QUEUE_SIZE; i++) {
+    RelayEntry* entry = &relayQueue[i];
+    if (entry->active && entry->frame.source == reply->destination &&
+        (entry->frame.counter & 0xFFFFFFul) == echoed &&
+        !loraFrameIsReply(&entry->frame)) {
+      entry->active = false;
+    }
+  }
+}
+
+/* A bridge answers what is meant for the host as soon as it hears it, so the
+   repeaters waiting on it drop their copies. It is an ordinary ACK - addressed
+   to the source, echoing the counter, with a budget of the hops this copy took
+   - so it retraces the frame's path and nothing else carries it. */
+static void sendReceipt(const LoraFrame* frame) {
+  uint8_t length = (uint8_t)(LORA_FRAME_OVERHEAD + 4 + 2);
+  refillAirtimeBudget();
+  uint32_t reserve = dutyCycleAllowanceMillis() / LORA_RECEIPT_RESERVE_DIVISOR;
+  if (airtimeBudgetMillis < reserve + airtimeMillis(length)) {
+    return;
+  }
+  sendAcknowledge(frame->source, LORA_TYPE_ACK, frame->counter, LORA_STATUS_OK,
+                  frame->hops);
+}
+
+static void queueRelay(const LoraFrame* frame, int16_t rssi) {
   RelayEntry* entry = NULL;
   for (uint8_t i = 0; i < LORA_RELAY_QUEUE_SIZE; i++) {
     if (!relayQueue[i].active) {
@@ -732,21 +841,19 @@ static void queueRelay(const uint8_t* buffer,
     return;
   }
 
-  memcpy(entry->frame, buffer, length);
-  entry->frameLength = length;
+  entry->frame = *frame;
   /* the hop is counted and, while the table has room, signed with this node's
      address and the margin it was heard at */
-  if (!loraFrameAppendRelay(entry->frame, &entry->frameLength,
-                            LORA_MAX_FRAME_SIZE, nodeAddress, rssi)) {
-    return;
-  }
-  entry->source = source;
-  entry->counter = counter;
+  loraFrameRecordRelay(&entry->frame, nodeAddress, rssi);
   entry->overheard = 0;
   entry->active = true;
-  /* without this jitter every relay in range answers at the same instant and
-     they all collide */
-  entry->dueMillis = millis() + (esp_random() % (3 * airtimeMillis(length) + 1));
+  /* the answer first - a bridge's receipt, the destination's ACK - so a copy
+     whoever it was for already has is dropped before it costs anything; then
+     the jitter, without which every relay in range answers at the same instant
+     and they all collide */
+  entry->dueMillis =
+      millis() + replyWindowMillis(frame) +
+      (esp_random() % (3 * airtimeMillis(loraFrameSize(&entry->frame)) + 1));
 }
 
 static void serviceRelayQueue() {
@@ -759,22 +866,27 @@ static void serviceRelayQueue() {
       entry->active = false;
       continue;
     }
-    if (!canTransmit(entry->frameLength)) {
+    if (!canTransmit(loraFrameSize(&entry->frame))) {
       /* the frame is already on its way through other paths; holding it until
          the budget refills would deliver it long after it is useful */
       entry->active = false;
       continue;
     }
-    transmitFrame(entry->frame, entry->frameLength);
+    if (sealAndTransmit(&entry->frame, nextCounter()) &&
+        !loraFrameIsReply(&entry->frame)) {
+      loraRelayedRemember(&relayed, entry->frame.source, entry->frame.counter);
+    }
     entry->active = false;
   }
 }
 
+/* keyed on the message, not the copy: every relay seals its own, so the clear
+   bytes of two copies of one frame never match */
 static void noteOverheard(uint8_t source, uint32_t counter) {
   for (uint8_t i = 0; i < LORA_RELAY_QUEUE_SIZE; i++) {
     RelayEntry* entry = &relayQueue[i];
-    if (entry->active && entry->source == source &&
-        entry->counter == counter) {
+    if (entry->active && entry->frame.source == source &&
+        entry->frame.counter == counter) {
       entry->overheard++;
     }
   }
@@ -787,7 +899,7 @@ static void handleAcknowledge(const LoraFrame* frame) {
   uint32_t acknowledged = ((uint32_t)frame->body[0] << 16) |
                           ((uint32_t)frame->body[1] << 8) |
                           (uint32_t)frame->body[2];
-  if ((pending.counter & 0xFFFFFFul) != acknowledged) {
+  if ((pending.frame.counter & 0xFFFFFFul) != acknowledged) {
     return;
   }
 
@@ -820,13 +932,8 @@ static void sendParameterResponse(uint8_t destination,
     return;
   }
 
-  uint8_t buffer[LORA_MAX_FRAME_SIZE];
-  uint8_t length =
-      buildFrame(destination, LORA_TYPE_RESP, budget, nextCounter(), body,
-                 LORA_RESP_COUNTER_SIZE + encoded, buffer);
-  if (length > 0) {
-    transmitFrame(buffer, length);
-  }
+  sendMessage(destination, LORA_TYPE_RESP, budget, body,
+              (uint8_t)(LORA_RESP_COUNTER_SIZE + encoded));
 }
 
 /* the console answer, sent once the queued command has actually run: same shape
@@ -838,14 +945,8 @@ static void sendConsoleResponse(const LoraConsoleReply* reply) {
   body[1] = (uint8_t)(reply->requestCounter >> 8);
   body[2] = (uint8_t)reply->requestCounter;
   memcpy(body + LORA_RESP_COUNTER_SIZE, reply->body, reply->bodyLength);
-
-  uint8_t buffer[LORA_MAX_FRAME_SIZE];
-  uint8_t length = buildFrame(
-      reply->destination, LORA_TYPE_RESP, reply->budget, nextCounter(), body,
-      (uint8_t)(LORA_RESP_COUNTER_SIZE + reply->bodyLength), buffer);
-  if (length > 0) {
-    transmitFrame(buffer, length);
-  }
+  sendMessage(reply->destination, LORA_TYPE_RESP, reply->budget, body,
+              (uint8_t)(LORA_RESP_COUNTER_SIZE + reply->bodyLength));
 }
 
 /* Runs whatever a remote (ar) asked for, outside the receive path. It is a slow
@@ -866,7 +967,7 @@ static void handleResponse(const LoraFrame* frame) {
   }
   uint32_t echoed = ((uint32_t)frame->body[0] << 16) |
                     ((uint32_t)frame->body[1] << 8) | (uint32_t)frame->body[2];
-  if (pending.active && (pending.counter & 0xFFFFFFul) == echoed) {
+  if (pending.active && (pending.frame.counter & 0xFFFFFFul) == echoed) {
     pending.active = false;
   }
 
@@ -979,18 +1080,30 @@ static void handleReceived() {
   /* count overheard copies before the duplicate test drops them, otherwise the
      suppression heuristic would never see anything */
   noteOverheard(frame.source, frame.counter);
+  dropAnsweredRelays(&frame);
+
+  /* first, before anything prints: the repeaters around are waiting on it. A
+     repeated copy is receipted too while it can still travel, since another
+     repeater may be holding it */
+  if (loraMeshIsBridge() && loraWantsReceipt(&frame, nodeAddress)) {
+    sendReceipt(&frame);
+  }
 
   boolean fresh = loraPeerAcceptCounter(frame.source, frame.counter);
-  LoraPeer* peer = loraPeerGet(frame.source);
-  peer->lastRssi = rawRssi;
-  peer->lastSnr = rawSnr;
+  /* the margin was measured on whoever transmitted this copy, which is the
+     source only when it came direct - filed under the source, a node heard
+     only through a relay would read as a neighbour at the relay's margin */
+  if (frame.transmitter > 0 && frame.transmitter < LORA_ADDRESS_BROADCAST &&
+      frame.transmitter != nodeAddress) {
+    loraPeerHeardDirectly(frame.transmitter, rawRssi, rawSnr);
+  }
 
   boolean forMe = frame.destination == nodeAddress ||
                   frame.destination == LORA_ADDRESS_BROADCAST;
 
   /* a bridge reports what it hears, not only what is addressed to it: the point
      of the role is to observe the mesh */
-  reportReception(&frame, peer->lastRssi, peer->lastSnr, fresh);
+  reportReception(&frame, rawRssi, rawSnr, fresh);
 
   /* the budget counts up now: a frame travels while it has hops left, and
      "do not relay" is a budget of zero rather than an exhausted countdown */
@@ -1001,9 +1114,11 @@ static void handleReceived() {
     if (remaining > LORA_TTL_MAX_ACCEPT) {
       Serial.print(F("Relay refused, remaining hops "));
       Serial.println(remaining);
+    } else if (loraFrameIsReply(&frame) && !loraReplyOnPath(&relayed, &frame)) {
+      /* an answer retraces its request: this node did not carry it, so it is
+         not on the way back */
     } else {
-      queueRelay(buffer, (uint8_t)length, frame.source, frame.counter,
-                 peer->lastRssi);
+      queueRelay(&frame, rawRssi);
     }
   }
 
@@ -1043,7 +1158,7 @@ static void handleReceived() {
         Serial.print(F("HELLO from "));
         Serial.print(frame.source);
         Serial.print(F(" rssi "));
-        Serial.println(peer->lastRssi);
+        Serial.println(rawRssi);
       }
       break;
     default:
@@ -1059,23 +1174,22 @@ static void servicePending() {
     pending.active = false;
     Print* output = pending.output == NULL ? &Serial : pending.output;
     output->print(F("No ACK from "));
-    output->println(pending.destination);
+    output->println(pending.frame.destination);
     Print* json = loraBridgeBegin("noack");
-    loraBridgeInt(json, "dst", pending.destination);
-    loraBridgeInt(json, "counter", pending.counter);
+    loraBridgeInt(json, "dst", pending.frame.destination);
+    loraBridgeInt(json, "counter", pending.frame.counter);
     loraBridgeEnd(json);
     return;
   }
-  if (!canTransmit(pending.frameLength)) {
+  uint8_t length = loraFrameSize(&pending.frame);
+  if (!canTransmit(length)) {
     pending.dueMillis = millis() + 500;
     return;
   }
 
-  loraFrameSetBudget(pending.frame, pending.frameLength,
-                      ladderTtl(pending.attempt));
-  transmitFrame(pending.frame, pending.frameLength);
-  pending.dueMillis =
-      millis() + ladderTimeout(pending.attempt, pending.frameLength);
+  pending.frame.budget = ladderTtl(pending.attempt);
+  sealAndTransmit(&pending.frame, nextCounter());
+  pending.dueMillis = millis() + ladderTimeout(pending.attempt, length);
   pending.attempt++;
 }
 
@@ -1083,12 +1197,14 @@ static void sendHello() {
   if (!groupKeyPresent || nodeAddress == 0) {
     return;
   }
-  uint8_t buffer[LORA_MAX_FRAME_SIZE];
-  uint8_t length =
-      buildFrame(LORA_ADDRESS_BROADCAST, LORA_TYPE_HELLO, 0, nextCounter(),
-                 NULL, 0, buffer);
-  if (length > 0) {
-    transmitFrame(buffer, length);
+  uint8_t body[LORA_HELLO_MAX_SIZE];
+  uint8_t bodyLength = loraMeshHelloBody(body);
+  uint32_t counter = sendMessage(LORA_ADDRESS_BROADCAST, LORA_TYPE_HELLO,
+                                 helloBudget(), body, bodyLength);
+  /* a bridge's host reads what the bridge says about itself - its fix - here */
+  if (counter != 0) {
+    reportTransmission(LORA_TYPE_HELLO, LORA_ADDRESS_BROADCAST, counter, false,
+                       body, bodyLength);
   }
 }
 
@@ -1231,12 +1347,22 @@ static void printPeersJson(Print* output) {
     }
     output->print(F("{\"address\":"));
     output->print(peer->address);
-    output->print(F(",\"counter\":"));
-    output->print(peer->lastCounter);
-    output->print(F(",\"rssi\":"));
-    output->print(peer->lastRssi);
-    output->print(F(",\"snr\":"));
-    output->print(peer->lastSnr);
+    /* 0 is an entry for a relay whose own messages were never heard: counters
+       start at 1 */
+    if (peer->lastCounter > 0) {
+      output->print(F(",\"counter\":"));
+      output->print(peer->lastCounter);
+    }
+    /* a margin only for a node heard directly, dated by that reception rather
+       than by the last relayed copy, so every entry carrying one is a link */
+    if (peer->heardDirect) {
+      output->print(F(",\"rssi\":"));
+      output->print(peer->lastRssi);
+      output->print(F(",\"snr\":"));
+      output->print(peer->lastSnr);
+      output->print(F(",\"rssiAge\":"));
+      output->print((millis() - peer->directMillis) / 1000);
+    }
     output->print(F(",\"age\":"));
     output->print((millis() - peer->lastHeardMillis) / 1000);
     output->print('}');
@@ -1263,13 +1389,20 @@ void loraMeshPrintPeers(Print* output) {
     output->print(peer->address);
     output->print(F(": counter "));
     output->print(peer->lastCounter);
-    output->print(F(" rssi "));
-    output->print(peer->lastRssi);
-    output->print(F("dBm snr "));
-    output->print(peer->lastSnr);
-    output->print(F("dB age "));
+    if (peer->heardDirect) {
+      output->print(F(", rssi "));
+      output->print(peer->lastRssi);
+      output->print(F("dBm snr "));
+      output->print(peer->lastSnr);
+      output->print(F("dB heard directly "));
+      output->print((millis() - peer->directMillis) / 1000);
+      output->print(F("s ago"));
+    } else {
+      output->print(F(", only through relays"));
+    }
+    output->print(F(", last heard "));
     output->print((millis() - peer->lastHeardMillis) / 1000);
-    output->println(F("s"));
+    output->println(F("s ago"));
   }
 }
 
@@ -1283,6 +1416,15 @@ void loraMeshPrintInfo(Print* output) {
   } else {
     output->println(isRepeater() ? F("repeater") : F("endpoint"));
   }
+  loraMeshPrintLocation(output);
+  /* The HELLO flags say this for every other node, but a bridge's own HELLO
+     never comes back up its port, so this line is the only way the host can
+     learn it about the bridge. */
+#ifdef THR_DRONE_ID
+  output->println(F("Drone watcher: yes"));
+#else
+  output->println(F("Drone watcher: no"));
+#endif
   output->print(F("AES128 key: "));
   if (groupKeyPresent) {
     toHex(output, groupKey, LORA_KEY_SIZE);

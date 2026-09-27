@@ -7,6 +7,7 @@
 #define KIND_LORA_MESH 7
 #define KIND_BLE_BEACON 8
 #define KIND_DRONE_TRACKER 9
+#define KIND_DRONE_TRANSMITTER 10
 #define KIND_EXAMPLE 99
 
 #if BOARD_TYPE == KIND_ROCKET
@@ -27,6 +28,8 @@
 #include "./configBleBeacon.h"
 #elif BOARD_TYPE == KIND_DRONE_TRACKER
 #include "./configDroneTracker.h"
+#elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
+#include "./configDroneTransmitter.h"
 #else
 #error "Unknown board type"
 #endif
