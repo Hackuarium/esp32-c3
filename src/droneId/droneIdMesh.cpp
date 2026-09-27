@@ -32,6 +32,12 @@
    with the receiver closed; the rest go on the next tick. */
 #define DRONE_MESH_MAX_IDENTS_PER_TICK 2
 
+/* An IDENT is one unacknowledged broadcast, sent back to back with the PILOT
+   and TRACK of the same tick, so one lost to a collision left the handle
+   unnamed on the host until the five minute keepalive. A new handle's IDENT is
+   therefore sent on its first three ticks: two more frames per new aircraft. */
+#define DRONE_MESH_IDENT_REPEATS 3
+
 typedef struct {
   boolean used;
   boolean present;
@@ -60,7 +66,7 @@ typedef struct {
   char operatorId[ODID_ID_SIZE];
 
   /* what has already been said */
-  boolean identSent;
+  uint8_t identsSent;
   boolean identHadOperator;
   boolean identHadClass;
   uint32_t identMillis;
@@ -262,7 +268,7 @@ static void sendIdents() {
       continue;
     }
     boolean asked = requestedIdent == entry->handle;
-    boolean due = !entry->identSent || asked ||
+    boolean due = entry->identsSent < DRONE_MESH_IDENT_REPEATS || asked ||
                   (entry->hasOperatorId && !entry->identHadOperator) ||
                   (entry->classification != 0 && !entry->identHadClass) ||
                   millis() - entry->identMillis >= slowMillis();
@@ -275,7 +281,9 @@ static void sendIdents() {
                         entry->hasOperatorId ? entry->operatorId : NULL};
     sent++;
     if (send(body, droneIdEncodeIdent(&ident, body, sizeof(body)))) {
-      entry->identSent = true;
+      if (entry->identsSent < DRONE_MESH_IDENT_REPEATS) {
+        entry->identsSent++;
+      }
       entry->identHadOperator = entry->hasOperatorId;
       entry->identHadClass = entry->classification != 0;
       entry->identMillis = millis();
@@ -435,7 +443,7 @@ static void printHandles(Print* output) {
         output->print(droneIdSourceLabel(source));
       }
     }
-    output->println(entry->identSent ? F("") : F(", IDENT not sent yet"));
+    output->println(entry->identsSent > 0 ? F("") : F(", IDENT not sent yet"));
   }
   if (live == 0) {
     output->println(F("  nothing being reported"));

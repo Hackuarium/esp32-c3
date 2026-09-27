@@ -17,8 +17,9 @@
 
    Per tick, in this order:
 
-     IDENT   a new handle, a newly arrived Operator ID or classification, a
-             five minute keepalive, or (df) asking
+     IDENT   a new handle (on its first three ticks, since one IDENT lost
+             leaves the host unable to name it), a newly arrived Operator ID
+             or classification, a five minute keepalive, or (df) asking
      PILOT   the operator's first position, a move past (M), or a keepalive
      TRACK   every aircraft heard in the last 15 s, (L) to a frame - with the
              position bit clear for one that has sent no Location message

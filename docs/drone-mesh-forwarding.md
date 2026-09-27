@@ -190,7 +190,10 @@ IDENT binding. A node reboot restarts the numbering, which is safe precisely
 because every aircraft is then a first sighting and every handle is re-bound
 before it is used.
 
-A `TRACK` can still arrive before its `IDENT` — a broadcast is unacknowledged.
+A `TRACK` can still arrive before its `IDENT` — a broadcast is unacknowledged,
+which is also why a new handle's `IDENT` goes out on its first three ticks
+rather than once: a single lost one left the aircraft unnamed until the
+five-minute keepalive.
 The host stores that point with a null UAS ID and back-fills it when the binding
 lands, rather than dropping it. And because `ar` runs a console verb on any
 node, the host can **ask**: a new `df<handle>` re-sends the IDENT for one

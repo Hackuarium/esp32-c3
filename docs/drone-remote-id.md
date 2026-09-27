@@ -254,7 +254,7 @@ stores it. Nothing is sent while the sky is empty. Three records, specified in
 
 | Opcode | Record | Sent |
 |---|---|---|
-| `0x12` | `IDENT` — handle, UAS ID, operator ID, EU class | a new aircraft, a newly arrived operator ID or class, every 5 min, or `df` |
+| `0x12` | `IDENT` — handle, UAS ID, operator ID, EU class | a new aircraft (on its first three reports), a newly arrived operator ID or class, every 5 min, or `df` |
 | `0x11` | `PILOT` — the operator's position | first seen, moved more than `M`, every 5 min |
 | `0x10` | `TRACK` — position, height, speed, heading, RSSI, transports | every `K` s while heard in the last 15 s, `L` to a frame — with the position bit clear when the aircraft sent none |
 
