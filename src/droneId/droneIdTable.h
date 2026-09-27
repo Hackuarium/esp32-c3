@@ -47,6 +47,9 @@ typedef struct {
   uint16_t messages;
   uint32_t firstSeenMillis;
   uint32_t lastSeenMillis;
+  /* When a Location last arrived, which is not when anything last did: a
+     position is as old as this, however recently the row was heard. */
+  uint32_t locationMillis;
   uint32_t lastReportMillis;
   /* What the JSON feed has already said about this row - see droneIdFeed.h.
      It is paced separately from the console, and it has to be the row's rather

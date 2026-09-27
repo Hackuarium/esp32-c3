@@ -58,4 +58,11 @@ const uint8_t* droneIdFindNanPayload(const uint8_t* frame, uint16_t length,
 ODID_messagetype_t droneIdDecodePayload(const uint8_t* payload, uint8_t length,
                                         ODID_UAS_Data* record);
 
+/* Whether a located payload carries a message of this type, alone or in a
+   pack. The record cannot say it: it keeps a Location for ever once one
+   arrived, and over Bluetooth 4 four frames in five carry something else - so
+   the age of a position is the age of the last frame this says true of. */
+bool droneIdPayloadCarries(const uint8_t* payload, uint8_t length,
+                           ODID_messagetype_t type);
+
 #endif

@@ -56,8 +56,11 @@ boolean droneIdFeedEnabled();
    a message type this transmitter had not sent before, or a changed UAS ID.
    That is what promotes an identity or an operator's position out of the
    position line, since both arrive as messages of their own, seconds or
-   minutes after the first position. */
-uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block);
+   minutes after the first position.
+
+   `located` says this frame carried a Location. A position line goes out only
+   then, so it never repeats a position that did not just arrive. */
+uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block, boolean located);
 
 /* Writes the lines, on a copy of the row and with the lock released: a feed
    line is a couple of hundred bytes at 115200 baud, and the drone task must
@@ -72,9 +75,12 @@ void droneIdFeedLost(const DroneAircraft* entry);
 #else
 
 inline boolean droneIdFeedEnabled() { return false; }
-inline uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block) {
+inline uint8_t droneIdFeedDue(DroneAircraft* entry,
+                              boolean block,
+                              boolean located) {
   (void)entry;
   (void)block;
+  (void)located;
   return 0;
 }
 inline void droneIdFeedEmit(const DroneAircraft* entry, uint8_t due) {

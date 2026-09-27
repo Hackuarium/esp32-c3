@@ -189,6 +189,33 @@ static void test_short_payload_never_reaches_the_decoder(void) {
                     droneIdDecodePayload(payload, sizeof(payload), &record));
 }
 
+/* The record keeps a Location once one arrived, so what a frame carried has
+   to be read off the frame: a legacy advertisement is one message, a pack says
+   what it holds. */
+static void test_payload_carries(void) {
+  uint8_t length = 0;
+  const uint8_t* legacy = droneIdFindBluetoothPayload(
+      bluetoothLegacy, sizeof(bluetoothLegacy), &length);
+  TEST_ASSERT_TRUE(
+      droneIdPayloadCarries(legacy, length, ODID_MESSAGETYPE_BASIC_ID));
+  TEST_ASSERT_FALSE(
+      droneIdPayloadCarries(legacy, length, ODID_MESSAGETYPE_LOCATION));
+
+  const uint8_t* pack = droneIdFindBluetoothPayload(
+      bluetoothExtended, sizeof(bluetoothExtended), &length);
+  TEST_ASSERT_TRUE(
+      droneIdPayloadCarries(pack, length, ODID_MESSAGETYPE_LOCATION));
+  TEST_ASSERT_TRUE(droneIdPayloadCarries(pack, length, ODID_MESSAGETYPE_SYSTEM));
+  TEST_ASSERT_FALSE(
+      droneIdPayloadCarries(pack, length, ODID_MESSAGETYPE_SELF_ID));
+
+  /* a pack cut short says nothing about the messages it lost */
+  TEST_ASSERT_FALSE(droneIdPayloadCarries(pack, 1 + 3 + ODID_MESSAGE_SIZE,
+                                          ODID_MESSAGETYPE_LOCATION));
+  TEST_ASSERT_FALSE(
+      droneIdPayloadCarries(pack, 8, ODID_MESSAGETYPE_PACKED));
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_bluetooth_legacy);
@@ -200,5 +227,6 @@ int main(void) {
   RUN_TEST(test_locators_do_not_cross_match);
   RUN_TEST(test_noise_matches_nothing);
   RUN_TEST(test_short_payload_never_reaches_the_decoder);
+  RUN_TEST(test_payload_carries);
   return UNITY_END();
 }

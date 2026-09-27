@@ -165,6 +165,11 @@ void droneIdTableApply(Print* output, const DroneCapture* capture) {
   entry->channel = capture->channel;
   entry->protocolVersion = capture->payload[1] & 0x0F;
   entry->lastSeenMillis = millis();
+  boolean located = droneIdPayloadCarries(capture->payload, capture->length,
+                                          ODID_MESSAGETYPE_LOCATION);
+  if (located) {
+    entry->locationMillis = millis();
+  }
   if (entry->messages < 65535) {
     entry->messages++;
   }
@@ -192,7 +197,7 @@ void droneIdTableApply(Print* output, const DroneCapture* capture) {
      the port on lines nobody reads. The two are paced apart - (Q) against
      (D) - which is why what is due is decided here, on the row, and written
      afterwards from the copy. */
-  uint8_t due = droneIdFeedDue(entry, block);
+  uint8_t due = droneIdFeedDue(entry, block, located);
   boolean feeding = droneIdFeedEnabled();
   boolean copy = feeding ? due != 0 : (block || !quiet);
 

@@ -229,8 +229,10 @@ cable reaches reports over LoRa instead — see *Over the mesh* below.
 Four things about it are deliberate:
 
 - **The three fast-changing things are paced apart.** A position is a tick, at
-  `Q`; an operator's position is an event, sent when they move more than `M`
-  metres; an identity is sent when it arrives or changes. Both of the slow ones
+  `Q`, and only when a Location just arrived: a line triggered by a Basic ID or
+  a System message would repeat the last position as if it were new; an
+  operator's position is an event, sent when they move more than `M` metres;
+  an identity is sent when it arrives or changes. Both of the slow ones
   are repeated every five minutes as well, because nothing else will ever say
   them again and a host that was restarting would otherwise hold an aircraft it
   cannot name.

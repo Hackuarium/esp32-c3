@@ -147,3 +147,26 @@ ODID_messagetype_t droneIdDecodePayload(const uint8_t* payload, uint8_t length,
   }
   return decodeOpenDroneID(record, body);
 }
+
+bool droneIdPayloadCarries(const uint8_t* payload, uint8_t length,
+                           ODID_messagetype_t type) {
+  if (length < 1 + ODID_MESSAGE_SIZE) {
+    return false;
+  }
+  const uint8_t* body = payload + 1;
+  ODID_messagetype_t first = decodeMessageType(body[0]);
+  if (first != ODID_MESSAGETYPE_PACKED) {
+    return first == type;
+  }
+  uint8_t count = body[2];
+  for (uint8_t i = 0; i < count; i++) {
+    uint16_t at = (uint16_t)(3 + i * ODID_MESSAGE_SIZE);
+    if (at + ODID_MESSAGE_SIZE > length - 1) {
+      return false;
+    }
+    if (decodeMessageType(body[at]) == type) {
+      return true;
+    }
+  }
+  return false;
+}

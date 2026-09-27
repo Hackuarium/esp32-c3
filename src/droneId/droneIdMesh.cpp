@@ -135,21 +135,23 @@ static void gatherLocation(MeshHandle* entry, const DroneAircraft* row) {
   boolean located =
       droneIdDecodeHasPosition(location->Latitude, location->Longitude);
   if (located && entry->located &&
-      abs((int32_t)(row->lastSeenMillis - entry->locationMillis)) <=
+      abs((int32_t)(row->locationMillis - entry->locationMillis)) <=
           DRONE_MESH_CONFLICT_WINDOW_MS &&
       droneIdMetresBetween(entry->location.Latitude, entry->location.Longitude,
                            location->Latitude, location->Longitude) >
           DRONE_MESH_CONFLICT_METRES) {
     entry->conflict = true;
   }
-  /* a row with a position beats one without, then the newest wins */
+  /* A row with a position beats one without, then the newest Location wins -
+     not the row heard last, which over Bluetooth 4 may have sent nothing but
+     its serial number for minutes. */
   boolean better = !entry->hasLocation || (located && !entry->located) ||
                    (located == entry->located &&
-                    isNewer(row->lastSeenMillis, entry->locationMillis));
+                    isNewer(row->locationMillis, entry->locationMillis));
   if (better) {
     entry->hasLocation = true;
     entry->located = located;
-    entry->locationMillis = row->lastSeenMillis;
+    entry->locationMillis = row->locationMillis;
     memcpy(&entry->location, location, sizeof(ODID_Location_data));
   }
 }
@@ -332,18 +334,21 @@ static void flushTracks(DroneTrack* tracks, MeshHandle** owners, uint8_t count) 
   }
 }
 
-/* An aircraft that has sent no Location message - a test transmitter, or one
-   still solving its fix - is still reported, with the position bit clear: the
+/* An aircraft with no recent Location - none sent yet, one still solving its
+   fix, or one heard only through its other messages lately - is still
+   reported, with the position bit clear: the
    TRACK is what says it is still being heard, and at what margin, and without
    it the host holds an IDENT every five minutes and nothing in between. */
-static void fillTrack(DroneTrack* track, const MeshHandle* entry) {
+static void fillTrack(DroneTrack* track,
+                      const MeshHandle* entry,
+                      boolean fresh) {
   memset(track, 0, sizeof(DroneTrack));
   track->handle = entry->handle;
   track->conflict = entry->conflict;
   track->first = !entry->tracked;
   track->rssi = entry->rssi;
   track->transports = entry->transports;
-  if (!entry->hasLocation) {
+  if (!fresh) {
     track->height = INV_ALT;
     track->speed = INV_SPEED_H;
     track->heading = INV_DIR;
@@ -367,12 +372,17 @@ static void sendTracks() {
   uint8_t limit = perFrame();
   for (uint8_t i = 0; i < DRONE_MESH_MAX_HANDLES; i++) {
     MeshHandle* entry = &handles[i];
-    uint32_t silent = millis() - (entry->hasLocation ? entry->locationMillis
-                                                     : entry->heardMillis);
+    /* a position older than the stale window is not sent as if it were
+       current: the aircraft is still reported, without one */
+    boolean fresh =
+        entry->hasLocation &&
+        millis() - entry->locationMillis < DRONE_MESH_STALE_MILLIS;
+    uint32_t silent =
+        millis() - (fresh ? entry->locationMillis : entry->heardMillis);
     if (!entry->present || silent >= DRONE_MESH_STALE_MILLIS) {
       continue;
     }
-    fillTrack(&tracks[count], entry);
+    fillTrack(&tracks[count], entry, fresh);
     tracks[count].secondsSinceHeard = silent / 1000;
     owners[count++] = entry;
     if (count == limit) {

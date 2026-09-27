@@ -110,7 +110,15 @@ of the bridge's range is placed too; `ar<address>:al` returns the same
 An aircraft the relay hears but that has sent no Location message — a test
 transmitter, or one still solving its fix — still gets a TRACK every tick with
 bit 4 clear and the three quantized fields at 255: it is the only record that
-says the aircraft is still being heard, and at what margin.
+says the aircraft is still being heard, and at what margin. So does one whose
+last Location is older than 15 s.
+
+**"Seconds since heard" is the age of the position**, taken from the newest
+Location any of the aircraft's transports delivered. It is not the age of the
+last frame. Over Bluetooth 4 four frames in five carry something else, and a
+weak transmitter can keep a row fresh for minutes on its serial number alone.
+Picking the row heard last once sent a two-minute-old position labelled 0 s
+old, and a map drew spokes back to it.
 
 Frame: `opcode(1) count(1) records(n × 11)`. **Four records is 46 of the 48 the
 body allows**, so one frame covers four aircraft.

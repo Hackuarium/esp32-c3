@@ -31,13 +31,17 @@ int16_t droneIdPilotMoveMetres() {
 
 boolean droneIdFeedEnabled() { return loraMeshIsBridge(); }
 
-uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block) {
+uint8_t droneIdFeedDue(DroneAircraft* entry, boolean block, boolean located) {
   if (!droneIdFeedEnabled()) {
     return 0;
   }
   uint8_t due = 0;
 
-  if (block || millis() - entry->lastFeedMillis >= feedIntervalMillis()) {
+  /* A first sighting without a Location still gets its line; one with a
+     Location only when that Location just arrived. */
+  boolean paced = millis() - entry->lastFeedMillis >= feedIntervalMillis();
+  if ((block && !entry->record.LocationValid) ||
+      (located && (block || paced))) {
     entry->lastFeedMillis = millis();
     due |= DRONE_FEED_POSITION;
   }
