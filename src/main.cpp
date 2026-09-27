@@ -22,6 +22,8 @@ void setupDroneTracker();
 void loopDroneTracker();
 void setupDroneTransmitter();
 void loopDroneTransmitter();
+void setupAirTraffic();
+void loopAirTraffic();
 
 void setup() {
   xSemaphoreWire = xSemaphoreCreateMutexStatic(&xMutexBufferWire);
@@ -45,6 +47,8 @@ void setup() {
   setupDroneTracker();
 #elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
   setupDroneTransmitter();
+#elif BOARD_TYPE == KIND_AIR_TRAFFIC
+  setupAirTraffic();
 #else
   setupExample();
 #endif
@@ -71,6 +75,8 @@ void loop() {
   loopDroneTracker();
 #elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
   loopDroneTransmitter();
+#elif BOARD_TYPE == KIND_AIR_TRAFFIC
+  loopAirTraffic();
 #else
   loopExample();
 #endif

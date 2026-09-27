@@ -34,6 +34,10 @@ void processBleCommand(char command, char* paramValue, Print* output);
 void processDroneCommand(char command, char* paramValue, Print* output);
 #endif
 
+#ifdef THR_AIR_TRAFFIC
+void processAirCommand(char command, char* paramValue, Print* output);
+#endif
+
 void TaskSerial(void* pvParameters) {
   Serial.begin(115200);
   while (true) {
@@ -180,6 +184,12 @@ void printResult(char* data, Print* output) {
     case 's':
       printParameters(output);
       break;
+
+#ifdef THR_AIR_TRAFFIC
+    case 't':
+      processAirCommand(data[1], paramValue, output);
+      break;
+#endif
 
     case 'u':
       processUtilitiesCommand(data[1], paramValue, output);

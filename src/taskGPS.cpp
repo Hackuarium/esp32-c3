@@ -2,6 +2,7 @@
 #ifdef GPS_RX
 #include <TinyGPSPlus.h>
 
+#include "gpsClock.h"
 #include "params.h"
 #ifdef THR_LORA_MESH
 #include "lora/loraMesh.h"
@@ -9,6 +10,71 @@
 
 HardwareSerial GPSSerial(1);
 TinyGPSPlus gps;
+
+/* What gpsClockRead() hands out. This task writes it and any other reads it,
+   so the values move together under a lock. */
+static portMUX_TYPE clockLock = portMUX_INITIALIZER_UNLOCKED;
+static boolean clockSet = false;
+static uint32_t clockSecondOfDay = 0;
+static uint32_t clockSentenceMillis = 0;
+static uint32_t lastTimeValue = 0xFFFFFFFF;
+#ifdef GPS_PPS
+static volatile uint32_t ppsMillis = 0;
+
+static void IRAM_ATTR onPps() {
+  ppsMillis = millis();
+}
+#endif
+
+/* Called after each complete sentence. RMC and GGA both carry the second they
+   describe, so only the first sentence of each new second is dated - the one
+   that arrives closest to it. */
+static void updateClock() {
+  if (!gps.time.isValid()) {
+    return;
+  }
+  uint32_t value = gps.time.value();
+  if (value == lastTimeValue) {
+    return;
+  }
+  lastTimeValue = value;
+  uint32_t second =
+      gps.time.hour() * 3600ul + gps.time.minute() * 60ul + gps.time.second();
+  portENTER_CRITICAL(&clockLock);
+  clockSecondOfDay = second;
+  clockSentenceMillis = millis();
+  clockSet = true;
+  portEXIT_CRITICAL(&clockLock);
+}
+
+boolean gpsClockRead(GpsClock* clock) {
+  portENTER_CRITICAL(&clockLock);
+  boolean set = clockSet;
+  uint32_t second = clockSecondOfDay;
+  uint32_t sentence = clockSentenceMillis;
+  portEXIT_CRITICAL(&clockLock);
+
+  uint32_t now = millis();
+  if (!set || now - sentence > 3000) {
+    return false;
+  }
+#ifdef GPS_PPS
+  /* A pulse in the last second and a half starts the current second. The
+     sentence naming it comes after the pulse; until it has arrived, the
+     latest sentence still names the second before. */
+  uint32_t pps = ppsMillis;
+  if (pps != 0 && now - pps < 1500) {
+    clock->secondOfDay = (int32_t)(sentence - pps) >= 0 ? second : second + 1;
+    clock->startMillis = pps;
+    clock->exact = true;
+    return true;
+  }
+#endif
+  clock->secondOfDay = second;
+  clock->startMillis = sentence;
+  clock->exact = false;
+  return true;
+}
 
 // GGA field 6 is the fix quality (0 = no fix); the module talks GN (multi-GNSS)
 TinyGPSCustom fixQuality(gps, "GNGGA", 6);
@@ -309,10 +375,17 @@ void TaskGPS(void* pvParameters) {
   Serial.print(baud);
   Serial.println(F(" baud. Use 'gi' to read the parsed data."));
 
+#ifdef GPS_PPS
+  pinMode(GPS_PPS, INPUT);
+  attachInterrupt(digitalPinToInterrupt(GPS_PPS), onPps, RISING);
+#endif
+
   while (true) {
     while (GPSSerial.available()) {
       char inChar = (char)GPSSerial.read();
-      gps.encode(inChar);
+      if (gps.encode(inChar)) {
+        updateClock();
+      }
       if (rawEchoUntil != 0) {
         Serial.write(inChar);
       }

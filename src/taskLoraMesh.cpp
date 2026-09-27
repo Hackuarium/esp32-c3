@@ -7,27 +7,10 @@
 #include "lora/loraBridge.h"
 #include "lora/loraMesh.h"
 #include "lora/loraPeers.h"
+#include "lora/loraPins.h"
 #include "lora/loraRelayPolicy.h"
 #include "params.h"
 #include "toHex.h"
-
-/* SX1262 pins of the Seeed XIAO ESP32S3 LoRa module: CS, DIO1, RESET, BUSY */
-#ifndef LORA_PIN_CS
-#define LORA_PIN_CS 41
-#define LORA_PIN_DIO1 39
-#define LORA_PIN_RESET 42
-#define LORA_PIN_BUSY 40
-#endif
-/* The antenna hangs off a PE4259, and that switch takes two control lines:
-   DIO2 drives CTRL and this pin drives /CTRL, so they have to move together and
-   opposite. Leaving it floating does not fail, it attenuates - the receive path
-   still happens to be selected, so a node hears normally and its own transmit
-   only reaches the antenna through the switch's isolation, about 40 dB down.
-   That is invisible on a bench at arm's length and costs a factor of a hundred
-   in range outdoors. */
-#ifndef LORA_PIN_RF_SW
-#define LORA_PIN_RF_SW 38
-#endif
 
 /* The three radio defaults are declared in configLoraMeshParams.h, next to the
    slots they fill, because loraMeshResetParameters() writes the same values.
@@ -63,18 +46,6 @@
 #define LORA_FREQUENCY_LEGACY_MAX 9600
 #define LORA_CODING_RATE 5
 #define LORA_PREAMBLE_SYMBOLS 8
-/* The Wio-SX1262 clocks the radio from an active TCXO supplied by DIO3, and it
-   is a 1.8 V part. RadioLib's begin() defaults this argument to 1.6 V - the
-   lowest step the SX1262 regulator offers - so leaving it out runs the
-   oscillator below spec: it still starts, so begin() reports no error, but the
-   PLL locks to a marginal reference and the transmitted chirp is spectrally
-   smeared. The receiver's correlator then throws most of the energy away, which
-   reads as a weak *and* noisy packet - a fixed ~50 dB below budget with the SNR
-   pinned near 5 dB however close the nodes are. It has to be stated per board,
-   not guessed: a module with a plain crystal needs 0 here instead. */
-#ifndef LORA_TCXO_VOLTAGE
-#define LORA_TCXO_VOLTAGE 1.8f
-#endif
 /* RadioLib's begin() trips the PA over-current protection at 60 mA, which is
    the SX1261 default; an SX1262 draws about 118 mA at the 22 dBm sub-band P
    allows, which is where the default carrier sits - so the ceiling would clip

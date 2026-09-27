@@ -93,6 +93,9 @@ void printHelp(Print* output) {
   output->println(F("(o)neWire"));
 #endif
   output->println(F("(s)ettings"));
+#ifdef THR_AIR_TRAFFIC
+  output->println(F("air (t)raffic"));
+#endif
   output->println(F("(u)tilities"));
   output->println(F("(w)ifi"));
 

@@ -19,8 +19,8 @@ watcher, which flashes over its built-in USB-JTAG.
 the toolchain is warm.
 
 The host tests cover the drone tracker's frame parsing and records, the test
-transmitter's frames, and the mesh HELLO body with the location line a host
-parses:
+transmitter's frames, the mesh HELLO body with the location line a host
+parses, and the air traffic receiver's framing and timetable:
 
     ~/.platformio/penv/bin/pio test -e native
 
@@ -1090,6 +1090,42 @@ a reflash the old aircraft lingers on the watchers for `E` (300) seconds. See [d
   which pins AnalogWrite 4.x and ArduinoNvs 2.8, versions the registry no
   longer serves. Every other env fails to install on a fresh checkout until
   that list is updated.
+
+## The air traffic receiver (`t`, `[env:airTraffic]`, `src/airTraffic/`)
+
+`KIND_AIR_TRAFFIC`, `include/configAirTraffic.h`, `src/taskAirTraffic.cpp`. A
+XIAO ESP32S3 with the Wio-SX1262 that listens to what light aircraft broadcast
+around 868 MHz — FLARM, ADS-L, OGN trackers and FANET — and prints each frame as
+an `air` JSON line on its USB port. The reference, including why one radio
+cannot hear all four at once, is [docs/air-traffic.md](docs/air-traffic.md).
+
+- **It is not a mesh node.** The SX1262 is retuned several times a second and
+  cannot also hold the mesh's channel. The pins and the TCXO voltage it shares
+  with the mesh live in `src/lora/loraPins.h`.
+- **One setting hears FLARM and ADS-L**: both begin with `0xF5`, so the M-band
+  sync word is its Manchester, `55 99`, and `airFrames.cpp` tells them apart by
+  the three bytes after it (`31 FA B6` or `72 4B`). A longer sync word would
+  drop one of the two. The price is noise matching 16 chips; `ti` counts it.
+- **The timetable is European and needs the UTC second.** Slot 0 (400–800 ms)
+  has FLARM on 868.2 and OGN on 868.4, slot 1 (800–1200 ms) the reverse, and
+  200–400 ms goes to FANET (`airSchedule.h`). The second comes from
+  `gpsClock.h` — the NMEA sentences corrected by `C`, or a PPS line with
+  `-D GPS_PPS=<pin>`. Without a GPS the settings take turns of `B` ms.
+- **Framing and integrity only; the host decodes.** FLARM's CRC is
+  CRC-16/CCITT-FALSE seeded 0xFFFF over `31 FA B6` and the payload; ADS-L's is
+  the Mode S CRC-24, the spec's own code, tested against `8D4840D6202CC371C32CE0`
+  → `576098`. OGN frames go out unchecked until its LDPC check is written.
+- **GFSK to LoRa re-initialises the chip.** RadioLib 7.4 has no modem switch on
+  the SX126x, and `begin()` resets the antenna switch, the gain and the
+  interrupt, so `afterBegin()` re-applies all three. `ti` reports the slowest
+  retune.
+- **It never transmits.** The −9 dBm handed to `begin()` is there because the
+  call needs a value. FLARM's public protocol is licensed for receiving only.
+- **A new env does not install here.** `[env]`'s list pins versions the registry
+  no longer serves, so `pio run -e airTraffic` fails on a fresh `.pio`. Copy the
+  *contents* of `.pio/libdeps/droneTracker` into `.pio/libdeps/airTraffic` —
+  copying the folder onto an existing one nests it, and the build then misses
+  half the libraries.
 
 ## HTTP (`src/http.cpp`)
 

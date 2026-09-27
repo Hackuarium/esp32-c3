@@ -8,6 +8,7 @@
 #define KIND_BLE_BEACON 8
 #define KIND_DRONE_TRACKER 9
 #define KIND_DRONE_TRANSMITTER 10
+#define KIND_AIR_TRAFFIC 11
 #define KIND_EXAMPLE 99
 
 #if BOARD_TYPE == KIND_ROCKET
@@ -30,6 +31,8 @@
 #include "./configDroneTracker.h"
 #elif BOARD_TYPE == KIND_DRONE_TRANSMITTER
 #include "./configDroneTransmitter.h"
+#elif BOARD_TYPE == KIND_AIR_TRAFFIC
+#include "./configAirTraffic.h"
 #else
 #error "Unknown board type"
 #endif
