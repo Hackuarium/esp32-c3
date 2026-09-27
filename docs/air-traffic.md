@@ -93,6 +93,17 @@ and counted.
 
     ti     protocols, clock, what was heard, slowest retune
     tc     clear the counts
+    tn     print the captures counted as noise, tn again to stop
+
+On the M-band the radio matches only the 16 chips of `F5`, so anything near
+868.2 or 868.4 at 100 kchip/s can start a capture. Whatever does not continue
+as FLARM or ADS-L is counted as noise and dropped; `tn` prints each one instead,
+off by default and until the next boot:
+
+    {"event":"noise","mhz":868.400,"rssi":-104,"raw":"…"}
+
+`raw` is still Manchester coded, as the radio handed it over. The RSSI is what
+tells a transmitter nearby from the noise floor.
 
 | Parameter | Default | Meaning |
 |---|---|---|

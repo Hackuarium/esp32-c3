@@ -39,6 +39,9 @@ static uint32_t heard[AIR_PROTOCOL_SLOTS];
 static uint32_t passed[AIR_PROTOCOL_SLOTS];
 /* captures the sync word matched but that were no frame at all */
 static uint32_t noise = 0;
+/* (tn) prints those captures instead of only counting them. Off at boot, so
+   the feed a host reads is frames and nothing else unless somebody asks. */
+static boolean showNoise = false;
 static uint32_t framesThisMinute = 0;
 static uint32_t minuteStartedMillis = 0;
 
@@ -148,10 +151,34 @@ static void printFrame(const AirCapture* capture, const AirFrame* frame) {
   Serial.println(line);
 }
 
+/* What the sync word matched on, as the radio handed it over: still Manchester
+   coded, so the host can see which chips broke the pattern. The RSSI is what
+   tells a transmitter nearby from the noise floor. */
+static void printNoise(const AirCapture* capture) {
+  const AirListenSetting* setting = airListenSetting(capture->listen);
+  char line[AIR_LINE_LENGTH];
+  size_t at = snprintf(line, sizeof(line),
+                       "{\"event\":\"noise\",\"mhz\":%.3f,\"rssi\":%d",
+                       setting->frequencyMhz, capture->rssi);
+  uint32_t second;
+  uint16_t millisInSecond;
+  if (utcAt(capture->atMillis, &second, &millisInSecond)) {
+    at += snprintf(line + at, sizeof(line) - at, ",\"ms\":%u", millisInSecond);
+  }
+  at += snprintf(line + at, sizeof(line) - at, ",\"raw\":\"");
+  uint8_t length = capture->length > 64 ? 64 : (uint8_t)capture->length;
+  at = appendHex(line, at, capture->raw, length);
+  snprintf(line + at, sizeof(line) - at, "\"}");
+  Serial.println(line);
+}
+
 static void handleCapture(const AirCapture* capture) {
   AirFrame frame;
   if (!airFrameParse(capture->listen, capture->raw, capture->length, &frame)) {
     noise++;
+    if (showNoise) {
+      printNoise(capture);
+    }
     return;
   }
   if (frame.protocol == AIR_FANET && capture->loraCrcChecked) {
@@ -251,9 +278,15 @@ void processAirCommand(char command, char* paramValue, Print* output) {
       noise = 0;
       output->println(F("Counts cleared"));
       break;
+    case 'n':
+      showNoise = !showNoise;
+      output->println(showNoise ? F("Noise captures printed")
+                                : F("Noise captures counted only"));
+      break;
     default:
       output->println(F("(ti) info - protocols, clock, what was heard"));
       output->println(F("(tc) clear the counts"));
+      output->println(F("(tn) print the captures counted as noise, or stop"));
       printParameterHelp(
           output, PARAM_AIR_PROTOCOLS,
           F("protocols: 1 FLARM+ADS-L, 2 OGN, 4 FANET, 8 O-band"));
