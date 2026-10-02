@@ -68,6 +68,18 @@ extern int16_t parameters[MAX_PARAM];
 #define DRONE_TX_OPERATOR_SPEED 1.4
 #endif
 
+/* Wi-Fi transmit power, in the driver's 0.25 dBm steps. The XIAO ESP32S3
+   radiates nothing at the 20 dBm the driver starts with: esp_wifi_80211_tx
+   still returns ESP_OK for every beacon, so the counters climb while the air
+   stays empty. Measured on the bench with a laptop scanning for the soft AP:
+   never heard at 20 dBm, heard only some of the time at 19.5, always at 15
+   and below - the board-level fault reported in espressif/arduino-esp32#8770.
+   Bluetooth, at +9 dBm, was never affected, which is why the watchers heard
+   BT 4 and BT 5 from the start. */
+#ifndef DRONE_TX_WIFI_POWER
+#define DRONE_TX_WIFI_POWER 60
+#endif
+
 #define DRONE_TX_QUALIFIER 4965
 
 #define PARAM_UPTIME_H 20   // U

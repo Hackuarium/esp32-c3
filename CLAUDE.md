@@ -1094,6 +1094,21 @@ a reflash the old aircraft lingers on the watchers for `E` (300) seconds. See [d
   reconfiguring the set, which the host refuses while it advertises. A refused
   update stops the set so the next turn starts it again, because the host
   forgets its sets when it resets.
+- **Its Wi-Fi runs at 15 dBm by default, never the driver's 20**
+  (`DRONE_TX_WIFI_POWER`, applied in `startWifi()` on every build).
+  At 20 dBm this XIAO ESP32S3 radiates nothing on Wi-Fi while
+  `esp_wifi_80211_tx` returns `ESP_OK` for every beacon, so the counters in
+  `di` climb over an empty channel: for weeks the watchers heard BT 4 and BT 5
+  and never a beacon, with nothing on either board looking wrong. Bluetooth, at
+  +9 dBm, is unaffected. A laptop scanning for the soft AP never saw it at 20
+  dBm, sometimes at 19.5 and always at 15 and below — the board-level fault in
+  espressif/arduino-esp32#8770. Any other firmware here that transmits Wi-Fi
+  from a XIAO ESP32S3 is exposed to the same thing.
+- **esptool dies at the baud change on this board too**, so flash the app
+  image at 115200 directly: `esptool.py --chip esp32s3 --port <port> --baud
+  115200 write_flash -z 0x10000 .pio/build/droneTransmitter/firmware.bin`.
+  Not `esp-builtin`: with a watcher on the other USB port, OpenOCD picks
+  whichever JTAG adapter it finds first.
 - **It builds only its own four files** (`build_src_filter`), so `lib_deps` is
   NimBLE and ArduinoNvs alone. It is also the one env not on `[env]`'s list,
   which pins AnalogWrite 4.x and ArduinoNvs 2.8, versions the registry no

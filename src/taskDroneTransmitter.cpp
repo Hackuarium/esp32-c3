@@ -289,6 +289,9 @@ static boolean startWifi(uint8_t channel) {
     config.ap.beacon_interval = 60000;
     esp_wifi_set_config(WIFI_IF_AP, &config);
   }
+  if (esp_wifi_set_max_tx_power(DRONE_TX_WIFI_POWER) != ESP_OK) {
+    return false;
+  }
   return esp_wifi_get_mac(WIFI_IF_AP, wifiAddress) == ESP_OK;
 }
 
