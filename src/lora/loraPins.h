@@ -13,6 +13,11 @@
 #define LORA_PIN_RESET 42
 #define LORA_PIN_BUSY 40
 #endif
+/* The Wio-SX1262 sits on the board's default SPI bus, so these stay undefined
+   and RadioLib starts that bus itself. A board whose radio is wired elsewhere -
+   the EoRa-S3 uses 5, 3 and 6 - defines all three and the mesh starts the bus
+   on them first. */
+// LORA_PIN_SCK, LORA_PIN_MISO, LORA_PIN_MOSI
 /* The antenna hangs off a PE4259, and that switch takes two control lines:
    DIO2 drives CTRL and this pin drives /CTRL, so they have to move together and
    opposite. Leaving it floating does not fail, it attenuates - the receive path

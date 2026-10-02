@@ -1220,6 +1220,10 @@ void TaskLoraMesh(void* pvParameters) {
      receivers, backward reuses a nonce */
   persistCounter();
 
+#ifdef LORA_PIN_SCK
+  /* RadioLib's own SPI.begin() is then a no-op, so the bus stays on these */
+  SPI.begin(LORA_PIN_SCK, LORA_PIN_MISO, LORA_PIN_MOSI);
+#endif
   int state = radio.begin(frequency(), bandwidth(), spreadingFactor(),
                           LORA_CODING_RATE,
                           RADIOLIB_SX126X_SYNC_WORD_PRIVATE, maxTxPowerDbm(),

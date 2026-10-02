@@ -171,6 +171,15 @@ On the XIAO ESP32S3 the radio is on the default SPI bus, whose **SCK is GPIO7 �
 the D8 that `lineS3` drives its pixels from**, so a combined board moves the
 strip (`lineS3lora` uses D0). GPIO8 and GPIO9 go the same way.
 
+**Another radio board is build flags, not a fork.** `src/lora/loraPins.h` takes
+every pin, the TCXO voltage and the SPI bus from the env; `[env:droneTrackerEoRa]`
+is the drone watcher on an Ebyte EoRa-S3-900TB (a LilyGO T3-S3 in all but name),
+and it differs in the three things that fail silently rather than loudly: its
+SPI bus (`LORA_PIN_SCK`…), a crystal where the Wio has a TCXO
+(`LORA_TCXO_VOLTAGE=0.0f`), and an antenna switch driven by DIO2 alone
+(`LORA_PIN_RF_SW=RADIOLIB_NC`). A 1.8 V TCXO setting on a crystal board, or a
+missing switch line, still passes `begin()` and just costs range.
+
 **The mesh owns parameters 104–113 (`DA`…`DJ`) on every board.** The code refers
 to parameters only by name, so each config *could* pick its own slots — and that
 is exactly the trap: the block would then collide with `PARAM_OUT2_COLOR1` on
