@@ -655,9 +655,13 @@ does not move has no use for.
 | Node | Role | Image | Notes |
 |---|---|---|---|
 | 3 | bridge | `droneTracker` | USB serial `E8:06:90:A1:02:AC`, no GPS fitted yet |
-| 5, 6 | repeater | `droneTracker` | the prison project's drone watchers; still on the old envelope |
+| 5 | repeater | `droneTracker` | USB serial `44:B1:76:AD:2A:48`, the prison project's drone watcher, no GPS |
+| 6 | repeater | `droneTracker` | USB serial `68:EE:8F:62:F8:78`, the prison project's other drone watcher, no GPS |
 | 7 | repeater | `droneTracker` | USB serial `68:EE:8F:62:F4:A8`, L76K GPS, `DI300` |
 | 8 | repeater | `droneTracker` | USB serial `68:EE:8F:62:FA:B8`, L76K GPS, `DI300` |
+| 9 | endpoint | `droneTrackerEoRa` | USB serial `1C:DB:D4:85:6F:44`, Ebyte EoRa-S3-900TB, no GPS |
+| 10 | repeater | `droneTracker` | USB serial `E8:3D:C1:FB:D5:34`, GPS at 115200 baud, `DI300`; arrived running a third-party Remote ID test image |
+| 11 | repeater | `droneTracker` | USB serial `44:B1:76:AD:31:D0`, no GPS data seen, `DI300`; arrived running Meshtastic |
 
 ### Radio settings and the duty cycle
 
@@ -1045,7 +1049,7 @@ built on the firmware side: the JSON feed on a bridge, and on every other board
 `src/droneId/droneIdMesh.cpp`, which the mesh task calls each loop to broadcast
 a summary every `K` seconds (default 5, `dm` prices it). The proximity test and
 the urgent `DATA_ACK` path are not built, nor is the host's decoder.
-Three things decide its shape. One drone's position at 1 Hz costs 135 % of
+Three things decide its shape. One drone's position at 1 Hz costs 144 % of
 sub-band P's whole allowance, so raw forwarding over LoRa is impossible and what
 travels is an 11-byte `TRACK` record four to a frame, plus a 6-byte `PILOT` for
 the operator's position and a variable `IDENT` binding the handle to the UAS ID —
@@ -1079,8 +1083,9 @@ the channel to the access point's and takes the receiver away until a reboot.
 `KIND_DRONE_TRANSMITTER`, `include/configDroneTransmitter.h`,
 `src/taskDroneTransmitter.cpp`. A bare XIAO ESP32S3 that pretends to be a drone,
 so the watcher has a known aircraft to hear. Every second it announces a serial
-number drawn at boot, flying a 1 km circle at 10 m/s around a fixed centre
-while its operator walks a 100 m one at 1.4 m/s, on
+number drawn at boot, flying a 1 km circle at 10 m/s around a fixed centre,
+climbing between 50 and 150 m and back every 120 s, while its operator walks
+a 100 m one at 1.4 m/s, on
 Bluetooth 4 legacy (`A`), Bluetooth 5 Long Range (`B`) and a Wi-Fi beacon on
 channel `C`. The ID changes at every boot, so after
 a reflash the old aircraft lingers on the watchers for `E` (300) seconds. See [docs/drone-remote-id.md](docs/drone-remote-id.md).

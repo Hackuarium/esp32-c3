@@ -43,17 +43,27 @@ extern int16_t parameters[MAX_PARAM];
 #ifndef DRONE_TX_GROUND_ALTITUDE
 #define DRONE_TX_GROUND_ALTITUDE 449.0f
 #endif
-/* It flies a circle this wide around the centre, clockwise, this far above
-   its take-off point: a kilometre at 10 m/s is one lap every 314 s. A speed of
-   0 hovers over the centre instead. */
+/* It flies a circle this wide around the centre, clockwise: a kilometre at
+   10 m/s is one lap every 314 s. A speed of 0 hovers over the centre instead. */
 #ifndef DRONE_TX_ORBIT_DIAMETER
 #define DRONE_TX_ORBIT_DIAMETER 1000.0
 #endif
 #ifndef DRONE_TX_SPEED
 #define DRONE_TX_SPEED 10.0
 #endif
-#ifndef DRONE_TX_HEIGHT
-#define DRONE_TX_HEIGHT 10.0f
+/* Its height above take-off rises and falls between these two, as a sine of
+   this period, so a 3D view has a climb to show. 120 s against the 314 s lap
+   makes the track a spiral rather than one loop flown over and over, and peaks
+   at 2.6 m/s vertically - a multirotor's, not a rocket's. Equal heights fly
+   level. */
+#ifndef DRONE_TX_HEIGHT_MIN
+#define DRONE_TX_HEIGHT_MIN 50.0
+#endif
+#ifndef DRONE_TX_HEIGHT_MAX
+#define DRONE_TX_HEIGHT_MAX 150.0
+#endif
+#ifndef DRONE_TX_HEIGHT_PERIOD
+#define DRONE_TX_HEIGHT_PERIOD 120.0
 #endif
 
 /* The operator walks a circle of their own around the same centre, at walking

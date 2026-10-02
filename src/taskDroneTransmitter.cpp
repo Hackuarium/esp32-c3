@@ -116,13 +116,11 @@ static void describeAircraft() {
   strncpy(aircraft.BasicID[0].UASID, uasId, ODID_ID_SIZE);
 
   /* No clock on this board, so the timestamp says unknown rather than
-     inventing one. The position, course and speed are updatePosition()'s. */
+     inventing one. The position, height, course and speeds are
+     updatePosition()'s. */
   aircraft.LocationValid = 1;
   aircraft.Location.Status = ODID_STATUS_AIRBORNE;
-  aircraft.Location.AltitudeGeo = DRONE_TX_GROUND_ALTITUDE + DRONE_TX_HEIGHT;
   aircraft.Location.HeightType = ODID_HEIGHT_REF_OVER_TAKEOFF;
-  aircraft.Location.Height = DRONE_TX_HEIGHT;
-  aircraft.Location.SpeedVertical = 0;
   aircraft.Location.HorizAccuracy = ODID_HOR_ACC_10_METER;
   aircraft.Location.VertAccuracy = ODID_VER_ACC_10_METER;
   aircraft.Location.TimeStamp = INV_TIMESTAMP;
@@ -160,11 +158,22 @@ static void updateOperator(double seconds) {
                        &system->OperatorLongitude, &course);
 }
 
+static void updateHeight(double seconds) {
+  ODID_Location_data* location = &aircraft.Location;
+  double middle = (DRONE_TX_HEIGHT_MIN + DRONE_TX_HEIGHT_MAX) / 2;
+  double amplitude = (DRONE_TX_HEIGHT_MAX - DRONE_TX_HEIGHT_MIN) / 2;
+  double omega = 2 * M_PI / DRONE_TX_HEIGHT_PERIOD;
+  location->Height = middle + amplitude * sin(omega * seconds);
+  location->AltitudeGeo = DRONE_TX_GROUND_ALTITUDE + location->Height;
+  location->SpeedVertical = amplitude * omega * cos(omega * seconds);
+}
+
 /* Where the aircraft and its operator are on their circles now, from the time
    since boot - the only time this board has. */
 static void updatePosition() {
   double seconds = esp_timer_get_time() / 1e6;
   updateOperator(seconds);
+  updateHeight(seconds);
   ODID_Location_data* location = &aircraft.Location;
   if (DRONE_TX_SPEED <= 0) {
     location->Latitude = DRONE_TX_LATITUDE;
@@ -401,10 +410,19 @@ static void printInfo(Print* output) {
   output->print(F(", "));
   output->print(aircraft.Location.Longitude, 7);
   output->print(F(", "));
-  output->print(DRONE_TX_GROUND_ALTITUDE + DRONE_TX_HEIGHT, 1);
+  output->print(aircraft.Location.AltitudeGeo, 1);
   output->print(F(" m geodetic, "));
-  output->print(DRONE_TX_HEIGHT, 1);
-  output->println(F(" m above take-off"));
+  output->print(aircraft.Location.Height, 1);
+  output->print(F(" m above take-off, "));
+  output->print(aircraft.Location.SpeedVertical, 1);
+  output->println(F(" m/s vertically"));
+  output->print(F("Climbing: "));
+  output->print(DRONE_TX_HEIGHT_MIN, 0);
+  output->print(F(" to "));
+  output->print(DRONE_TX_HEIGHT_MAX, 0);
+  output->print(F(" m and back every "));
+  output->print(DRONE_TX_HEIGHT_PERIOD, 0);
+  output->println(F(" s"));
   if (DRONE_TX_SPEED > 0) {
     output->print(F("Flying: a "));
     output->print(DRONE_TX_ORBIT_DIAMETER, 0);
