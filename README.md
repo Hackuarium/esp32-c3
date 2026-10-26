@@ -110,7 +110,7 @@ To flash it over USB instead, override the port:
     pio run -t upload --upload-port /dev/cu.usbmodem…
 
 The square runs the energy wall: it polls
-`https://solar.patiny.com/api/energy-flow/compact` every 2.5 s over HTTPS and
+`https://solar.patiny.com/v1/energy-flow/compact` every 2.5 s over HTTPS and
 needs no access to the inverter's LAN. Point it elsewhere with
 `-D ENERGY_FLOW_URL=…`, and change the cadence with
 `-D ENERGY_FLOW_INTERVAL_MS=…`. On the serial console it logs a line only when

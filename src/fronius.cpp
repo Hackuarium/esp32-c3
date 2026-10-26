@@ -23,7 +23,7 @@
   deployment.
 */
 #ifndef ENERGY_FLOW_URL
-#define ENERGY_FLOW_URL "http://solar.patiny.com/api/energy-flow/compact"
+#define ENERGY_FLOW_URL "http://solar.patiny.com/v1/energy-flow/compact"
 #endif
 
 // 15 numeric members; 512 bytes is ample and leaves the parse allocation-free.

@@ -78,7 +78,7 @@ BYD, mint for the Marstek, top-right), grid (white, bottom-left), consumption
   from the power.
 - `src/fronius.cpp` — fetches the data. The names are historical: it no longer
   talks to a Fronius inverter, it reads
-  `https://solar.patiny.com/api/energy-flow/compact`, which already aggregates
+  `https://solar.patiny.com/v1/energy-flow/compact`, which already aggregates
   the inverter **and** the Marstek batteries and splits the balance into flows.
   Nothing is derived on the device.
 - Override the URL with `-D ENERGY_FLOW_URL=…` and the cadence with

@@ -5,7 +5,7 @@
 /*
   The live energy balance drawn by the LED wall, served by the solar monitoring
   backend (https://github.com/lpatiny/solar.patiny.com) on
-  /api/energy-flow/compact.
+  /v1/energy-flow/compact.
 
   The backend aggregates the Fronius inverter AND the Marstek batteries and
   already splits the balance into source -> sink flows, so nothing is derived
