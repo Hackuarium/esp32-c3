@@ -36,6 +36,13 @@ void outdoorSchedule(uint8_t highBrightness, uint8_t lowBrightness);
 void clearActions();
 
 void TaskPixels(void* pvParameters) {
+  // Blank the strip before the start-up delay: a reset can leave the LEDs
+  // latched on garbage, often full white, which can collapse the supply again
+  // before the delay ends and keep the board in a reset loop.
+  pixels.begin();
+  pixels.clear();
+  pixels.show();
+
   vTaskDelay(7192);
 
   updateMapping();
@@ -45,13 +52,8 @@ void TaskPixels(void* pvParameters) {
   // Initialise the xLastWakeTime variable with the current time.
   xLastWakeTime = xTaskGetTickCount();
 
-  pixels.begin();
-
   uint16_t state[MAX_LED] = {0};
   uint32_t rowColors[getParameter(PARAM_NB_ROWS)] = {0};
-
-  pixels.clear();
-  pixels.show();
 
 #if FLASH_SIZE_MB >= 8
   setFunction("sin(t-sqrt((x-3.5)^2+(y-3.5)^2))");
@@ -72,7 +74,7 @@ void TaskPixels(void* pvParameters) {
     if (previousProgram != getParameter(PARAM_CURRENT_PROGRAM)) {
       previousProgram = getParameter(PARAM_CURRENT_PROGRAM);
       programChanged = 1;
-      state[MAX_LED] = {0};
+      memset(state, 0, sizeof(state));
       pixels.clear();
     } else {
       programChanged = 0;
